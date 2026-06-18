@@ -7,7 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @lutest/worker-node",
+    "dev": "npm run dev -w @lutest/cli-host",
+    "dev:host": "npm run dev -w @lutest/cli-host",
+    "dev:worker": "npm run dev -w @lutest/worker-node",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "npm run lint --workspaces --if-present"
