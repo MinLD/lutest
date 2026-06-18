@@ -1,0 +1,40 @@
+# ========================
+# 1. Node.js & Dependencies
+# ========================
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# ========================
+# 2. Build & Cache Output
+# ========================
+dist/
+.turbo/
+.next/
+build/
+
+# ========================
+# 3. Go Binaries
+# ========================
+# Bỏ qua các file thực thi sau khi build Go
+/cmd/lutest/lutest
+/cmd/lutest/lutest.exe
+bin/
+obj/
+
+# ========================
+# 4. Environment Variables
+# ========================
+# Tuyệt đối không push file chứa mật khẩu/cấu hình local
+.env
+.env.*
+!.env.example
+
+# ========================
+# 5. OS & Editor Files
+# ========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
