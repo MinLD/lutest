@@ -5,6 +5,7 @@ import { graphRoutes } from "./modules/graph/graph.routes";
 import { reportRoutes } from "./modules/report/report.routes";
 import { notFoundHandler } from "./shared/middleware/not-found";
 import { errorHandler } from "./shared/middleware/error-handler";
+import { scanRoutes } from "./modules/scan/scan.routes";
 
 export const createApp = () => {
   const app = express();
@@ -15,6 +16,7 @@ export const createApp = () => {
   app.use("/api/project", projectRoutes);
   app.use("/api/graph", graphRoutes);
   app.use("/api/report", reportRoutes);
+  app.use("/api/scan", scanRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

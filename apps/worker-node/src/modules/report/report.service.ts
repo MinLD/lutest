@@ -1,12 +1,17 @@
 import type { LatestReportResponse } from "@lutest/contracts";
 import { reportRepository } from "./report.repository";
 
-export const reportService = {
-  async getLatestReport(): Promise<LatestReportResponse> {
-    const report = await reportRepository.findLatest();
+export interface GetLatestReportInput {
+  cwd: string;
+  projectPath?: string;
+  envProjectPath?: string;
+}
 
-    return {
-      report,
-    };
-  },
+const getLatestReport = async (
+  input: GetLatestReportInput,
+): Promise<LatestReportResponse> => {
+  const report = await reportRepository.findLatest(input);
+  return { report };
 };
+
+export const reportService = { getLatestReport };

@@ -1,13 +1,12 @@
 import { createApp } from "./app";
+import { configService } from "./modules/config/config.service";
 
-const port = Number(process.env.PORT ?? 6532);
-const envMode = process.env.LUTEST_ENV ?? "development";
-const timeout = process.env.WORKER_TIMEOUT ?? "30000";
+const config = configService.getWorkerConfig(process.env);
 
 const app = createApp();
 
-app.listen(port, () => {
+app.listen(config.port, () => {
   console.log(
-    `[Lutest Worker] Ready on port ${port} | Mode: ${envMode} | Timeout: ${timeout}ms`,
+    `[Lutest Worker] Ready on port ${config.port} | Mode: ${config.env} | Timeout: ${config.workerTimeoutMs}ms`,
   );
 });

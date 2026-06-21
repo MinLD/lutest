@@ -80,5 +80,28 @@ export interface ReportSummary {
 }
 
 export interface LatestReportResponse {
-  report: ReportSummary | null;
+  report: ScanResponse | null;
+}
+
+export interface ScanRequest {
+  projectPath?: string;
+}
+
+export interface ScanIssue {
+  id: string;
+  type: "layout" | "console" | "network" | "accessibility" | "unknown";
+  severity: "critical" | "warning" | "info";
+  message: string;
+  filePath?: string;
+}
+
+export interface ScanResponse {
+  scanId: string;
+  startedAt: string;
+  finishedAt: string;
+  status: "passed" | "failed" | "warning";
+  project: ProjectSummary;
+  sourceFileCount: number;
+  issues: ScanIssue[];
+  reportPath: string;
 }

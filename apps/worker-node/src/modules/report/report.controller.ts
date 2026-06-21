@@ -4,10 +4,18 @@ import { reportService } from "./report.service";
 
 export const reportController = {
   async getLatestReport(
-    _req: Request,
+    req: Request,
     res: Response<LatestReportResponse>,
   ): Promise<void> {
-    const latestReport = await reportService.getLatestReport();
+    const projectPath =
+      typeof req.query.path === "string" ? req.query.path : undefined;
+
+    const latestReport = await reportService.getLatestReport({
+      cwd: process.cwd(),
+      projectPath,
+      envProjectPath: process.env.PROJECT_PATH,
+    });
+
     res.json(latestReport);
   },
 };
