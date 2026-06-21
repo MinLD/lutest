@@ -1,22 +1,13 @@
-import express from 'express';
-import type { StatusResponse } from '@lutest/contracts';
+import { createApp } from "./app";
 
-const app = express();
-const PORT = process.env.PORT || 6532;
+const port = Number(process.env.PORT ?? 6532);
+const envMode = process.env.LUTEST_ENV ?? "development";
+const timeout = process.env.WORKER_TIMEOUT ?? "30000";
 
-// 🌟 Hứng biến môi trường do Go Host truyền xuống
-const ENV_MODE = process.env.LUTEST_ENV || 'unknown';
-const TIMEOUT = process.env.WORKER_TIMEOUT || 'unknown';
+const app = createApp();
 
-app.get('/api/status', (req, res) => {
-  const response: StatusResponse = { 
-    status: 'ok', 
-    uptime: process.uptime(),
-    service: 'lutest-worker', // Bổ sung trường thiếu
-    runtime: 'node'           // Bổ sung trường thiếu
-  };
-  res.json(response);
-});
-app.listen(PORT, () => {
-  console.log(`[Lutest Worker] Ready on port ${PORT} | Mode: ${ENV_MODE} | Timeout: ${TIMEOUT}ms`);
+app.listen(port, () => {
+  console.log(
+    `[Lutest Worker] Ready on port ${port} | Mode: ${envMode} | Timeout: ${timeout}ms`,
+  );
 });
