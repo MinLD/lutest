@@ -105,3 +105,14 @@ export interface ScanResponse {
   issues: ScanIssue[];
   reportPath: string;
 }
+
+export interface SourceFileNodeData {
+  filePath: string;
+  relativePath: string;
+  extension: string;
+}
+
+export interface ImportEdgeData {
+  importPath: string;
+  resolvedPath?: string;
+}
