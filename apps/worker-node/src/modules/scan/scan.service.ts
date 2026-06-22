@@ -1,10 +1,10 @@
 import path from "node:path";
 import type { ScanResponse } from "@lutest/contracts";
-import { fileSystemService } from "../../shared/services/file-system.service";
 import { pathService } from "../../shared/services/path.service";
 import { projectService } from "../project/project.service";
 import { scanMapper } from "./scan.mapper";
 import { scanRepository } from "./scan.repository";
+import { graphService } from "../graph/graph.service";
 export interface RunScanInput {
   cwd: string;
   projectPath?: string;
@@ -22,6 +22,13 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
   const paths = pathService.resolveProjectPaths(input);
 
   const discovery = await projectService.discoverProject(input);
+  await graphService.buildProjectGraph({
+    cwd: input.cwd,
+    projectPath: input.projectPath,
+    envProjectPath: input.envProjectPath,
+    projectRoot: discovery.summary.rootDir,
+    sourceFiles: discovery.sourceFiles,
+  });
 
   const issues = discovery.summary.packageJsonExists
     ? []
@@ -59,4 +66,3 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
 export const scanService = {
   runScan,
 };
-    
