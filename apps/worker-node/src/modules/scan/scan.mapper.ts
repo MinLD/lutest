@@ -1,8 +1,4 @@
-import type {
-  ProjectSummary,
-  ScanIssue,
-  ScanResponse,
-} from "@lutest/contracts";
+import type { ScanIssue, ScanResponse } from "@lutest/contracts";
 
 const toScanStatus = (issues: ScanIssue[]): ScanResponse["status"] => {
   if (issues.some((issue) => issue.severity === "critical")) return "failed";

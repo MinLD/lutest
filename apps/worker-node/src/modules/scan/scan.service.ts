@@ -5,6 +5,7 @@ import { projectService } from "../project/project.service";
 import { scanMapper } from "./scan.mapper";
 import { scanRepository } from "./scan.repository";
 import { graphService } from "../graph/graph.service";
+import { ruleEngine } from "../rule/rule.engine";
 export interface RunScanInput {
   cwd: string;
   projectPath?: string;
@@ -29,8 +30,12 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
     projectRoot: discovery.summary.rootDir,
     sourceFiles: discovery.sourceFiles,
   });
+  const ruleIssues = await ruleEngine.runRules({
+    projectRoot: discovery.summary.rootDir,
+    sourceFiles: discovery.sourceFiles,
+  });
 
-  const issues = discovery.summary.packageJsonExists
+  const baseIssues = discovery.summary.packageJsonExists
     ? []
     : [
         {
@@ -40,7 +45,7 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
           message: "package.json not found in target project",
         },
       ];
-
+  const issues = [...baseIssues, ...ruleIssues];
   const finishedAt = new Date().toISOString();
   const reportPath = path.join(paths.reportDir, `${scanId}.json`);
 

@@ -72,6 +72,7 @@ const listFiles = async (input: ListFilesInput): Promise<string[]> => {
           await walk(fullPath);
           return;
         }
+        
 
         if (!entry.isFile()) return;
 
