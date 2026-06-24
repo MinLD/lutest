@@ -1,4 +1,4 @@
-# TLX - Roadmap 8 Tuần Xây Lại Từ Đầu
+# Lutest - Roadmap 8 Tuần Xây Lại Từ Đầu
 
 Date: 2026-06-18
 
@@ -15,13 +15,13 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
   - **TypeScript**
   - **UI local dashboard**
   - **local-first**   
-- mục tiêu trong 8 tuần là tạo ra một bản TLX có thể:
-  - chạy bằng `tlx`
+- mục tiêu trong 8 tuần là tạo ra một bản Lutest có thể:
+  - chạy bằng `lutest`
   - khởi động worker ổn định
   - quét project local
   - dựng graph cơ bản
   - chạy visual scan cơ bản
-  - lưu report/screenshots vào `.tlx/`
+  - lưu report/screenshots vào `.lutest/`
   - mở dashboard và xem kết quả thật
   - có nền sẵn để mở rộng các phase sản phẩm sau này
 
@@ -33,7 +33,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 **Mục tiêu chính:** dọn hướng cũ, chốt kiến trúc mới, tạo monorepo sạch, thiết lập Node host CLI + Node worker + contracts + scripts cơ bản.
 
 ## Tuần 2 - Hoàn thiện Host CLI và lifecycle nền tảng
-**Mục tiêu chính:** làm cho `tlx` chạy được, đọc config được, spawn worker được, health check được, shutdown sạch.
+**Mục tiêu chính:** làm cho `lutest` chạy được, đọc config được, spawn worker được, health check được, shutdown sạch.
 
 ## Tuần 3 - Hoàn thiện Worker nền tảng và local API
 **Mục tiêu chính:** worker Express chạy độc lập, có route status/project/graph placeholder, có static dashboard serving, có runtime config sạch.
@@ -42,7 +42,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 **Mục tiêu chính:** đọc project thật, nhận diện framework cơ bản, parse source ở mức đủ dùng, tạo graph pages/components/apis sơ bộ.
 
 ## Tuần 5 - Scan engine + Playwright + report local
-**Mục tiêu chính:** thực hiện scan thật trên project local, tạo `.tlx/latest-report.json`, chụp screenshot, sinh bug/report data thật.
+**Mục tiêu chính:** thực hiện scan thật trên project local, tạo `.lutest/latest-report.json`, chụp screenshot, sinh bug/report data thật.
 
 ## Tuần 6 - Dashboard thật + cache diff + auth/manual flow
 **Mục tiêu chính:** dashboard đọc dữ liệu thật, có cache diff cơ bản, có auth/manual login flow tối thiểu, UX đủ để demo.
@@ -120,7 +120,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 - Tạo `prettier` nếu dùng
 - Tạo quy ước environment:
   - `.env.example`
-  - `tlx.yaml.example`
+  - `lutest.yaml.example`
 
 #### Development
 - Tạo cấu trúc config model ban đầu:
@@ -182,7 +182,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 ## TUẦN 2 - HOST CLI VÀ LIFECYCLE NỀN TẢNG
 
 ### Mục tiêu tuần
-- `tlx` phải chạy được
+- `lutest` phải chạy được
 - host phải đọc config được
 - host phải spawn worker được
 - host phải shutdown sạch
@@ -198,11 +198,11 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 - Chốt format config merge:
   - defaults
   - `.env`
-  - `tlx.yaml`
+  - `lutest.yaml`
   - env override
 
 #### Development
-- Tạo command `tlx`
+- Tạo command `lutest`
 - Tạo root command và flags cơ bản
 - Tạo config loading pipeline
 - Tạo struct config chuẩn:
@@ -215,8 +215,8 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 
 #### Testing / Debug
 - Test CLI:
-  - `tlx --help`
-  - `tlx version`
+  - `lutest --help`
+  - `lutest version`
 - Unit test config parser:
   - env only
   - yaml only
@@ -287,7 +287,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 - Test nhiều lần start/stop liên tiếp
 
 ### Deliverables cuối Tuần 2
-- `tlx` chạy được
+- `lutest` chạy được
 - host đọc config được
 - host spawn worker được
 - host health check được
@@ -342,7 +342,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
   - root dir
   - project dir
   - static assets dir
-  - `.tlx/` dir
+  - `.lutest/` dir
 - Tách config của worker ra riêng
 
 #### Development
@@ -465,22 +465,22 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 
 #### Development
 - Nối route `/api/graph` với graph thật
-- Ghi graph snapshot vào `.tlx/graph/`
-- Tạo helper ghi `.tlx/` nếu chưa có
+- Ghi graph snapshot vào `.lutest/graph/`
+- Tạo helper ghi `.lutest/` nếu chưa có
 
 #### Testing / Debug
 - Manual test trên 1 project thật
 - Verify:
   - framework detect đúng
   - graph có dữ liệu
-  - `.tlx/` được tạo đúng
+  - `.lutest/` được tạo đúng
 - Không qua tuần 5 nếu graph chưa ra data usable
 
 ### Deliverables cuối Tuần 4
 - framework detection dùng được
 - graph extraction cơ bản dùng được
 - route graph trả dữ liệu thật
-- `.tlx/` bắt đầu có dữ liệu local
+- `.lutest/` bắt đầu có dữ liệu local
 
 ---
 
@@ -490,7 +490,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 - chạy scan thật
 - chụp screenshot thật
 - sinh report thật
-- lưu kết quả vào `.tlx/`
+- lưu kết quả vào `.lutest/`
 
 ### Đầu tuần
 
@@ -531,12 +531,19 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
   - overflow
   - text clipping
   - low contrast
+- Chốt UI/UX analysis phase đầu:
+  - AABB cho overlap/collision detection
+  - overflow theo viewport và container
+  - contrast ratio theo WCAG
+  - OKLCH cho chuẩn hóa severity colors trên dashboard
 - Chưa cố làm quá nhiều heuristic
 
 #### Development
 - Viết DOM scanner cơ bản
 - Viết AABB overlap check cơ bản
+- Viết overflow check theo bounding box
 - Viết contrast ratio check cơ bản
+- Thiết kế token màu OKLCH cho Critical/Warning/Info/Success
 - Chụp screenshot route-level
 - Tạo `Bug` objects theo contracts
 
@@ -544,6 +551,9 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 - Test trên 2-3 page thật
 - Xác minh:
   - có bug output
+  - AABB phát hiện overlap thật
+  - contrast check phát hiện text khó đọc
+  - màu severity OKLCH hiển thị rõ trên dashboard
   - không false positive quá vô lý
   - screenshot file tồn tại
 
@@ -553,9 +563,9 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 
 #### Setup / Architecture
 - Chốt output local:
-  - `.tlx/latest-report.json`
-  - `.tlx/hash.json`
-  - `.tlx/screenshots/`
+  - `.lutest/latest-report.json`
+  - `.lutest/hash.json`
+  - `.lutest/screenshots/`
 
 #### Development
 - Viết report writer
@@ -577,6 +587,8 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 ### Deliverables cuối Tuần 5
 - scan engine hoạt động
 - Playwright chạy thật
+- AABB/overflow/contrast checks chạy được ở mức cơ bản
+- dashboard có severity color tokens dựa trên OKLCH
 - report local được tạo
 - screenshot được lưu
 - route report latest hoạt động
@@ -771,7 +783,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 
 #### Testing / Debug
 - End-to-end test đầy đủ:
-  1. chạy `tlx`
+  1. chạy `lutest`
   2. worker healthy
   3. mở dashboard
   4. scan project
@@ -868,7 +880,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 
 #### Testing / Debug
 - Final demo checklist:
-  - `tlx` chạy được
+  - `lutest` chạy được
   - host spawn worker ổn
   - project detect đúng
   - graph có data
@@ -932,7 +944,7 @@ Roadmap này được viết để phục vụ đúng nhu cầu sau:
 ### Bẫy 4: Dùng `process.cwd()` bừa bãi trong worker
 **Dấu hiệu:**
 - chạy chỗ này được, chỗ khác fail
-- path static hoặc `.tlx/` sai khi gọi qua host
+- path static hoặc `.lutest/` sai khi gọi qua host
 
 **Cách né:**
 - tuần 3 phải chốt path resolver
@@ -1052,7 +1064,7 @@ Mỗi tuần chỉ nên có **1 đầu ra chính**.
 
 ### Nguyên tắc 2: Luôn chốt “Definition of Done” cuối tuần
 Ví dụ:
-- tuần 2 xong nghĩa là `tlx` phải spawn worker thật
+- tuần 2 xong nghĩa là `lutest` phải spawn worker thật
 - tuần 5 xong nghĩa là phải có report thật
 
 Không dùng “đã code được một phần” làm thước đo.
@@ -1090,7 +1102,7 @@ Nếu đến giữa tuần 6 bị chậm, cắt theo thứ tự sau:
 - UI polish nhiều hiệu ứng
 
 ### Giữ lại bắt buộc
-- `tlx`
+- `lutest`
 - host/worker lifecycle
 - framework detect cơ bản
 - graph cơ bản
@@ -1110,7 +1122,7 @@ Nếu đến giữa tuần 6 bị chậm, cắt theo thứ tự sau:
 
 Nếu bám đúng roadmap này, cuối 8 tuần bạn nên có:
 
-- một TLX chạy được bằng `tlx`
+- một Lutest chạy được bằng `lutest`
 - Node host ổn định
 - worker Express ổn định
 - framework detection cơ bản
@@ -1125,7 +1137,7 @@ Nếu bám đúng roadmap này, cuối 8 tuần bạn nên có:
 
 ## 6. Kết luận
 
-Roadmap này không cố làm TLX “đủ mọi thứ” trong 8 tuần.
+Roadmap này không cố làm Lutest “đủ mọi thứ” trong 8 tuần.
 
 Nó tập trung vào một mục tiêu thực tế hơn:
 

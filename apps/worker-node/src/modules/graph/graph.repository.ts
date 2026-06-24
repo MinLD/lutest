@@ -1,44 +1,27 @@
 import type { GraphResponse } from "@lutest/contracts";
-import { fileSystemService } from "../../shared/services/file-system.service";
 import { pathService } from "../../shared/services/path.service";
+import { storageService } from "../../shared/services/storage.service";
 
-export interface SaveGraphInput {
+const saveLatest = async (input: {
   cwd: string;
-  projectPath?: string;
-  envProjectPath?: string;
   graph: GraphResponse;
-}
+  projectPath?: string;
+  envProjectPath?: string;
+}): Promise<void> => {
+  const paths = pathService.resolveProjectPaths(input);
+  await storageService.writeJson(paths.latestGraphPath, input.graph);
+};
 
-export interface FindGraphInput {
+const findLatest = async (input: {
   cwd: string;
   projectPath?: string;
   envProjectPath?: string;
-}
-
-const saveGraph = async (input: SaveGraphInput): Promise<void> => {
-  const paths = pathService.resolveProjectPaths({
-    cwd: input.cwd,
-    projectPath: input.projectPath,
-    envProjectPath: input.envProjectPath,
-  });
-  await fileSystemService.writeJsonFile({
-    filePath: paths.graphPath,
-    data: input.graph,
-  });
+}): Promise<GraphResponse | null> => {
+  const paths = pathService.resolveProjectPaths(input);
+  return storageService.readJson<GraphResponse>(paths.latestGraphPath);
 };
 
-const findGraph = async (
-  input: FindGraphInput,
-): Promise<GraphResponse | null> => {
-  const paths = pathService.resolveProjectPaths({
-    cwd: input.cwd,
-    projectPath: input.projectPath,
-    envProjectPath: input.envProjectPath,
-  });
-
-  return fileSystemService.readJsonFile<GraphResponse>({
-    filePath: paths.graphPath,
-  });
+export const graphRepository = {
+  saveLatest,
+  findLatest,
 };
-
-export const graphRepository = { saveGraph, findGraph };

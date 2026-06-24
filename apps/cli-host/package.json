@@ -2,6 +2,9 @@
   "name": "@lutest/cli-host",
   "version": "1.0.0",
   "private": true,
+  "bin": {
+    "lutest": "dist/main.js"
+  },
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",

@@ -3,18 +3,13 @@ import type { DetectedFramework, ProjectSummary } from "@lutest/contracts";
 import type { PackageJsonData } from "./project.repository";
 import type { ProjectPaths } from "../../shared/services/path.service";
 
-const detectFramework = (
-  packageJson: PackageJsonData | null,
+export const determineFramework = (
+  dependencies: Record<string, string>,
 ): DetectedFramework => {
-  if (!packageJson) return "unknown";
-  const deps = {
-    ...packageJson.dependencies,
-    ...packageJson.devDependencies,
-  };
-  if (deps.next) return "next";
-  if (deps.vite && deps.react) return "vite-react";
-  if (deps.react) return "react";
-  if (deps.vue) return "vue";
+  if (dependencies["next"]) return "next";
+  if (dependencies["vite"] && dependencies["react"]) return "vite-react";
+  if (dependencies["react"]) return "react";
+  if (dependencies["vue"]) return "vue";
   return "unknown";
 };
 
@@ -23,15 +18,19 @@ const toProjectSummary = (input: {
   packageJson: PackageJsonData | null;
   packageJsonExists: boolean;
 }): ProjectSummary => {
+  const deps = {
+    ...(input.packageJson?.dependencies || {}),
+    ...(input.packageJson?.devDependencies || {}),
+  };
   return {
     name:
       typeof input.packageJson?.name === "string"
         ? input.packageJson.name
         : path.basename(input.paths.targetProjectRoot),
     rootDir: input.paths.targetProjectRoot,
-    tlxDir: input.paths.tlxDir,
+    lutestDir: input.paths.lutestDir,
     packageJsonExists: input.packageJsonExists,
-    detectedFramework: detectFramework(input.packageJson),
+    detectedFramework: determineFramework(deps),
   };
 };
 

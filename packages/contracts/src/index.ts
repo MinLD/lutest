@@ -19,56 +19,48 @@ export type DetectedFramework =
   | "vite-react"
   | "react"
   | "vue"
-  | "unknown";
+  | "laravel"
+  | "php"
+  | "unknown"
+  | null;
 
 export interface ProjectSummary {
   name: string;
   rootDir: string;
-  tlxDir: string;
+  lutestDir: string;
   packageJsonExists: boolean;
   detectedFramework: DetectedFramework;
+  sourceFileCount?: number;
 }
+export type GraphNodeType = "page" | "component" | "api" | "file";
+export type GraphEdgeType = "import" | "use" | "call";
 
-export type GraphNodeType =
-  | "project"
-  | "page"
-  | "route"
-  | "component"
-  | "api"
-  | "asset"
-  | "unknown";
-
-export type GraphEdgeType =
-  | "contains"
-  | "import"
-  | "render"
-  | "call"
-  | "depend";
-
-export interface GraphNode<TData = Record<string, unknown>> {
+export interface GraphNode {
   id: string;
   type: GraphNodeType;
   label: string;
-  data?: TData;
+  filePath: string;
 }
 
-export interface GraphEdge<TData = Record<string, unknown>> {
+export interface GraphEdge {
   id: string;
+  type: GraphEdgeType;
   source: string;
   target: string;
-  type: GraphEdgeType;
-  data?: TData;
 }
 
-export interface GraphResponse<
-  TNodeData = Record<string, unknown>,
-  TEdgeData = Record<string, unknown>,
-> {
-  nodes: GraphNode<TNodeData>[];
-  edges: GraphEdge<TEdgeData>[];
-  generatedAt: string;
+export interface GraphSummary {
+  pageCount: number;
+  componentCount: number;
+  apiCount: number;
+  fileCount: number;
 }
 
+export interface GraphResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  summary: GraphSummary;
+}
 export interface ReportSummary {
   scanId: string;
   createdAt: string;
@@ -87,10 +79,21 @@ export interface ScanRequest {
   projectPath?: string;
 }
 
+
+export type ScanIssueType =
+  | "console"
+  | "syntax"
+  | "overflow"
+  | "todo"
+  | "large-file"
+  | "maintainability"
+  | "unknown";
+
 export interface ScanIssue {
   id: string;
-  type: "layout" | "console" | "network" | "accessibility" | "unknown";
-  severity: "critical" | "warning" | "info";
+  // CHANGED: dùng ScanIssueType thay vì inline union cũ.
+  type: ScanIssueType;
+  severity: "info" | "warning" | "error";
   message: string;
   filePath?: string;
 }

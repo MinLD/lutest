@@ -1,7 +1,6 @@
-import path from "node:path";
 import type { ScanResponse } from "@lutest/contracts";
-import { fileSystemService } from "../../shared/services/file-system.service";
 import { pathService } from "../../shared/services/path.service";
+import { storageService } from "../../shared/services/storage.service";
 
 export interface FindLatestReportInput {
   cwd: string;
@@ -18,9 +17,7 @@ const findLatest = async (
     envProjectPath: input.envProjectPath,
   });
 
-  return fileSystemService.readJsonFile<ScanResponse>({
-    filePath: path.join(paths.tlxDir, "latest-report.json"),
-  });
+  return storageService.readJson<ScanResponse>(paths.latestReportPath);
 };
 
 export const reportRepository = { findLatest };

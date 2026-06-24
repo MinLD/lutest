@@ -15,7 +15,7 @@ export const largeFileRule: Rule = {
 
       issues.push({
         id: `${RULE_ID}:${file.relativePath}`,
-        type: "unknown",
+        type: "large-file",
         severity: "warning",
         message: `Large file: ${file.relativePath} has ${file.lineCount} lines`,
         filePath: file.relativePath,

@@ -1,6 +1,6 @@
 {
-  "name": "lutest-root",
-  "private": true,
+  "name": "lutest",
+  "private": false,
   "packageManager": "npm@10.5.0",
   "workspaces": [
     "apps/*",

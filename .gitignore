@@ -38,3 +38,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+
+AGENTS.MD
+.agents
+skills-lock.json
+node_modules

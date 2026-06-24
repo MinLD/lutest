@@ -23,13 +23,14 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
   const paths = pathService.resolveProjectPaths(input);
 
   const discovery = await projectService.discoverProject(input);
-  await graphService.buildProjectGraph({
+
+  await graphService.buildAndSaveGraph({
     cwd: input.cwd,
+    rootDir: discovery.summary.rootDir,
     projectPath: input.projectPath,
     envProjectPath: input.envProjectPath,
-    projectRoot: discovery.summary.rootDir,
-    sourceFiles: discovery.sourceFiles,
   });
+
   const ruleIssues = await ruleEngine.runRules({
     projectRoot: discovery.summary.rootDir,
     sourceFiles: discovery.sourceFiles,

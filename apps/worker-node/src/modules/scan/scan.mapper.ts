@@ -1,7 +1,7 @@
 import type { ScanIssue, ScanResponse } from "@lutest/contracts";
 
 const toScanStatus = (issues: ScanIssue[]): ScanResponse["status"] => {
-  if (issues.some((issue) => issue.severity === "critical")) return "failed";
+  if (issues.some((issue) => issue.severity === "error")) return "failed";
   if (issues.length > 0) return "warning";
   return "passed";
 };

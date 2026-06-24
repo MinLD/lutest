@@ -14,7 +14,7 @@ export const todoCommentRule: Rule = {
 
       issues.push({
         id: `${RULE_ID}:${file.relativePath}`,
-        type: "unknown",
+        type: "todo",
         severity: "info",
         message: `TODO/FIXME comment found in ${file.relativePath}`,
         filePath: file.relativePath,
