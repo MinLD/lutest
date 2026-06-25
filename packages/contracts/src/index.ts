@@ -40,6 +40,7 @@ export interface GraphNode {
   type: GraphNodeType;
   label: string;
   filePath: string;
+  data?: SourceFileNodeData;
 }
 
 export interface GraphEdge {
@@ -79,7 +80,6 @@ export interface ScanRequest {
   projectPath?: string;
 }
 
-
 export type ScanIssueType =
   | "console"
   | "syntax"
@@ -91,7 +91,6 @@ export type ScanIssueType =
 
 export interface ScanIssue {
   id: string;
-  // CHANGED: dùng ScanIssueType thay vì inline union cũ.
   type: ScanIssueType;
   severity: "info" | "warning" | "error";
   message: string;
@@ -109,13 +108,23 @@ export interface ScanResponse {
   reportPath: string;
 }
 
-export interface SourceFileNodeData {
-  filePath: string;
-  relativePath: string;
-  extension: string;
-}
-
 export interface ImportEdgeData {
   importPath: string;
   resolvedPath?: string;
 }
+
+export type ApiCallKind = "fetch" | "axios" | "ky" | "ofetch" | "custom-client";
+
+export type ApiCallInfo = {
+  kind: ApiCallKind;
+  target: string;
+  method?: string;
+  line: number;
+};
+
+export type SourceFileNodeData = {
+  relativePath?: string;
+  extension?: string;
+  lineCount?: number;
+  apiCalls?: ApiCallInfo[];
+};

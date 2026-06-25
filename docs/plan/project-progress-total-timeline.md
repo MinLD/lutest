@@ -288,10 +288,21 @@ Nguồn đối chiếu chính:
     - `component`: file `.tsx/.jsx` trong `components/**` hoặc `ui/**`, hoặc PascalCase component file.
     - `api`: `app/**/route.*`, `pages/api/**`, hoặc path có segment `api/server/services`.
     - fallback: `file`
-  - Giới hạn v1:
-    - API detection vẫn là heuristic/path-based.
-    - Nếu API client nằm ở thư mục lạ như `lib/http.ts`, `features/*/data.ts`, `hooks/use*.ts` thì có thể bị sót.
-    - V2 cần AST/semantic detection để nhận diện network call thật.
+  - API detection semantic v1:
+    - File:
+      - `apps/worker-node/src/modules/graph/api-call-detector.ts`
+      - `apps/worker-node/src/modules/graph/api-call-detector.test.ts`
+    - Detect network call trong source:
+      - `fetch("...")`
+      - `ofetch("...")`
+      - `axios.get/post/put/patch/delete/head/options("...")`
+      - `ky.get/post/put/patch/delete/head/options("...")`
+    - Gắn `apiCalls` vào `GraphNode.data`.
+    - Nếu node đang là `file` và có API call thì nâng type thành `api`.
+  - Giới hạn còn lại:
+    - Chưa trace custom client/import chain sâu.
+    - Chưa dùng AST parser để phân biệt toàn bộ false positive/false negative nâng cao.
+    - V2 sâu hơn sẽ làm khi cần đọc custom client như `api.get`, `http.post`, `client.request`.
   - Graph summary đã tính:
     - `pageCount`
     - `componentCount`
@@ -300,7 +311,7 @@ Nguồn đối chiếu chính:
   - Status:
     - Graph Extraction v1: DONE.
     - Import edge extraction v1: DONE cho relative imports/requires cơ bản.
-    - API semantic detection: PENDING cho V2.
+    - API semantic detection v1: DONE cho `fetch`, `ofetch`, `axios`, `ky`.
 
 - [x] Chuẩn hóa Graph contracts.
   - File:
@@ -369,17 +380,32 @@ Nguồn đối chiếu chính:
   - `scan.repository.ts` đã bỏ legacy read path.
   - Đã chạy build/typecheck pass.
 
-- [ ] API detection trong graph vẫn là v1 heuristic, chưa semantic.
-  - Hiện chỉ chắc với:
-    - `app/**/route.*`
-    - `pages/api/**`
-    - segment `api/server/services`
-  - Có thể sót file gọi API đặt ở thư mục lạ.
-  - V2 cần:
-    - parse AST.
-    - detect `fetch`, `axios`, `ky`, `ofetch`, custom client.
-    - trace import chain từ page/component/hook/service.
-    - phân biệt API layer thật với text/url false positive.
+- [x] API detection semantic v1 trong graph đã hoàn thành.
+  - File:
+    - `apps/worker-node/src/modules/graph/api-call-detector.ts`
+    - `apps/worker-node/src/modules/graph/api-call-detector.test.ts`
+    - `apps/worker-node/src/modules/graph/graph.service.ts`
+    - `packages/contracts/src/index.ts`
+  - Detect:
+    - `fetch`
+    - `ofetch`
+    - `axios`
+    - `ky`
+  - Output:
+    - `GraphNode.data.apiCalls`
+    - `kind`
+    - `target`
+    - `method`
+    - `line`
+  - `graph.service.ts` đã gắn API calls vào node.
+  - Node type `file` có API call được nâng thành `api`.
+  - Đã chạy:
+    - `npm run typecheck`
+    - `npm run build`
+  - Giới hạn để làm sau:
+    - custom client/import chain sâu.
+    - AST parser để giảm false positive/false negative.
+    - call edges semantic giữa page/component và API layer.
 
 ---
 

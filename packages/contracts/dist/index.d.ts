@@ -28,6 +28,7 @@ export interface GraphNode {
     type: GraphNodeType;
     label: string;
     filePath: string;
+    data?: SourceFileNodeData;
 }
 export interface GraphEdge {
     id: string;
@@ -79,12 +80,20 @@ export interface ScanResponse {
     issues: ScanIssue[];
     reportPath: string;
 }
-export interface SourceFileNodeData {
-    filePath: string;
-    relativePath: string;
-    extension: string;
-}
 export interface ImportEdgeData {
     importPath: string;
     resolvedPath?: string;
 }
+export type ApiCallKind = "fetch" | "axios" | "ky" | "ofetch" | "custom-client";
+export type ApiCallInfo = {
+    kind: ApiCallKind;
+    target: string;
+    method?: string;
+    line: number;
+};
+export type SourceFileNodeData = {
+    relativePath?: string;
+    extension?: string;
+    lineCount?: number;
+    apiCalls?: ApiCallInfo[];
+};

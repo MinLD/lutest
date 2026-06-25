@@ -3,7 +3,8 @@ import path from "node:path";
 import type { GraphEdge, GraphNode, GraphResponse } from "@lutest/contracts";
 import { fileSystemService } from "../../shared/services/file-system.service";
 import { graphRepository } from "./graph.repository";
-
+import { detectApiCalls } from "./api-call-detector";
+import type { ApiCallInfo } from "@lutest/contracts";
 export interface BuildAndSaveGraphInput {
   cwd: string;
   rootDir: string;
@@ -64,14 +65,11 @@ const isRouteFile = (relativePath: string): boolean => {
   const fileName = getFileName(relativePath);
 
   return (
-    hasSegment(relativePath, ["routes"]) &&
-    /\.(tsx|ts|jsx|js)$/.test(fileName)
+    hasSegment(relativePath, ["routes"]) && /\.(tsx|ts|jsx|js)$/.test(fileName)
   );
 };
 
 const isPageFile = (relativePath: string): boolean => {
-  // CHANGED: chỉ classify page với Next `app/**/page.*`, `pages/**`, hoặc `routes/**`.
-  // DELETED: logic cũ xem mọi file trong `app/` là page nên đếm sai cực lớn.
   return (
     isNextAppPageFile(relativePath) ||
     isNextPagesRouterPageFile(relativePath) ||
@@ -82,7 +80,6 @@ const isPageFile = (relativePath: string): boolean => {
 const isApiFile = (relativePath: string): boolean => {
   const fileName = getFileName(relativePath);
 
-  // CHANGED: Next app route handlers là API, không phải page.
   if (
     hasSegment(relativePath, ["app"]) &&
     ["route.ts", "route.tsx", "route.js", "route.jsx"].includes(fileName)
@@ -90,8 +87,10 @@ const isApiFile = (relativePath: string): boolean => {
     return true;
   }
 
-  // CHANGED: Next pages API route: `pages/api/**`.
-  if (hasSegment(relativePath, ["pages"]) && hasSegment(relativePath, ["api"])) {
+  if (
+    hasSegment(relativePath, ["pages"]) &&
+    hasSegment(relativePath, ["api"])
+  ) {
     return true;
   }
 
@@ -104,10 +103,8 @@ const isComponentFile = (relativePath: string): boolean => {
 
   if (!/\.(tsx|jsx)$/.test(fileName)) return false;
 
-  // CHANGED: component folder vẫn là component.
   if (hasSegment(relativePath, ["components", "ui"])) return true;
 
-  // CHANGED: hỗ trợ convention React component viết hoa, ví dụ `MovieCard.tsx`.
   return /^[A-Z]/.test(stem);
 };
 
@@ -126,6 +123,21 @@ const toNode = (rootDir: string, filePath: string): GraphNode => {
     filePath: relativePath,
   };
 };
+
+function toApiAwareNode(node: GraphNode, source: string): GraphNode {
+  const apiCalls = detectApiCalls(source);
+
+  if (apiCalls.length === 0) return node;
+
+  return {
+    ...node,
+    type: node.type === "file" ? "api" : node.type,
+    data: {
+      ...node.data,
+      apiCalls,
+    },
+  };
+}
 
 const readSourceFilesForGraph = async (
   rootDir: string,
@@ -218,17 +230,15 @@ const buildGraph = async (input: {
     extensions: SOURCE_EXTENSIONS,
     ignoredDirs: ["node_modules", ".git", "dist", "build", ".next", ".lutest"],
   });
-
-  const nodes = sourceFilePaths.map((filePath) =>
-    toNode(input.rootDir, filePath),
-  );
-  const nodeIds = new Set(nodes.map((node) => node.id));
-
-  // CHANGED: build graph now reads source contents to extract import edges.
   const sourceFiles = await readSourceFilesForGraph(
     input.rootDir,
     sourceFilePaths,
   );
+  const nodes = sourceFiles.map((file) => {
+    const baseNode = toNode(input.rootDir, file.absolutePath);
+    return toApiAwareNode(baseNode, file.content);
+  });
+  const nodeIds = new Set(nodes.map((node) => node.id));
 
   const edges = buildImportEdges({
     sourceFiles,

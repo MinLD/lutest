@@ -50,7 +50,8 @@ const writeJsonFile = async <TData>(
     JSON.stringify(input.data, null, 2),
     "utf-8",
   );
-};
+};2
+
 
 const listFiles = async (input: ListFilesInput): Promise<string[]> => {
   const ignoredDirs = new Set(input.ignoredDirs ?? []);
@@ -72,7 +73,6 @@ const listFiles = async (input: ListFilesInput): Promise<string[]> => {
           await walk(fullPath);
           return;
         }
-        
 
         if (!entry.isFile()) return;
 
