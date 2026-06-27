@@ -1,0 +1,20 @@
+{
+  "name": "next-graph-243",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "axios": "latest",
+    "ky": "latest",
+    "next": "latest",
+    "ofetch": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "typescript": "^5.4.0"
+  },
+  "devDependencies": {}
+}

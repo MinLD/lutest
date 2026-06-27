@@ -411,11 +411,30 @@ Nguồn đối chiếu chính:
 
 ### Tuần 4 — Dashboard UI/UX & Graph Visualization Pending
 
-- [ ] `apps/ui/` hiện chưa có file.
-  - Trạng thái quét:
-    - `apps/ui`: No files found.
-  - Dashboard chưa được implement.
-  - Cần scaffold UI app theo stack được duyệt trong SRS.
+- [ ] Scaffold dashboard UI bằng Next.js.
+  - App path:
+    - `apps/ui/`
+  - Stack bắt buộc:
+    - Next.js `16.3`
+    - TypeScript
+    - Tailwind CSS
+  - Không dùng Vite cho dashboard UI.
+  - Mục tiêu tuần 4:
+    - dựng khung dashboard trước
+    - chưa làm Playwright
+    - chưa làm visual automation
+
+- [ ] Chuẩn hóa cấu trúc Next.js app router cho dashboard.
+  - Cần có tối thiểu:
+    - `apps/ui/package.json`
+    - `apps/ui/next.config.ts`
+    - `apps/ui/tsconfig.json`
+    - `apps/ui/postcss.config.mjs`
+    - `apps/ui/src/app/layout.tsx`
+    - `apps/ui/src/app/page.tsx`
+    - `apps/ui/src/app/globals.css`
+  - UI code viết bằng React + TypeScript.
+  - Styling dùng Tailwind CSS, tránh CSS inline/hardcode rải rác.
 
 - [ ] Dashboard local chưa đọc API thật.
   - API cần gọi:
@@ -515,7 +534,7 @@ Nguồn đối chiếu chính:
 
 ---
 
-### Tuần 5+ — CLI Host, Cache, Production Hardening Pending
+### Tuần 5+ — CLI Host, Cache, Production Hardening, NPM Publish Pending
 
 - [ ] CLI host lifecycle chưa được xác minh đầy đủ.
   - Cần audit:
@@ -570,6 +589,53 @@ Nguồn đối chiếu chính:
     - `ruleEngine.runRules`
     - `scanMapper.toScanResponse`
     - report missing file behavior.
+
+- [ ] NPM publish chưa được thực hiện.
+  - Không publish ngay sau Tuần 3 dù scan/graph v1 đã chạy được.
+  - Điều kiện publish bản đầu tiên (`0.1.0-alpha` hoặc `0.1.0`) là:
+    1. CLI có command product-grade:
+       - `lutest scan <projectPath>`
+    2. CLI tự quản lý worker lifecycle:
+       - cấp port
+       - spawn worker
+       - wait `/api/status`
+       - gọi `POST /api/scan`
+       - in kết quả scan
+       - shutdown worker an toàn
+       - trả exit code đúng (`0` khi passed, `1` khi failed/error)
+    3. Chốt package publish:
+       - ưu tiên publish CLI package public dưới tên `@lutest/cli`
+       - không publish root monorepo
+       - không publish worker/contracts riêng nếu chưa cần public API
+    4. Chuẩn hóa package metadata:
+       - `name`
+       - `version`
+       - `bin`
+       - `files`
+       - `main`
+       - README usage tối thiểu
+    5. Build/typecheck pass:
+       - `npm run typecheck`
+       - `npm run build`
+    6. Test bằng fixture lớn:
+       - `fixtures/next-graph-243`
+       - scan status `passed`
+       - graph/report được ghi vào `.lutest/`
+    7. Test package local:
+       - `npm pack`
+       - `npm install -g <tarball>`
+       - `lutest scan <fixturePath>`
+    8. Dry-run publish:
+       - `npm publish --dry-run --access public`
+       - kiểm tra tarball không chứa `fixtures/`, `node_modules/`, `.lutest/`, file dev thừa
+    9. Publish thật:
+       - `npm publish --access public`
+    10. Test sau publish:
+        - `npm install -g @lutest/cli`
+        - `lutest scan <fixturePath>`
+  - Mốc đề xuất:
+    - Sau khi hoàn tất phần CLI host lifecycle ở Tuần 5+.
+    - Nếu cần phát hành sớm để test nội bộ, publish `0.1.0-alpha.0` sau khi `lutest scan <projectPath>` chạy ổn qua npm pack.
 
 ---
 
@@ -821,9 +887,12 @@ Nguồn đối chiếu chính:
 
 ### UI/dashboard hiện tại
 
-- `apps/ui/` hiện chưa có file.
-- Dashboard chưa scaffold.
+- `apps/ui/` dùng cho dashboard Next.js.
+- Dashboard cần scaffold theo Next.js 16.3 + TypeScript + Tailwind CSS.
+- Không dùng Vite cho dashboard UI.
 - Chưa có:
+  - Next.js app router structure hoàn chỉnh
+  - Tailwind CSS setup
   - graph visualization
   - OKLCH color tokens
   - AABB layout/collision
@@ -847,10 +916,12 @@ Nguồn đối chiếu chính:
 
 - Tuần 1: DONE — monorepo + Express worker + contracts nền.
 - Tuần 2: DONE — project discovery + path/storage service + scan/report pipeline v1.
-- Tuần 3: DONE phần lớn — static code analysis + graph extraction v1 + import edges v1 + graph persistence.
+- Tuần 3: DONE — static code analysis + graph extraction v1 + import edges v1 + graph persistence + API semantic detection v1.
 - Tuần 3 còn lại: API semantic detection v2, unit tests graph builder, endpoint naming cleanup.
-- Tuần 4: TODO — dashboard UI/UX + graph visualization + OKLCH + AABB.
+- Tuần 4: TODO — scaffold dashboard UI bằng Next.js 16.3 + TypeScript + Tailwind CSS, sau đó làm graph visualization + OKLCH + AABB.
 - Tuần 5: TODO — Playwright visual automation + screenshots + DOM bounding boxes + auth/cache hardening.
+- Tuần 5+: TODO — CLI product command `lutest scan <projectPath>` + npm publish readiness.
+- Publish npm: chưa publish; chỉ publish sau khi CLI lifecycle + npm pack + dry-run pass.
 
 ### File progress mới
 
