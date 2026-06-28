@@ -10,7 +10,7 @@ graphRoutes.get("/", async (req, res, next) => {
     const projectPath =
       typeof req.query.path === "string" ? req.query.path : undefined;
 
-    const paths = pathService.resolveProjectPaths({
+    const paths = await pathService.resolveProjectPaths({
       cwd,
       projectPath,
       envProjectPath: process.env.LUTEST_PROJECT_PATH,

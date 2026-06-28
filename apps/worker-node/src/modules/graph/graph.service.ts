@@ -4,7 +4,10 @@ import type { GraphEdge, GraphNode, GraphResponse } from "@lutest/contracts";
 import { fileSystemService } from "../../shared/services/file-system.service";
 import { graphRepository } from "./graph.repository";
 import { detectApiCalls } from "./api-call-detector";
-import type { ApiCallInfo } from "@lutest/contracts";
+import { detectSymbols } from "./symbol-detector";
+import { frameworkAdapterRegistry } from "./adapters/framework-adapter-registry";
+import type { FrameworkAdapter } from "./adapters/framework-adapter";
+
 export interface BuildAndSaveGraphInput {
   cwd: string;
   rootDir: string;
@@ -25,96 +28,17 @@ const IMPORT_REGEX =
 
 const normalizePath = (value: string): string => value.replaceAll("\\", "/");
 
-const getPathSegments = (relativePath: string): string[] => {
-  return normalizePath(relativePath).split("/");
-};
-
-const getFileName = (relativePath: string): string => {
-  return path.basename(relativePath);
-};
-
-const getFileStem = (relativePath: string): string => {
-  return path.basename(relativePath, path.extname(relativePath));
-};
-
-const hasSegment = (relativePath: string, segments: string[]): boolean => {
-  const pathSegments = getPathSegments(relativePath);
-  return segments.some((segment) => pathSegments.includes(segment));
-};
-
-const isNextAppPageFile = (relativePath: string): boolean => {
-  const fileName = getFileName(relativePath);
-
-  return (
-    hasSegment(relativePath, ["app"]) &&
-    ["page.tsx", "page.ts", "page.jsx", "page.js"].includes(fileName)
-  );
-};
-
-const isNextPagesRouterPageFile = (relativePath: string): boolean => {
-  if (!hasSegment(relativePath, ["pages"])) return false;
-  if (hasSegment(relativePath, ["api"])) return false;
-
-  const fileName = getFileName(relativePath);
-  if (fileName.startsWith("_")) return false;
-
-  return /\.(tsx|ts|jsx|js)$/.test(fileName);
-};
-
-const isRouteFile = (relativePath: string): boolean => {
-  const fileName = getFileName(relativePath);
-
-  return (
-    hasSegment(relativePath, ["routes"]) && /\.(tsx|ts|jsx|js)$/.test(fileName)
-  );
-};
-
-const isPageFile = (relativePath: string): boolean => {
-  return (
-    isNextAppPageFile(relativePath) ||
-    isNextPagesRouterPageFile(relativePath) ||
-    isRouteFile(relativePath)
-  );
-};
-
-const isApiFile = (relativePath: string): boolean => {
-  const fileName = getFileName(relativePath);
-
-  if (
-    hasSegment(relativePath, ["app"]) &&
-    ["route.ts", "route.tsx", "route.js", "route.jsx"].includes(fileName)
-  ) {
-    return true;
-  }
-
-  if (
-    hasSegment(relativePath, ["pages"]) &&
-    hasSegment(relativePath, ["api"])
-  ) {
-    return true;
-  }
-
-  return hasSegment(relativePath, ["api", "server", "services"]);
-};
-
-const isComponentFile = (relativePath: string): boolean => {
-  const fileName = getFileName(relativePath);
-  const stem = getFileStem(relativePath);
-
-  if (!/\.(tsx|jsx)$/.test(fileName)) return false;
-
-  if (hasSegment(relativePath, ["components", "ui"])) return true;
-
-  return /^[A-Z]/.test(stem);
-};
-
-const toNode = (rootDir: string, filePath: string): GraphNode => {
+const toNode = (
+  rootDir: string,
+  filePath: string,
+  adapter: FrameworkAdapter,
+): GraphNode => {
   const relativePath = normalizePath(path.relative(rootDir, filePath));
 
   let type: GraphNode["type"] = "file";
-  if (isPageFile(relativePath)) type = "page";
-  else if (isComponentFile(relativePath)) type = "component";
-  else if (isApiFile(relativePath)) type = "api";
+  if (adapter.isPage(relativePath)) type = "page";
+  else if (adapter.isComponent(relativePath)) type = "component";
+  else if (adapter.isApi(relativePath)) type = "api";
 
   return {
     id: `file:${relativePath}`,
@@ -234,8 +158,23 @@ const buildGraph = async (input: {
     input.rootDir,
     sourceFilePaths,
   );
+  const adapter = await frameworkAdapterRegistry.getAdapterForProject(
+    input.rootDir,
+  );
+  const symbolTotals = sourceFiles.reduce(
+    (total, file) => {
+      const symbols = detectSymbols(file.absolutePath, file.content);
+      return {
+        componentCount:
+          total.componentCount +
+          (adapter.isComponent(file.relativePath) ? symbols.components.length : 0),
+        apiCount: total.apiCount + symbols.apis.length,
+      };
+    },
+    { componentCount: 0, apiCount: 0 },
+  );
   const nodes = sourceFiles.map((file) => {
-    const baseNode = toNode(input.rootDir, file.absolutePath);
+    const baseNode = toNode(input.rootDir, file.absolutePath, adapter);
     return toApiAwareNode(baseNode, file.content);
   });
   const nodeIds = new Set(nodes.map((node) => node.id));
@@ -250,8 +189,8 @@ const buildGraph = async (input: {
     edges,
     summary: {
       pageCount: nodes.filter((n) => n.type === "page").length,
-      componentCount: nodes.filter((n) => n.type === "component").length,
-      apiCount: nodes.filter((n) => n.type === "api").length,
+      componentCount: symbolTotals.componentCount,
+      apiCount: symbolTotals.apiCount,
       fileCount: nodes.length,
     },
   };

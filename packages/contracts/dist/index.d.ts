@@ -97,3 +97,14 @@ export type SourceFileNodeData = {
     lineCount?: number;
     apiCalls?: ApiCallInfo[];
 };
+export type ValidationResult<T> = {
+    ok: true;
+    value: T;
+} | {
+    ok: false;
+    code: "INVALID_REQUEST" | "SCHEMA_INVALID";
+    message: string;
+};
+export declare const validateScanRequest: (value: unknown) => ValidationResult<ScanRequest>;
+export declare const validateProjectPathQuery: (value: unknown) => ValidationResult<string | undefined>;
+export declare const validateScanResponse: (value: unknown) => ValidationResult<ScanResponse>;

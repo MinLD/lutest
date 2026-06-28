@@ -8,7 +8,7 @@ const saveLatest = async (input: {
   projectPath?: string;
   envProjectPath?: string;
 }): Promise<void> => {
-  const paths = pathService.resolveProjectPaths(input);
+  const paths = await pathService.resolveProjectPaths(input);
   await storageService.writeJson(paths.latestGraphPath, input.graph);
 };
 
@@ -17,7 +17,7 @@ const findLatest = async (input: {
   projectPath?: string;
   envProjectPath?: string;
 }): Promise<GraphResponse | null> => {
-  const paths = pathService.resolveProjectPaths(input);
+  const paths = await pathService.resolveProjectPaths(input);
   return storageService.readJson<GraphResponse>(paths.latestGraphPath);
 };
 

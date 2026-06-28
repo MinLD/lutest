@@ -30,7 +30,7 @@ const checkFileExists = async (filePath: string): Promise<boolean> => {
 const getProjectSummary = async (
   input: ProjectDiscoveryInput,
 ): Promise<ProjectSummary> => {
-  const paths = pathService.resolveProjectPaths({
+  const paths = await pathService.resolveProjectPaths({
     cwd: input.cwd,
     projectPath: input.projectPath,
     envProjectPath: input.envProjectPath,
@@ -51,7 +51,7 @@ const getProjectSummary = async (
 const discoverProject = async (
   input: ProjectDiscoveryInput,
 ): Promise<ProjectDiscoveryResult> => {
-  const paths = pathService.resolveProjectPaths(input);
+  const paths = await pathService.resolveProjectPaths(input);
   const rootDir = paths.targetProjectRoot;
 
   const packageJsonPath = path.join(rootDir, "package.json");

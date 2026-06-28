@@ -10,6 +10,9 @@ Nguồn đối chiếu chính:
 - `packages/contracts/src/index.ts`
 - `apps/ui/`
 - `docs/plan/project-progress-week-1.md`
+- `docs/plan/zero-debt-audit-roadmap.md`
+
+> Zero-Debt Gate: các mục `Done` trong tài liệu này chỉ có nghĩa là `Done v1` nếu chưa thỏa DoD trong `docs/plan/zero-debt-audit-roadmap.md`. Không mở tính năng mới khi P0 debt còn mở.
 
 ---
 
@@ -640,6 +643,12 @@ Nguồn đối chiếu chính:
 ---
 
 ## 3. Các Điểm Cần Cập Nhật / Tối Ưu Trong Tương Lai (Technical Debt & Future Updates)
+
+Canonical zero-debt audit và DoD bắt buộc nằm tại:
+
+- `docs/plan/zero-debt-audit-roadmap.md`
+
+Các việc P0 trong tài liệu đó phải được xử lý trước khi mở rộng Playwright/visual/cache/npm publish.
 
 - [ ] Refactor `rule.engine.ts` để hạn chế đọc file bằng `fs` trực tiếp.
   - Hiện rule engine vẫn dùng:

@@ -1,5 +1,5 @@
 import path from "node:path";
-
+import fs from "node:fs/promises";
 export interface ProjectPaths {
   targetProjectRoot: string;
   lutestDir: string;
@@ -22,12 +22,28 @@ export interface ResolveInput {
 const normalizePath = (value: string): string => {
   return value.replaceAll("\\", "/");
 };
+const assertProjectDirectory = async (
+  targetProjectRoot: string,
+): Promise<void> => {
+  let stat;
+  try {
+    stat = await fs.stat(targetProjectRoot);
+  } catch {
+    throw new Error(`PROJECT_NOT_FOUND:${targetProjectRoot}`);
+  }
 
-const resolveProjectPaths = (input: ResolveInput): ProjectPaths => {
+  if (!stat.isDirectory()) {
+    throw new Error(`PROJECT_NOT_DIRECTORY:${targetProjectRoot}`);
+  }
+};
+
+const resolveProjectPaths = async (
+  input: ResolveInput,
+): Promise<ProjectPaths> => {
   const rawRoot = input.projectPath || input.envProjectPath || input.cwd;
   const targetProjectRoot = normalizePath(path.resolve(rawRoot));
+  await assertProjectDirectory(targetProjectRoot);
   const lutestDir = normalizePath(path.join(targetProjectRoot, ".lutest"));
-
   return {
     targetProjectRoot,
     lutestDir,
@@ -45,7 +61,21 @@ const resolveProjectPaths = (input: ResolveInput): ProjectPaths => {
     ),
   };
 };
+const resolveProjectPathsStrict = async (input: {
+  cwd: string;
+  projectPath?: string;
+  envProjectPath?: string;
+}) => {
+  const rawRoot = input.projectPath || input.envProjectPath || input.cwd;
+  const targetProjectRoot = path.resolve(input.cwd, rawRoot);
 
+  await assertProjectDirectory(targetProjectRoot);
+
+  return {
+    targetProjectRoot,
+  };
+};
 export const pathService = {
   resolveProjectPaths,
+  resolveProjectPathsStrict,
 };

@@ -20,7 +20,7 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
   const startedAt = new Date().toISOString();
   const scanId = createScanId();
 
-  const paths = pathService.resolveProjectPaths(input);
+  const paths = await pathService.resolveProjectPaths(input);
 
   const discovery = await projectService.discoverProject(input);
 

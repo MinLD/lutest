@@ -1,0 +1,69 @@
+{
+  "nodes": [
+    {
+      "id": "file:next-env.d.ts",
+      "type": "file",
+      "label": "next-env.d.ts",
+      "filePath": "next-env.d.ts"
+    },
+    {
+      "id": "file:next.config.ts",
+      "type": "file",
+      "label": "next.config.ts",
+      "filePath": "next.config.ts"
+    },
+    {
+      "id": "file:src/app/layout.tsx",
+      "type": "file",
+      "label": "layout.tsx",
+      "filePath": "src/app/layout.tsx"
+    },
+    {
+      "id": "file:src/app/page.tsx",
+      "type": "page",
+      "label": "page.tsx",
+      "filePath": "src/app/page.tsx"
+    },
+    {
+      "id": "file:src/lib/api-client.ts",
+      "type": "api",
+      "label": "api-client.ts",
+      "filePath": "src/lib/api-client.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "fetch",
+            "target": "${getWorkerUrl()}${path}",
+            "line": 37
+          }
+        ]
+      }
+    },
+    {
+      "id": "file:src/lib/use-dashboard-data.ts",
+      "type": "file",
+      "label": "use-dashboard-data.ts",
+      "filePath": "src/lib/use-dashboard-data.ts"
+    },
+    {
+      "id": "file:src/components/dashboard-shell.tsx",
+      "type": "component",
+      "label": "dashboard-shell.tsx",
+      "filePath": "src/components/dashboard-shell.tsx"
+    }
+  ],
+  "edges": [
+    {
+      "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
+      "type": "import",
+      "source": "file:src/lib/use-dashboard-data.ts",
+      "target": "file:src/lib/api-client.ts"
+    }
+  ],
+  "summary": {
+    "pageCount": 1,
+    "componentCount": 15,
+    "apiCount": 1,
+    "fileCount": 7
+  }
+}

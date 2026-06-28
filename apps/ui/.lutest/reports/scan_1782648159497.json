@@ -1,0 +1,25 @@
+{
+  "scanId": "scan_1782648159497",
+  "startedAt": "2026-06-28T12:02:39.497Z",
+  "finishedAt": "2026-06-28T12:02:39.571Z",
+  "project": {
+    "name": "ui",
+    "rootDir": "D:/Projects/lutest/apps/ui",
+    "lutestDir": "D:/Projects/lutest/apps/ui/.lutest",
+    "packageJsonExists": true,
+    "detectedFramework": "next",
+    "sourceFileCount": 7
+  },
+  "sourceFileCount": 7,
+  "issues": [
+    {
+      "id": "large-file:src/components/dashboard-shell.tsx",
+      "type": "large-file",
+      "severity": "warning",
+      "message": "Large file: src/components/dashboard-shell.tsx has 572 lines",
+      "filePath": "src/components/dashboard-shell.tsx"
+    }
+  ],
+  "reportPath": "D:\\Projects\\lutest\\apps\\ui\\.lutest\\reports\\scan_1782648159497.json",
+  "status": "warning"
+}
