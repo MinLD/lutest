@@ -1,6 +1,6 @@
 # Lutest Zero-Debt Technical Audit & Production-Grade Roadmap
 
-Cập nhật: 28/06/2026  
+Cập nhật: 29/06/2026  
 Vai trò: tài liệu kiểm soát nợ kỹ thuật bắt buộc trước khi mở rộng tính năng mới.  
 Nguyên tắc: tính năng đã đánh dấu `Done` nhưng còn mock/placeholder/heuristic/hardcode thì bị hạ xuống `Done v1 - cần hardening`, không được coi là production-grade.
 
@@ -48,7 +48,7 @@ Production gap so với SRS:
 
 ### 1.2 API Validation & Input Trust Boundary
 
-Trạng thái hiện tại: chưa đạt production-grade.
+Trạng thái hiện tại: `Done v1 - hardening còn thiếu tests/docs`, chưa đạt production-grade.
 
 Nợ kỹ thuật hiện có:
 
@@ -84,7 +84,7 @@ Required fix:
 
 ### 1.3 Path Security & Filesystem Policy
 
-Trạng thái hiện tại: chưa đạt production-grade.
+Trạng thái hiện tại: `Done v1 - hardening còn thiếu tests/docs`, chưa đạt production-grade.
 
 Nợ kỹ thuật hiện có:
 
@@ -478,8 +478,20 @@ DoD:
 
 ### Phase Z1 — P0 Hardening
 
-- [ ] Thêm runtime validators cho request/response contracts.
-- [ ] Thêm path security policy.
+- [x] Thêm runtime validators cho request/response contracts.
+  - `validateScanRequest`
+  - `validateProjectPathQuery`
+  - `validateLatestReportResponse`
+  - `validateScanResponse`
+  - controllers dùng validation trước service
+  - còn thiếu unit tests đầy đủ + docs route table
+- [x] Thêm path security policy.
+  - `pathService.resolveProjectPaths`
+  - `pathPolicyService.assertProjectRoot`
+  - chặn ignored/generated dirs cơ bản
+  - validate path tồn tại/là directory
+  - có self-check tối thiểu: `path-policy.service.self-check.ts`
+  - còn thiếu policy docs + integration tests đầy đủ
 - [ ] Refactor report read thành result type:
   - missing
   - malformed
@@ -496,7 +508,12 @@ DoD:
   - custom API client
   - hook calling API client
   - relative imports
-- [ ] Chạy full build/typecheck/test.
+- [x] Chạy full build/typecheck/test.
+  - `npx tsx apps/worker-node/src/shared/services/path-policy.service.self-check.ts`
+  - `npm run typecheck -w @lutest/worker-node`
+  - `npm run typecheck -w @lutest/contracts`
+  - `npm run build -w ui`
+  - chưa có full automated test suite
 
 ### Phase Z2 — P1 Hardening
 

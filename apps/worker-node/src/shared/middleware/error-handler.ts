@@ -22,11 +22,11 @@ export const errorHandler: ErrorRequestHandler<unknown, ApiErrorResponse> = (
   console.error("[Worker] Unhandled error:", error);
 
   res.status(500).json({
-    error: {
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Internal server error",
-      details:
-        process.env.LUTEST_ENV === "development" ? String(error) : undefined,
-    },
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "Internal server error",
+        details:
+          process.env.LUTEST_ENV === "development" ? String(error) : undefined,
+      },
   });
 };

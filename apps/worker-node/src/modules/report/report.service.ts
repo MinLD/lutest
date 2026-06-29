@@ -1,7 +1,5 @@
 import type { LatestReportResponse } from "@lutest/contracts";
 import { reportRepository } from "./report.repository";
-import { validateScanResponse } from "@lutest/contracts";
-import { HttpError } from "../../shared/errors/http-error";
 
 export interface GetLatestReportInput {
   cwd: string;
@@ -14,34 +12,54 @@ const getLatestReport = async (
 ): Promise<LatestReportResponse> => {
   const result = await reportRepository.findLatest(input);
 
-  if (result.status === "missing") {
-    return { report: null };
+  if (result.state === "valid") {
+    return { state: "valid", report: result.report };
   }
 
-  if (result.status === "malformed") {
-    throw new HttpError(
-      500,
-      "SCHEMA_INVALID",
-      "Latest report JSON is malformed",
-      result.message,
-    );
+  if (result.state === "missing") {
+    return {
+      state: "missing",
+      report: null,
+      error: {
+        code: "NOT_FOUND",
+        message: result.message,
+      },
+    };
   }
 
-  if (result.status === "error") {
-    throw new HttpError(
-      500,
-      "INTERNAL_ERROR",
-      "Could not read latest report",
-      result.message,
-    );
+  if (result.state === "malformed") {
+    return {
+      state: "malformed",
+      report: null,
+      error: {
+        code: "SCHEMA_INVALID",
+        message: "Latest report JSON is malformed",
+        details: result.message,
+      },
+    };
   }
 
-  const validation = validateScanResponse(result.data);
-  if (!validation.ok) {
-    throw new HttpError(500, validation.code, validation.message);
+  if (result.state === "schema-invalid") {
+    return {
+      state: "schema-invalid",
+      report: null,
+      error: {
+        code: "SCHEMA_INVALID",
+        message: result.message,
+        details: result.details,
+      },
+    };
   }
 
-  return { report: validation.value };
+  return {
+    state: "malformed",
+    report: null,
+    error: {
+      code: "INTERNAL_ERROR",
+      message: "Could not read latest report",
+      details: result.message,
+    },
+  };
 };
 
 export const reportService = { getLatestReport };

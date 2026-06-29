@@ -4,6 +4,18 @@ exports.validateScanResponse = exports.validateProjectPathQuery = exports.valida
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const isString = (value) => typeof value === "string";
 const isNonEmptyString = (value) => isString(value) && value.trim().length > 0;
+const rejectUnknownKeys = (value, allowedKeys) => {
+    const unknownKeys = Object.keys(value).filter((key) => !allowedKeys.includes(key));
+    if (unknownKeys.length > 0) {
+        return {
+            ok: false,
+            code: "INVALID_REQUEST",
+            message: `Unknown request fields: ${unknownKeys.join(", ")}`,
+            details: { unknownKeys },
+        };
+    }
+    return { ok: true, value: undefined };
+};
 const validateScanRequest = (value) => {
     if (!isRecord(value)) {
         return {
@@ -12,6 +24,9 @@ const validateScanRequest = (value) => {
             message: "Request body must be an object",
         };
     }
+    const keys = rejectUnknownKeys(value, ["projectPath"]);
+    if (!keys.ok)
+        return keys;
     if (value.projectPath !== undefined && !isNonEmptyString(value.projectPath)) {
         return {
             ok: false,

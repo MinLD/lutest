@@ -3,8 +3,7 @@ import path from "node:path";
 import type { GraphEdge, GraphNode, GraphResponse } from "@lutest/contracts";
 import { fileSystemService } from "../../shared/services/file-system.service";
 import { graphRepository } from "./graph.repository";
-import { detectApiCalls } from "./api-call-detector";
-import { detectSymbols } from "./symbol-detector";
+import { detectSymbols, type DetectedApiSymbol } from "./symbol-detector";
 import { frameworkAdapterRegistry } from "./adapters/framework-adapter-registry";
 import type { FrameworkAdapter } from "./adapters/framework-adapter";
 
@@ -48,17 +47,19 @@ const toNode = (
   };
 };
 
-function toApiAwareNode(node: GraphNode, source: string): GraphNode {
-  const apiCalls = detectApiCalls(source);
-
-  if (apiCalls.length === 0) return node;
+function toApiAwareNode(node: GraphNode, apis: DetectedApiSymbol[]): GraphNode {
+  if (apis.length === 0) return node;
 
   return {
     ...node,
     type: node.type === "file" ? "api" : node.type,
     data: {
       ...node.data,
-      apiCalls,
+      apiCalls: apis.map((api) => ({
+        kind: api.kind,
+        target: api.target ?? api.name,
+        line: api.line,
+      })),
     },
   };
 }
@@ -163,19 +164,19 @@ const buildGraph = async (input: {
   );
   const symbolTotals = sourceFiles.reduce(
     (total, file) => {
-      const symbols = detectSymbols(file.absolutePath, file.content);
+      const symbols = detectSymbols(file.relativePath, file.content);
       return {
-        componentCount:
-          total.componentCount +
-          (adapter.isComponent(file.relativePath) ? symbols.components.length : 0),
+        componentCount: total.componentCount + symbols.components.length,
         apiCount: total.apiCount + symbols.apis.length,
+        pageCount: total.pageCount + symbols.pages.length,
       };
     },
-    { componentCount: 0, apiCount: 0 },
+    { componentCount: 0, apiCount: 0, pageCount: 0 },
   );
   const nodes = sourceFiles.map((file) => {
     const baseNode = toNode(input.rootDir, file.absolutePath, adapter);
-    return toApiAwareNode(baseNode, file.content);
+    const symbols = detectSymbols(file.relativePath, file.content);
+    return toApiAwareNode(baseNode, symbols.apis);
   });
   const nodeIds = new Set(nodes.map((node) => node.id));
 
@@ -188,7 +189,7 @@ const buildGraph = async (input: {
     nodes,
     edges,
     summary: {
-      pageCount: nodes.filter((n) => n.type === "page").length,
+      pageCount: symbolTotals.pageCount,
       componentCount: symbolTotals.componentCount,
       apiCount: symbolTotals.apiCount,
       fileCount: nodes.length,

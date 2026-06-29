@@ -1,29 +1,26 @@
-import type { Request, Response, NextFunction } from "express";
-import type { ProjectSummary } from "@lutest/contracts";
+import type { NextFunction, Request, Response } from "express";
 import { projectService } from "./project.service";
-import { validateProjectPathQuery } from "@lutest/contracts";
-import { HttpError } from "../../shared/errors/http-error";
+import { getValidatedProjectPath } from "../../shared/http/validated-project-path";
 
-export const projectController = {
-  async getProject(
-    req: Request,
-    res: Response<ProjectSummary>,
-    next: NextFunction,
-  ): Promise<void> {
-    try {
-      const validation = validateProjectPathQuery(req.query.path);
-      if (!validation.ok) {
-        throw new HttpError(400, validation.code, validation.message);
-      }
+const getProject = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const projectPath = await getValidatedProjectPath(req, res);
+    if (projectPath === null) return;
 
-      const project = await projectService.getProjectSummary({
-        cwd: process.cwd(),
-        projectPath: validation.value,
-        envProjectPath: process.env.LUTEST_PROJECT_PATH,
-      });
-      res.json(project);
-    } catch (error) {
-      next(error);
-    }
-  },
+    const result = await projectService.getProjectSummary({
+      cwd: process.cwd(),
+      projectPath,
+      envProjectPath: process.env.LUTEST_PROJECT_PATH,
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
 };
+
+export const projectController = { getProject };

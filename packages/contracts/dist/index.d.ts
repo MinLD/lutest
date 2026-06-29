@@ -1,6 +1,7 @@
+export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED";
 export interface ApiErrorResponse {
     error: {
-        code: string;
+        code: ErrorCode;
         message: string;
         details?: unknown;
     };
@@ -104,6 +105,7 @@ export type ValidationResult<T> = {
     ok: false;
     code: "INVALID_REQUEST" | "SCHEMA_INVALID";
     message: string;
+    details?: unknown;
 };
 export declare const validateScanRequest: (value: unknown) => ValidationResult<ScanRequest>;
 export declare const validateProjectPathQuery: (value: unknown) => ValidationResult<string | undefined>;

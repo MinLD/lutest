@@ -32,7 +32,17 @@ function formatFramework(project: ProjectSummary | null) {
 }
 
 function countIssues(report: LatestReportResponse | null) {
-  return report?.report?.issues.length ?? 0;
+  return report?.state === "valid" ? report.report.issues.length : 0;
+}
+
+function latestReportLabel(report: LatestReportResponse | null) {
+  if (!report) return ["no report", "empty"];
+  if (report.state === "valid") return [report.report.scanId, report.report.status];
+
+  return [
+    report.error?.message ?? "report unavailable",
+    report.state,
+  ];
 }
 
 function BrandMark() {
@@ -45,7 +55,7 @@ function BrandMark() {
 
 function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[18.5rem] overflow-hidden border-r border-[#dbe7f5] bg-[#fbfdff]/95 px-3 py-5 backdrop-blur md:block xl:w-[18rem]">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[18.5rem] overflow-hidden border-r border-[#dbe7f5] bg-[#fbfdff]/95 px-5 py-3 backdrop-blur md:block xl:w-[18rem]">
       <div className="flex items-center gap-2 pt-2 pb-5">
         <div className="h-3 w-3 rounded-full bg-[#FF5F56]" />
         <div className="h-3 w-3 rounded-full bg-[#FFBD2E]" />
@@ -204,8 +214,8 @@ function MobileHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="hidden rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-sm font-bold text-pink-600 min-[430px]:block">
-          Donate
+        <button className="flex items-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-sm font-bold text-pink-600">
+          <Rose /> Donate
         </button>
         <button
           type="button"
@@ -293,15 +303,12 @@ function EndpointPanel({
   project: ProjectSummary | null;
   latestReport: LatestReportResponse | null;
 }) {
+  const [latestReportValue, latestReportState] = latestReportLabel(latestReport);
   const rows = [
     ["Worker", status?.service ?? "lutest-worker", formatStatus(status)],
     ["Runtime", status?.runtime ?? "node", status ? "ready" : "unknown"],
     ["Project", project?.rootDir ?? "not loaded", project ? "ready" : "empty"],
-    [
-      "Latest report",
-      latestReport?.report?.scanId ?? "no report",
-      latestReport?.report?.status ?? "empty",
-    ],
+    ["Latest report", latestReportValue, latestReportState],
   ];
 
   return (
@@ -445,8 +452,12 @@ function ScanList({
 }: {
   latestReport: LatestReportResponse | null;
 }) {
-  const report = latestReport?.report;
+  const report = latestReport?.state === "valid" ? latestReport.report : null;
   const issues = report?.issues.slice(0, 6) ?? [];
+  const invalidMessage =
+    latestReport && latestReport.state !== "valid"
+      ? latestReport.error?.message
+      : null;
 
   return (
     <aside className="rounded-[1.35rem] bg-white p-4 shadow-[0_1px_0_#dbe7f5,0_18px_50px_rgba(36,63,103,0.06)] sm:p-6">
@@ -476,6 +487,8 @@ function ScanList({
               </p>
             </div>
           ))
+        ) : invalidMessage ? (
+          <p className="text-sm font-semibold text-red-700">{invalidMessage}</p>
         ) : (
           <p className="text-sm text-[#667085]">No issues to show.</p>
         )}
@@ -532,9 +545,7 @@ function SectionTitle({
 
 export function DashboardShell() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const { data, isLoading, isScanning, error, runScan } = useDashboardData(
-    "D:/Projects/lutest/apps/ui",
-  );
+  const { data, isLoading, isScanning, error, runScan } = useDashboardData();
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#fbfdff] text-[#111827]">

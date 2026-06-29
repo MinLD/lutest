@@ -1,6 +1,13 @@
+export type ErrorCode =
+  | "INVALID_REQUEST"
+  | "NOT_FOUND"
+  | "INTERNAL_ERROR"
+  | "SCHEMA_INVALID"
+  | "PATH_NOT_ALLOWED";
+
 export interface ApiErrorResponse {
   error: {
-    code: string;
+    code: ErrorCode;
     message: string;
     details?: unknown;
   };
@@ -72,9 +79,17 @@ export interface ReportSummary {
   infoIssues: number;
 }
 
-export interface LatestReportResponse {
-  report: ScanResponse | null;
-}
+export type LatestReportState =
+  | "missing"
+  | "malformed"
+  | "schema-invalid"
+  | "valid";
+
+export type LatestReportResponse =
+  | { state: "missing"; report: null; error: ApiErrorResponse["error"] }
+  | { state: "malformed"; report: null; error: ApiErrorResponse["error"] }
+  | { state: "schema-invalid"; report: null; error: ApiErrorResponse["error"] }
+  | { state: "valid"; report: ScanResponse };
 
 export interface ScanRequest {
   projectPath?: string;
@@ -131,7 +146,12 @@ export type SourceFileNodeData = {
 
 export type ValidationResult<T> =
   | { ok: true; value: T }
-  | { ok: false; code: "INVALID_REQUEST" | "SCHEMA_INVALID"; message: string };
+  | {
+      ok: false;
+      code: "INVALID_REQUEST" | "SCHEMA_INVALID";
+      message: string;
+      details?: unknown;
+    };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -140,6 +160,26 @@ const isString = (value: unknown): value is string => typeof value === "string";
 
 const isNonEmptyString = (value: unknown): value is string =>
   isString(value) && value.trim().length > 0;
+
+const rejectUnknownKeys = (
+  value: Record<string, unknown>,
+  allowedKeys: readonly string[],
+): ValidationResult<void> => {
+  const unknownKeys = Object.keys(value).filter(
+    (key) => !allowedKeys.includes(key),
+  );
+
+  if (unknownKeys.length > 0) {
+    return {
+      ok: false,
+      code: "INVALID_REQUEST",
+      message: `Unknown request fields: ${unknownKeys.join(", ")}`,
+      details: { unknownKeys },
+    };
+  }
+
+  return { ok: true, value: undefined };
+};
 
 export const validateScanRequest = (
   value: unknown,
@@ -151,6 +191,9 @@ export const validateScanRequest = (
       message: "Request body must be an object",
     };
   }
+
+  const keys = rejectUnknownKeys(value, ["projectPath"]);
+  if (!keys.ok) return keys;
 
   if (value.projectPath !== undefined && !isNonEmptyString(value.projectPath)) {
     return {
@@ -187,6 +230,72 @@ export const validateProjectPathQuery = (
   return { ok: true, value };
 };
 
+export const validateLatestReportResponse = (
+  value: unknown,
+): ValidationResult<LatestReportResponse> => {
+  if (!isRecord(value)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "LatestReportResponse must be an object",
+    };
+  }
+
+  if (
+    !["missing", "malformed", "schema-invalid", "valid"].includes(
+      String(value.state),
+    )
+  ) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "state is invalid" };
+  }
+
+  if (value.state === "valid") {
+    const report = validateScanResponse(value.report);
+    if (!report.ok) return report;
+
+    return {
+      ok: true,
+      value: { state: "valid", report: report.value },
+    };
+  }
+
+  if (value.report !== null) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "report must be null when state is not valid",
+    };
+  }
+
+  if (!isRecord(value.error)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "error must be an object when state is not valid",
+    };
+  }
+
+  if (!isNonEmptyString(value.error.code)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "error.code must be a non-empty string",
+    };
+  }
+
+  if (!isNonEmptyString(value.error.message)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "error.message must be a non-empty string",
+    };
+  }
+
+  return {
+    ok: true,
+    value: value as unknown as LatestReportResponse,
+  };
+};
 export const validateScanResponse = (
   value: unknown,
 ): ValidationResult<ScanResponse> => {

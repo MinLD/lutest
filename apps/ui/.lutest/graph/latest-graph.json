@@ -25,6 +25,12 @@
       "filePath": "src/app/page.tsx"
     },
     {
+      "id": "file:src/components/dashboard-shell.tsx",
+      "type": "component",
+      "label": "dashboard-shell.tsx",
+      "filePath": "src/components/dashboard-shell.tsx"
+    },
+    {
       "id": "file:src/lib/api-client.ts",
       "type": "api",
       "label": "api-client.ts",
@@ -44,12 +50,6 @@
       "type": "file",
       "label": "use-dashboard-data.ts",
       "filePath": "src/lib/use-dashboard-data.ts"
-    },
-    {
-      "id": "file:src/components/dashboard-shell.tsx",
-      "type": "component",
-      "label": "dashboard-shell.tsx",
-      "filePath": "src/components/dashboard-shell.tsx"
     }
   ],
   "edges": [

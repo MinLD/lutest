@@ -1,9 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import type { GraphResponse } from "@lutest/contracts";
 import { graphService } from "./graph.service";
-import { validateProjectPathQuery } from "@lutest/contracts";
-import { HttpError } from "../../shared/errors/http-error";
 import { pathService } from "../../shared/services/path.service";
+import { getValidatedProjectPath } from "../../shared/http/validated-project-path";
 
 export const graphController = {
   async getGraph(
@@ -12,24 +11,23 @@ export const graphController = {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const validation = validateProjectPathQuery(req.query.path);
-      if (!validation.ok) {
-        throw new HttpError(400, validation.code, validation.message);
-      }
-      const cwd = process.cwd();
+      const projectPath = await getValidatedProjectPath(req, res);
+      if (projectPath === null) return;
+
       const paths = await pathService.resolveProjectPaths({
-        cwd,
-        projectPath: validation.value,
-        envProjectPath: process.env.LUTEST_PROJECT_PATH,
-      });
-      const graph = await graphService.buildAndSaveGraph({
-        cwd,
-        rootDir: paths.targetProjectRoot,
-        projectPath: validation.value,
+        cwd: process.cwd(),
+        projectPath,
         envProjectPath: process.env.LUTEST_PROJECT_PATH,
       });
 
-      res.json(graph);
+      const result = await graphService.buildAndSaveGraph({
+        rootDir: paths.targetProjectRoot,
+        cwd: process.cwd(),
+        projectPath,
+        envProjectPath: process.env.LUTEST_PROJECT_PATH,
+      });
+
+      res.json(result);
     } catch (error) {
       next(error);
     }
