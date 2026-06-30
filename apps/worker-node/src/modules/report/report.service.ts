@@ -1,4 +1,5 @@
-import type { LatestReportResponse } from "@lutest/contracts";
+﻿import type { LatestReportResponse } from "@lutest/contracts";
+import { HttpError } from "../../shared/errors/http-error";
 import { reportRepository } from "./report.repository";
 
 export interface GetLatestReportInput {
@@ -12,54 +13,47 @@ const getLatestReport = async (
 ): Promise<LatestReportResponse> => {
   const result = await reportRepository.findLatest(input);
 
-  if (result.state === "valid") {
+  if (result.kind === "ok") {
     return { state: "valid", report: result.report };
   }
 
-  if (result.state === "missing") {
-    return {
-      state: "missing",
-      report: null,
-      error: {
-        code: "NOT_FOUND",
-        message: result.message,
-      },
-    };
+  if (result.kind === "missing") {
+    return { state: "missing", report: null };
   }
 
-  if (result.state === "malformed") {
-    return {
-      state: "malformed",
-      report: null,
-      error: {
-        code: "SCHEMA_INVALID",
-        message: "Latest report JSON is malformed",
-        details: result.message,
-      },
-    };
+  if (result.kind === "malformed") {
+    throw new HttpError(
+      500,
+      "REPORT_MALFORMED",
+      "Latest report JSON is malformed.",
+      result.error,
+    );
   }
 
-  if (result.state === "schema-invalid") {
-    return {
-      state: "schema-invalid",
-      report: null,
-      error: {
-        code: "SCHEMA_INVALID",
-        message: result.message,
-        details: result.details,
-      },
-    };
+  if (result.kind === "schema-invalid") {
+    throw new HttpError(
+      500,
+      "REPORT_SCHEMA_INVALID",
+      "Latest report does not match ScanResponse schema.",
+      result.details ?? result.error,
+    );
   }
 
-  return {
-    state: "malformed",
-    report: null,
-    error: {
-      code: "INTERNAL_ERROR",
-      message: "Could not read latest report",
-      details: result.message,
-    },
-  };
+  if (result.kind === "permission-denied") {
+    throw new HttpError(
+      500,
+      "REPORT_PERMISSION_DENIED",
+      "Latest report cannot be read due to filesystem permissions.",
+      result.error,
+    );
+  }
+
+  throw new HttpError(
+    500,
+    "INTERNAL_ERROR",
+    "Could not read latest report.",
+    result.error,
+  );
 };
 
 export const reportService = { getLatestReport };

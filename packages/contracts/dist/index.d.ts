@@ -1,4 +1,4 @@
-export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED";
+export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED" | "REPORT_MALFORMED" | "REPORT_SCHEMA_INVALID" | "REPORT_PERMISSION_DENIED";
 export interface ApiErrorResponse {
     error: {
         code: ErrorCode;
@@ -57,19 +57,10 @@ export interface ReportSummary {
     warningIssues: number;
     infoIssues: number;
 }
-export type LatestReportState = "missing" | "malformed" | "schema-invalid" | "valid";
+export type LatestReportState = "missing" | "valid";
 export type LatestReportResponse = {
     state: "missing";
     report: null;
-    error: ApiErrorResponse["error"];
-} | {
-    state: "malformed";
-    report: null;
-    error: ApiErrorResponse["error"];
-} | {
-    state: "schema-invalid";
-    report: null;
-    error: ApiErrorResponse["error"];
 } | {
     state: "valid";
     report: ScanResponse;

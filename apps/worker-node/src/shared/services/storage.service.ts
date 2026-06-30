@@ -1,12 +1,13 @@
-import fs from "node:fs/promises";
+﻿import fs from "node:fs/promises";
 import path from "node:path";
 import type { ProjectPaths } from "./path.service";
-export type ReadJsonResult<T> =
-  | { status: "ok"; data: T }
-  | { status: "missing"; message: string }
-  | { status: "malformed"; message: string }
-  | { status: "permission"; message: string }
-  | { status: "unknown"; message: string };
+
+export type JsonReadResult<T> =
+  | { kind: "ok"; data: T }
+  | { kind: "missing"; error: string }
+  | { kind: "malformed"; error: string }
+  | { kind: "permission-denied"; error: string }
+  | { kind: "unknown-error"; error: string };
 
 const ensureDir = async (dirPath: string): Promise<void> => {
   await fs.mkdir(dirPath, { recursive: true });
@@ -24,41 +25,45 @@ const ensureProjectStorage = async (paths: ProjectPaths): Promise<void> => {
 
 const writeJson = async (filePath: string, data: unknown): Promise<void> => {
   await ensureDir(path.dirname(filePath));
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  const tempPath = `${filePath}.tmp-${process.pid}-${Date.now()}`;
+  await fs.writeFile(tempPath, JSON.stringify(data, null, 2), "utf-8");
+  await fs.rename(tempPath, filePath);
 };
 
 const readJson = async <T>(filePath: string): Promise<T | null> => {
   const result = await readJsonResult<T>(filePath);
-  return result.status === "ok" ? result.data : null;
+  return result.kind === "ok" ? result.data : null;
 };
 
 const readJsonResult = async <T>(
   filePath: string,
-): Promise<ReadJsonResult<T>> => {
+): Promise<JsonReadResult<T>> => {
   try {
     const raw = await fs.readFile(filePath, "utf-8");
-    return { status: "ok", data: JSON.parse(raw) as T };
+    return { kind: "ok", data: JSON.parse(raw) as T };
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return { status: "malformed", message: error.message };
+      return { kind: "malformed", error: error.message };
     }
 
     if (isNodeError(error) && error.code === "ENOENT") {
-      return { status: "missing", message: `File not found: ${filePath}` };
+      return { kind: "missing", error: `File not found: ${filePath}` };
     }
 
     if (
       isNodeError(error) &&
       (error.code === "EACCES" || error.code === "EPERM")
     ) {
-      return { status: "permission", message: String(error) };
+      return { kind: "permission-denied", error: String(error) };
     }
 
-    return { status: "unknown", message: String(error) };
+    return { kind: "unknown-error", error: String(error) };
   }
 };
+
 const isNodeError = (error: unknown): error is NodeJS.ErrnoException =>
   error instanceof Error && "code" in error;
+
 export const storageService = {
   ensureDir,
   ensureProjectStorage,

@@ -1,9 +1,12 @@
-export type ErrorCode =
+﻿export type ErrorCode =
   | "INVALID_REQUEST"
   | "NOT_FOUND"
   | "INTERNAL_ERROR"
   | "SCHEMA_INVALID"
-  | "PATH_NOT_ALLOWED";
+  | "PATH_NOT_ALLOWED"
+  | "REPORT_MALFORMED"
+  | "REPORT_SCHEMA_INVALID"
+  | "REPORT_PERMISSION_DENIED";
 
 export interface ApiErrorResponse {
   error: {
@@ -79,16 +82,10 @@ export interface ReportSummary {
   infoIssues: number;
 }
 
-export type LatestReportState =
-  | "missing"
-  | "malformed"
-  | "schema-invalid"
-  | "valid";
+export type LatestReportState = "missing" | "valid";
 
 export type LatestReportResponse =
-  | { state: "missing"; report: null; error: ApiErrorResponse["error"] }
-  | { state: "malformed"; report: null; error: ApiErrorResponse["error"] }
-  | { state: "schema-invalid"; report: null; error: ApiErrorResponse["error"] }
+  | { state: "missing"; report: null }
   | { state: "valid"; report: ScanResponse };
 
 export interface ScanRequest {
@@ -173,7 +170,10 @@ const isErrorCode = (value: unknown): value is ErrorCode =>
   value === "NOT_FOUND" ||
   value === "INTERNAL_ERROR" ||
   value === "SCHEMA_INVALID" ||
-  value === "PATH_NOT_ALLOWED";
+  value === "PATH_NOT_ALLOWED" ||
+  value === "REPORT_MALFORMED" ||
+  value === "REPORT_SCHEMA_INVALID" ||
+  value === "REPORT_PERMISSION_DENIED";
 
 const isScanIssueType = (value: unknown): value is ScanIssueType =>
   value === "console" ||
@@ -191,8 +191,6 @@ const isScanIssueSeverity = (
 
 const isLatestReportState = (value: unknown): value is LatestReportState =>
   value === "missing" ||
-  value === "malformed" ||
-  value === "schema-invalid" ||
   value === "valid";
 
 const isScanStatus = (value: unknown): value is ScanResponse["status"] =>
@@ -400,47 +398,11 @@ export const validateLatestReportResponse = (
     return {
       ok: false,
       code: "SCHEMA_INVALID",
-      message: "report must be null when state is not valid",
+      message: "report must be null when latest report is missing",
     };
   }
 
-  const error = value.error;
-  if (!isRecord(error)) {
-    return {
-      ok: false,
-      code: "SCHEMA_INVALID",
-      message: "error must be an object when state is not valid",
-    };
-  }
-
-  if (!isErrorCode(error.code)) {
-    return {
-      ok: false,
-      code: "SCHEMA_INVALID",
-      message: "error.code is invalid",
-    };
-  }
-
-  if (!isNonEmptyString(error.message)) {
-    return {
-      ok: false,
-      code: "SCHEMA_INVALID",
-      message: "error.message must be a non-empty string",
-    };
-  }
-
-  return {
-    ok: true,
-    value: {
-      state,
-      report: null,
-      error: {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-      },
-    },
-  };
+  return { ok: true, value: { state: "missing", report: null } };
 };
 export const validateScanResponse = (
   value: unknown,
@@ -532,3 +494,5 @@ export const validateScanResponse = (
     },
   };
 };
+
+

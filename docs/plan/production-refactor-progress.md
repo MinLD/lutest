@@ -560,3 +560,62 @@ Remaining issues:
 
 Next phase:
 - R3 — Report integrity.
+
+## R3 — Report integrity
+
+Status: Done
+Updated: 2026-06-30
+
+Read result states implemented:
+- `storageService.readJsonResult<T>()` now returns `kind`: `ok`, `missing`, `malformed`, `permission-denied`, `unknown-error`.
+- `reportRepository.findLatest()` maps storage results into report states: `ok`, `missing`, `malformed`, `schema-invalid`, `permission-denied`, `unknown-error`.
+- Legacy `storageService.readJson<T>()` remains as compatibility wrapper returning `T | null`.
+
+Latest report API behavior:
+- Missing latest report returns data response: `{ state: "missing", report: null }`.
+- Valid latest report returns data response: `{ state: "valid", report }`.
+- Malformed JSON throws `HttpError` with `REPORT_MALFORMED`; API returns JSON error, not `report: null`.
+- Schema-invalid report throws `HttpError` with `REPORT_SCHEMA_INVALID`; API returns JSON error, not `report: null`.
+- Permission-denied read throws `REPORT_PERMISSION_DENIED` when filesystem exposes `EACCES`/`EPERM`.
+
+Schema validation status:
+- Latest report disk JSON is parsed as `unknown`, then validated with `validateScanResponse` before returning.
+- `LatestReportResponse` contract now models only valid data states: `missing` and `valid`; corrupted reports are API errors.
+- Added report-specific error codes: `REPORT_MALFORMED`, `REPORT_SCHEMA_INVALID`, `REPORT_PERMISSION_DENIED`.
+
+Report write validation status:
+- `scanRepository.saveReport()` validates `ScanResponse` before writing any report file.
+- Invalid internal report shape throws `REPORT_SCHEMA_INVALID` and does not write report JSON.
+- `storageService.writeJson()` now writes to a temp file and renames temp to final path for per-file atomic write.
+- Parent directories are ensured before write.
+
+Files changed:
+- `apps/worker-node/src/shared/services/storage.service.ts`
+- `apps/worker-node/src/modules/report/report.repository.ts`
+- `apps/worker-node/src/modules/report/report.service.ts`
+- `apps/worker-node/src/modules/report/report.service.self-check.ts`
+- `apps/worker-node/src/modules/report/report-integrity.self-check.ts`
+- `apps/worker-node/src/modules/scan/scan.repository.ts`
+- `packages/contracts/src/index.ts`
+- `packages/contracts/src/latest-report.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npm run build -w @lutest/cli-host` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/latest-report.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed, exit `0`.
+
+Remaining risks:
+- Permission-denied branch is mapped from Node `EACCES`/`EPERM`, but not force-tested cross-platform because Windows ACL mutation is not reliable in this sandbox.
+- `scanRepository.saveReport()` writes report file and latest file as two separate atomic writes; no transaction spans both files.
+- UI may need to adapt to corrupted-report HTTP error responses instead of old `state: malformed/schema-invalid` data states; UI redesign is out of R3 scope.
+
+Next phase:
+- R4 — Production graph contracts.

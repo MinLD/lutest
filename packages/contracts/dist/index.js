@@ -9,7 +9,10 @@ const isErrorCode = (value) => value === "INVALID_REQUEST" ||
     value === "NOT_FOUND" ||
     value === "INTERNAL_ERROR" ||
     value === "SCHEMA_INVALID" ||
-    value === "PATH_NOT_ALLOWED";
+    value === "PATH_NOT_ALLOWED" ||
+    value === "REPORT_MALFORMED" ||
+    value === "REPORT_SCHEMA_INVALID" ||
+    value === "REPORT_PERMISSION_DENIED";
 const isScanIssueType = (value) => value === "console" ||
     value === "syntax" ||
     value === "overflow" ||
@@ -19,8 +22,6 @@ const isScanIssueType = (value) => value === "console" ||
     value === "unknown";
 const isScanIssueSeverity = (value) => value === "info" || value === "warning" || value === "error";
 const isLatestReportState = (value) => value === "missing" ||
-    value === "malformed" ||
-    value === "schema-invalid" ||
     value === "valid";
 const isScanStatus = (value) => value === "passed" || value === "failed" || value === "warning";
 const rejectUnknownKeys = (value, allowedKeys) => {
@@ -192,43 +193,10 @@ const validateLatestReportResponse = (value) => {
         return {
             ok: false,
             code: "SCHEMA_INVALID",
-            message: "report must be null when state is not valid",
+            message: "report must be null when latest report is missing",
         };
     }
-    const error = value.error;
-    if (!isRecord(error)) {
-        return {
-            ok: false,
-            code: "SCHEMA_INVALID",
-            message: "error must be an object when state is not valid",
-        };
-    }
-    if (!isErrorCode(error.code)) {
-        return {
-            ok: false,
-            code: "SCHEMA_INVALID",
-            message: "error.code is invalid",
-        };
-    }
-    if (!isNonEmptyString(error.message)) {
-        return {
-            ok: false,
-            code: "SCHEMA_INVALID",
-            message: "error.message must be a non-empty string",
-        };
-    }
-    return {
-        ok: true,
-        value: {
-            state,
-            report: null,
-            error: {
-                code: error.code,
-                message: error.message,
-                details: error.details,
-            },
-        },
-    };
+    return { ok: true, value: { state: "missing", report: null } };
 };
 exports.validateLatestReportResponse = validateLatestReportResponse;
 const validateScanResponse = (value) => {
