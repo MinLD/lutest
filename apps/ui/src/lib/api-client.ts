@@ -77,7 +77,7 @@ export const lutestApi = {
   },
 
   runScan(input: ScanRequest = {}) {
-    return requestJson<ScanResponse>("/api/scan", {
+    return requestJson<ScanResponse>("/api/actions/scan", {
       method: "POST",
       body: JSON.stringify(input),
     });

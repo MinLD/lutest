@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import type { GraphResponse } from "@lutest/contracts";
+import { validateGraphQuery, type GraphResponse } from "@lutest/contracts";
 import { graphService } from "./graph.service";
 import { pathService } from "../../shared/services/path.service";
 import { getValidatedProjectPath } from "../../shared/http/validated-project-path";
@@ -11,7 +11,7 @@ export const graphController = {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const projectPath = await getValidatedProjectPath(req, res);
+      const projectPath = await getValidatedProjectPath(req, res, validateGraphQuery);
       if (projectPath === null) return;
 
       const paths = await pathService.resolveProjectPaths({

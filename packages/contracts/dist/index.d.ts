@@ -57,11 +57,28 @@ export interface ReportSummary {
     warningIssues: number;
     infoIssues: number;
 }
-export interface LatestReportResponse {
-    report: ScanResponse | null;
-}
+export type LatestReportState = "missing" | "malformed" | "schema-invalid" | "valid";
+export type LatestReportResponse = {
+    state: "missing";
+    report: null;
+    error: ApiErrorResponse["error"];
+} | {
+    state: "malformed";
+    report: null;
+    error: ApiErrorResponse["error"];
+} | {
+    state: "schema-invalid";
+    report: null;
+    error: ApiErrorResponse["error"];
+} | {
+    state: "valid";
+    report: ScanResponse;
+};
 export interface ScanRequest {
     projectPath?: string;
+}
+export interface ProjectPathQuery {
+    path?: string;
 }
 export type ScanIssueType = "console" | "syntax" | "overflow" | "todo" | "large-file" | "maintainability" | "unknown";
 export interface ScanIssue {
@@ -108,5 +125,8 @@ export type ValidationResult<T> = {
     details?: unknown;
 };
 export declare const validateScanRequest: (value: unknown) => ValidationResult<ScanRequest>;
-export declare const validateProjectPathQuery: (value: unknown) => ValidationResult<string | undefined>;
+export declare const validateProjectPathQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
+export declare const validateGraphQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
+export declare const validateLatestReportQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
+export declare const validateLatestReportResponse: (value: unknown) => ValidationResult<LatestReportResponse>;
 export declare const validateScanResponse: (value: unknown) => ValidationResult<ScanResponse>;

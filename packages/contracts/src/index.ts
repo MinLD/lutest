@@ -95,6 +95,10 @@ export interface ScanRequest {
   projectPath?: string;
 }
 
+export interface ProjectPathQuery {
+  path?: string;
+}
+
 export type ScanIssueType =
   | "console"
   | "syntax"
@@ -161,6 +165,39 @@ const isString = (value: unknown): value is string => typeof value === "string";
 const isNonEmptyString = (value: unknown): value is string =>
   isString(value) && value.trim().length > 0;
 
+const isOptionalNonEmptyString = (value: unknown): value is string | undefined =>
+  value === undefined || isNonEmptyString(value);
+
+const isErrorCode = (value: unknown): value is ErrorCode =>
+  value === "INVALID_REQUEST" ||
+  value === "NOT_FOUND" ||
+  value === "INTERNAL_ERROR" ||
+  value === "SCHEMA_INVALID" ||
+  value === "PATH_NOT_ALLOWED";
+
+const isScanIssueType = (value: unknown): value is ScanIssueType =>
+  value === "console" ||
+  value === "syntax" ||
+  value === "overflow" ||
+  value === "todo" ||
+  value === "large-file" ||
+  value === "maintainability" ||
+  value === "unknown";
+
+const isScanIssueSeverity = (
+  value: unknown,
+): value is ScanIssue["severity"] =>
+  value === "info" || value === "warning" || value === "error";
+
+const isLatestReportState = (value: unknown): value is LatestReportState =>
+  value === "missing" ||
+  value === "malformed" ||
+  value === "schema-invalid" ||
+  value === "valid";
+
+const isScanStatus = (value: unknown): value is ScanResponse["status"] =>
+  value === "passed" || value === "failed" || value === "warning";
+
 const rejectUnknownKeys = (
   value: Record<string, unknown>,
   allowedKeys: readonly string[],
@@ -195,7 +232,8 @@ export const validateScanRequest = (
   const keys = rejectUnknownKeys(value, ["projectPath"]);
   if (!keys.ok) return keys;
 
-  if (value.projectPath !== undefined && !isNonEmptyString(value.projectPath)) {
+  const projectPath = value.projectPath;
+  if (!isOptionalNonEmptyString(projectPath)) {
     return {
       ok: false,
       code: "INVALID_REQUEST",
@@ -205,29 +243,131 @@ export const validateScanRequest = (
 
   return {
     ok: true,
-    value: { projectPath: value.projectPath as string | undefined },
+    value: { projectPath },
   };
 };
 
 export const validateProjectPathQuery = (
   value: unknown,
-): ValidationResult<string | undefined> => {
-  if (value === undefined) return { ok: true, value: undefined };
-  if (Array.isArray(value)) {
+): ValidationResult<ProjectPathQuery> => {
+  if (!isRecord(value)) {
+    return {
+      ok: false,
+      code: "INVALID_REQUEST",
+      message: "Query must be an object",
+    };
+  }
+
+  const keys = rejectUnknownKeys(value, ["path"]);
+  if (!keys.ok) return keys;
+
+  const projectPath = value.path;
+  if (Array.isArray(projectPath)) {
     return {
       ok: false,
       code: "INVALID_REQUEST",
       message: "path query must be a single string",
     };
   }
-  if (!isNonEmptyString(value)) {
+  if (!isOptionalNonEmptyString(projectPath)) {
     return {
       ok: false,
       code: "INVALID_REQUEST",
       message: "path query must be a non-empty string",
     };
   }
-  return { ok: true, value };
+  return { ok: true, value: { path: projectPath } };
+};
+
+export const validateGraphQuery = validateProjectPathQuery;
+
+export const validateLatestReportQuery = validateProjectPathQuery;
+
+const validateProjectSummary = (
+  value: unknown,
+): ValidationResult<ProjectSummary> => {
+  if (!isRecord(value)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "project must be an object",
+    };
+  }
+
+  if (!isNonEmptyString(value.name)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "project.name must be a non-empty string" };
+  }
+  if (!isNonEmptyString(value.rootDir)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "project.rootDir must be a non-empty string" };
+  }
+  if (!isNonEmptyString(value.lutestDir)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "project.lutestDir must be a non-empty string" };
+  }
+  if (typeof value.packageJsonExists !== "boolean") {
+    return { ok: false, code: "SCHEMA_INVALID", message: "project.packageJsonExists must be a boolean" };
+  }
+  if (
+    value.detectedFramework !== "next" &&
+    value.detectedFramework !== "vite-react" &&
+    value.detectedFramework !== "react" &&
+    value.detectedFramework !== "vue" &&
+    value.detectedFramework !== "laravel" &&
+    value.detectedFramework !== "php" &&
+    value.detectedFramework !== "unknown" &&
+    value.detectedFramework !== null
+  ) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "project.detectedFramework is invalid" };
+  }
+  if (
+    value.sourceFileCount !== undefined &&
+    typeof value.sourceFileCount !== "number"
+  ) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "project.sourceFileCount must be a number" };
+  }
+
+  return {
+    ok: true,
+    value: {
+      name: value.name,
+      rootDir: value.rootDir,
+      lutestDir: value.lutestDir,
+      packageJsonExists: value.packageJsonExists,
+      detectedFramework: value.detectedFramework,
+      sourceFileCount: value.sourceFileCount,
+    },
+  };
+};
+
+const validateScanIssue = (value: unknown): ValidationResult<ScanIssue> => {
+  if (!isRecord(value)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "issue must be an object" };
+  }
+  if (!isNonEmptyString(value.id)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "issue.id must be a non-empty string" };
+  }
+  if (!isScanIssueType(value.type)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "issue.type is invalid" };
+  }
+  if (!isScanIssueSeverity(value.severity)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "issue.severity is invalid" };
+  }
+  if (!isNonEmptyString(value.message)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "issue.message must be a non-empty string" };
+  }
+  if (!isOptionalNonEmptyString(value.filePath)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "issue.filePath must be a non-empty string" };
+  }
+
+  return {
+    ok: true,
+    value: {
+      id: value.id,
+      type: value.type,
+      severity: value.severity,
+      message: value.message,
+      filePath: value.filePath,
+    },
+  };
 };
 
 export const validateLatestReportResponse = (
@@ -241,15 +381,12 @@ export const validateLatestReportResponse = (
     };
   }
 
-  if (
-    !["missing", "malformed", "schema-invalid", "valid"].includes(
-      String(value.state),
-    )
-  ) {
+  const state = value.state;
+  if (!isLatestReportState(state)) {
     return { ok: false, code: "SCHEMA_INVALID", message: "state is invalid" };
   }
 
-  if (value.state === "valid") {
+  if (state === "valid") {
     const report = validateScanResponse(value.report);
     if (!report.ok) return report;
 
@@ -267,7 +404,8 @@ export const validateLatestReportResponse = (
     };
   }
 
-  if (!isRecord(value.error)) {
+  const error = value.error;
+  if (!isRecord(error)) {
     return {
       ok: false,
       code: "SCHEMA_INVALID",
@@ -275,15 +413,15 @@ export const validateLatestReportResponse = (
     };
   }
 
-  if (!isNonEmptyString(value.error.code)) {
+  if (!isErrorCode(error.code)) {
     return {
       ok: false,
       code: "SCHEMA_INVALID",
-      message: "error.code must be a non-empty string",
+      message: "error.code is invalid",
     };
   }
 
-  if (!isNonEmptyString(value.error.message)) {
+  if (!isNonEmptyString(error.message)) {
     return {
       ok: false,
       code: "SCHEMA_INVALID",
@@ -293,7 +431,15 @@ export const validateLatestReportResponse = (
 
   return {
     ok: true,
-    value: value as unknown as LatestReportResponse,
+    value: {
+      state,
+      report: null,
+      error: {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+      },
+    },
   };
 };
 export const validateScanResponse = (
@@ -307,28 +453,46 @@ export const validateScanResponse = (
     };
   }
 
-  const requiredStrings = ["scanId", "startedAt", "finishedAt", "reportPath"];
-  for (const key of requiredStrings) {
-    if (!isNonEmptyString(value[key])) {
-      return {
-        ok: false,
-        code: "SCHEMA_INVALID",
-        message: `${key} must be a non-empty string`,
-      };
-    }
-  }
-
-  if (!["passed", "failed", "warning"].includes(String(value.status))) {
-    return { ok: false, code: "SCHEMA_INVALID", message: "status is invalid" };
-  }
-
-  if (!isRecord(value.project)) {
+  const scanId = value.scanId;
+  const startedAt = value.startedAt;
+  const finishedAt = value.finishedAt;
+  const reportPath = value.reportPath;
+  if (!isNonEmptyString(scanId)) {
     return {
       ok: false,
       code: "SCHEMA_INVALID",
-      message: "project must be an object",
+      message: "scanId must be a non-empty string",
     };
   }
+  if (!isNonEmptyString(startedAt)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "startedAt must be a non-empty string",
+    };
+  }
+  if (!isNonEmptyString(finishedAt)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "finishedAt must be a non-empty string",
+    };
+  }
+  if (!isNonEmptyString(reportPath)) {
+    return {
+      ok: false,
+      code: "SCHEMA_INVALID",
+      message: "reportPath must be a non-empty string",
+    };
+  }
+
+  const status = value.status;
+  if (!isScanStatus(status)) {
+    return { ok: false, code: "SCHEMA_INVALID", message: "status is invalid" };
+  }
+
+  const project = validateProjectSummary(value.project);
+  if (!project.ok) return project;
 
   if (typeof value.sourceFileCount !== "number") {
     return {
@@ -338,7 +502,8 @@ export const validateScanResponse = (
     };
   }
 
-  if (!Array.isArray(value.issues)) {
+  const rawIssues = value.issues;
+  if (!Array.isArray(rawIssues)) {
     return {
       ok: false,
       code: "SCHEMA_INVALID",
@@ -346,5 +511,24 @@ export const validateScanResponse = (
     };
   }
 
-  return { ok: true, value: value as unknown as ScanResponse };
+  const issues: ScanIssue[] = [];
+  for (const rawIssue of rawIssues) {
+    const issue = validateScanIssue(rawIssue);
+    if (!issue.ok) return issue;
+    issues.push(issue.value);
+  }
+
+  return {
+    ok: true,
+    value: {
+      scanId,
+      startedAt,
+      finishedAt,
+      status,
+      project: project.value,
+      sourceFileCount: value.sourceFileCount,
+      issues,
+      reportPath,
+    },
+  };
 };

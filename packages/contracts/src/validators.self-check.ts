@@ -1,4 +1,9 @@
-import { validateProjectPathQuery, validateScanRequest } from "./index";
+import {
+  validateGraphQuery,
+  validateLatestReportQuery,
+  validateProjectPathQuery,
+  validateScanRequest,
+} from "./index";
 
 const assert = (condition: boolean, message: string): void => {
   if (!condition) throw new Error(message);
@@ -26,17 +31,29 @@ assert(
   "unknown scan field invalid",
 );
 
-same(validateProjectPathQuery(undefined), {
+same(validateProjectPathQuery({}), {
   ok: true,
-  value: undefined,
+  value: { path: undefined },
 }, "missing path query valid");
 
-same(validateProjectPathQuery("D:\\Projects\\lutest"), {
+same(validateProjectPathQuery({ path: "D:\\Projects\\lutest" }), {
   ok: true,
-  value: "D:\\Projects\\lutest",
+  value: { path: "D:\\Projects\\lutest" },
 }, "path query valid");
 
-assert(!validateProjectPathQuery("").ok, "empty path query invalid");
-assert(!validateProjectPathQuery(["a", "b"]).ok, "array path query invalid");
+assert(!validateProjectPathQuery({ path: "" }).ok, "empty path query invalid");
+assert(
+  !validateProjectPathQuery({ path: ["a", "b"] }).ok,
+  "array path query invalid",
+);
+assert(!validateProjectPathQuery({ extra: true }).ok, "unknown query invalid");
+same(validateGraphQuery({}), {
+  ok: true,
+  value: { path: undefined },
+}, "graph query valid");
+same(validateLatestReportQuery({}), {
+  ok: true,
+  value: { path: undefined },
+}, "latest report query valid");
 
 console.log("validators self-check passed");

@@ -29,6 +29,8 @@ export const createApp = () => {
   app.use("/api/project", projectRoutes);
   app.use("/api/graph", graphRoutes);
   app.use("/api/report", reportRoutes);
+  // Canonical production scan route. /api/scan remains a temporary legacy alias.
+  app.use("/api/actions/scan", scanRoutes);
   app.use("/api/scan", scanRoutes);
 
   app.use(notFoundHandler);
