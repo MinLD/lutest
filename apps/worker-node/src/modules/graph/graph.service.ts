@@ -22,10 +22,16 @@ interface SourceFileForGraph {
 
 const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx"];
 
+const IGNORED_SOURCE_FILE_REGEX =
+  /\.(d|test|spec|stories)\.(tsx|ts|jsx|js)$/;
+
 const IMPORT_REGEX =
   /import\s+(?:type\s+)?(?:[\s\S]*?\s+from\s+)?["']([^"']+)["']|require\(["']([^"']+)["']\)/g;
 
 const normalizePath = (value: string): string => value.replaceAll("\\", "/");
+
+const isGraphSourceFile = (filePath: string): boolean =>
+  !IGNORED_SOURCE_FILE_REGEX.test(path.basename(filePath));
 
 const toNode = (
   rootDir: string,
@@ -57,8 +63,11 @@ function toApiAwareNode(node: GraphNode, apis: DetectedApiSymbol[]): GraphNode {
       ...node.data,
       apiCalls: apis.map((api) => ({
         kind: api.kind,
-        target: api.target ?? api.name,
+        target: api.target,
+        method: api.method,
         line: api.line,
+        column: api.column,
+        callee: api.callee,
       })),
     },
   };
@@ -150,11 +159,13 @@ const buildImportEdges = (input: {
 const buildGraph = async (input: {
   rootDir: string;
 }): Promise<GraphResponse> => {
-  const sourceFilePaths = await fileSystemService.listFiles({
-    rootDir: input.rootDir,
-    extensions: SOURCE_EXTENSIONS,
-    ignoredDirs: ["node_modules", ".git", "dist", "build", ".next", ".lutest"],
-  });
+  const sourceFilePaths = (
+    await fileSystemService.listFiles({
+      rootDir: input.rootDir,
+      extensions: SOURCE_EXTENSIONS,
+      ignoredDirs: ["node_modules", ".git", "dist", "build", ".next", ".lutest"],
+    })
+  ).filter(isGraphSourceFile);
   const sourceFiles = await readSourceFilesForGraph(
     input.rootDir,
     sourceFilePaths,
@@ -162,23 +173,27 @@ const buildGraph = async (input: {
   const adapter = await frameworkAdapterRegistry.getAdapterForProject(
     input.rootDir,
   );
-  const symbolTotals = sourceFiles.reduce(
-    (total, file) => {
-      const symbols = detectSymbols(file.relativePath, file.content);
-      return {
-        componentCount: total.componentCount + symbols.components.length,
-        apiCount: total.apiCount + symbols.apis.length,
-        pageCount: total.pageCount + symbols.pages.length,
-      };
-    },
-    { componentCount: 0, apiCount: 0, pageCount: 0 },
-  );
-  const nodes = sourceFiles.map((file) => {
+  const filesWithSymbols = sourceFiles.map((file) => ({
+    ...file,
+    symbols: adapter.classifySymbols(
+      file.relativePath,
+      detectSymbols(file.relativePath, file.content),
+    ),
+  }));
+  const nodes = filesWithSymbols.map((file) => {
     const baseNode = toNode(input.rootDir, file.absolutePath, adapter);
-    const symbols = detectSymbols(file.relativePath, file.content);
-    return toApiAwareNode(baseNode, symbols.apis);
+    return toApiAwareNode(baseNode, file.symbols.apis);
   });
   const nodeIds = new Set(nodes.map((node) => node.id));
+  const nodeTotals = nodes.reduce(
+    (total, node) => ({
+      pageCount: total.pageCount + (node.type === "page" ? 1 : 0),
+      componentCount:
+        total.componentCount + (node.type === "component" ? 1 : 0),
+      apiCount: total.apiCount + (node.type === "api" ? 1 : 0),
+    }),
+    { pageCount: 0, componentCount: 0, apiCount: 0 },
+  );
 
   const edges = buildImportEdges({
     sourceFiles,
@@ -189,9 +204,7 @@ const buildGraph = async (input: {
     nodes,
     edges,
     summary: {
-      pageCount: symbolTotals.pageCount,
-      componentCount: symbolTotals.componentCount,
-      apiCount: symbolTotals.apiCount,
+      ...nodeTotals,
       fileCount: nodes.length,
     },
   };

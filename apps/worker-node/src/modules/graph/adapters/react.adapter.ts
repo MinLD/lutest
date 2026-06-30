@@ -49,4 +49,15 @@ export const reactAdapter: FrameworkAdapter = {
 
     return hasSegment(relativePath, ["components", "ui"]) || /^[A-Z]/.test(stem);
   },
+
+  classifySymbols(relativePath, symbols) {
+    return {
+      pages: this.isPage(relativePath) ? symbols.declarations : [],
+      components:
+        this.isComponent(relativePath) || this.isPage(relativePath)
+          ? symbols.declarations
+          : [],
+      apis: this.isApi(relativePath) || symbols.apis.length > 0 ? symbols.apis : [],
+    };
+  },
 };

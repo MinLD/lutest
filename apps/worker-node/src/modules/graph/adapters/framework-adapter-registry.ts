@@ -20,6 +20,14 @@ const defaultAdapter: FrameworkAdapter = {
   isComponent(): boolean {
     return false;
   },
+
+  classifySymbols(_relativePath, symbols) {
+    return {
+      pages: [],
+      components: symbols.declarations,
+      apis: symbols.apis,
+    };
+  },
 };
 
 const adapters: Partial<

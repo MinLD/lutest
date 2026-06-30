@@ -1,7 +1,7 @@
 {
-  "scanId": "scan_1782787524904",
-  "startedAt": "2026-06-30T02:45:24.903Z",
-  "finishedAt": "2026-06-30T02:45:24.935Z",
+  "scanId": "scan_1782783246912",
+  "startedAt": "2026-06-30T01:34:06.912Z",
+  "finishedAt": "2026-06-30T01:34:06.925Z",
   "project": {
     "name": "ui",
     "rootDir": "D:/Projects/lutest/apps/ui",
@@ -20,6 +20,6 @@
       "filePath": "src/components/dashboard-shell.tsx"
     }
   ],
-  "reportPath": "D:\\Projects\\lutest\\apps\\ui\\.lutest\\reports\\scan_1782787524904.json",
+  "reportPath": "D:\\Projects\\lutest\\apps\\ui\\.lutest\\reports\\scan_1782783246912.json",
   "status": "warning"
 }

@@ -1,12 +1,6 @@
 {
   "nodes": [
     {
-      "id": "file:next-env.d.ts",
-      "type": "file",
-      "label": "next-env.d.ts",
-      "filePath": "next-env.d.ts"
-    },
-    {
       "id": "file:next.config.ts",
       "type": "file",
       "label": "next.config.ts",
@@ -32,18 +26,9 @@
     },
     {
       "id": "file:src/lib/api-client.ts",
-      "type": "api",
+      "type": "file",
       "label": "api-client.ts",
-      "filePath": "src/lib/api-client.ts",
-      "data": {
-        "apiCalls": [
-          {
-            "kind": "fetch",
-            "target": "${getWorkerUrl()}${path}",
-            "line": 37
-          }
-        ]
-      }
+      "filePath": "src/lib/api-client.ts"
     },
     {
       "id": "file:src/lib/use-dashboard-data.ts",
@@ -62,8 +47,8 @@
   ],
   "summary": {
     "pageCount": 1,
-    "componentCount": 15,
-    "apiCount": 1,
-    "fileCount": 7
+    "componentCount": 1,
+    "apiCount": 0,
+    "fileCount": 6
   }
 }

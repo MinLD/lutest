@@ -1,54 +1,63 @@
 import ts from "typescript";
 
-export type DetectedComponentSymbol = {
+export type DetectedDeclarationKind = "function" | "const" | "class";
+export type DetectedApiKind = "fetch" | "axios" | "ky" | "ofetch" | "custom-client";
+
+export type DetectedDeclarationSymbol = {
   name: string;
   line: number;
-  kind: "function" | "const" | "class";
+  column: number;
+  kind: DetectedDeclarationKind;
 };
 
 export type DetectedApiSymbol = {
-  name: string;
+  kind: DetectedApiKind;
+  target: string;
+  method?: string;
   line: number;
-  kind: "fetch" | "axios" | "ky" | "ofetch" | "custom-client";
-  target?: string;
+  column: number;
+  callee: string;
 };
 
-export type DetectedPageSymbol = {
-  name: string;
-  line: number;
-  kind: "default-export" | "file";
+export type DetectedSymbols = {
+  declarations: DetectedDeclarationSymbol[];
+  apis: DetectedApiSymbol[];
 };
 
-const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete", "request"]);
+const HTTP_METHODS = new Set([
+  "get",
+  "post",
+  "put",
+  "patch",
+  "delete",
+  "head",
+  "options",
+  "request",
+]);
 
-const isPascalCase = (name: string): boolean =>
-  /^[A-Z][A-Za-z0-9]*$/.test(name);
+const isPascalCase = (name: string): boolean => /^[A-Z][A-Za-z0-9]*$/.test(name);
 
 const isFunctionLike = (node: ts.Node): boolean =>
   ts.isArrowFunction(node) || ts.isFunctionExpression(node);
 
-const isPageFile = (filePath: string): boolean =>
-  /(?:^|[\\/])app[\\/].*[\\/]page\.(tsx|ts|jsx|js)$/.test(filePath) ||
-  /(?:^|[\\/])pages[\\/].+\.(tsx|ts|jsx|js)$/.test(filePath);
+const getPosition = (sourceFile: ts.SourceFile, node: ts.Node) => {
+  const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
 
-const lineOf = (sourceFile: ts.SourceFile, node: ts.Node): number =>
-  sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
-
-const getStringArg = (node: ts.CallExpression): string | undefined => {
-  const first = node.arguments[0];
-  return first && ts.isStringLiteralLike(first) ? first.text : undefined;
+  return {
+    line: position.line + 1,
+    column: position.character + 1,
+  };
 };
 
-const hasDefaultModifier = (node: ts.Node): boolean =>
-  ts.canHaveModifiers(node) &&
-  ts
-    .getModifiers(node)
-    ?.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword) === true;
+const getStringTarget = (node: ts.CallExpression): string | null => {
+  const first = node.arguments[0];
+  return first && ts.isStringLiteralLike(first) ? first.text : null;
+};
 
 const getApiKind = (
   expression: ts.LeftHandSideExpression,
   sourceFile: ts.SourceFile,
-): DetectedApiSymbol["kind"] | null => {
+): DetectedApiKind | null => {
   if (ts.isIdentifier(expression)) {
     if (expression.text === "fetch") return "fetch";
     if (expression.text === "ofetch") return "ofetch";
@@ -68,7 +77,16 @@ const getApiKind = (
   return null;
 };
 
-export const detectSymbols = (filePath: string, content: string) => {
+const getApiMethod = (
+  expression: ts.LeftHandSideExpression,
+): string | undefined => {
+  if (!ts.isPropertyAccessExpression(expression)) return undefined;
+
+  const method = expression.name.text;
+  return HTTP_METHODS.has(method) ? method.toUpperCase() : undefined;
+};
+
+export const detectSymbols = (filePath: string, content: string): DetectedSymbols => {
   const sourceFile = ts.createSourceFile(
     filePath,
     content,
@@ -79,69 +97,52 @@ export const detectSymbols = (filePath: string, content: string) => {
       : ts.ScriptKind.TS,
   );
 
-  const components: DetectedComponentSymbol[] = [];
+  const declarations: DetectedDeclarationSymbol[] = [];
   const apis: DetectedApiSymbol[] = [];
-  const pages: DetectedPageSymbol[] = [];
+
+  const pushDeclaration = (
+    node: ts.Node,
+    name: string,
+    kind: DetectedDeclarationKind,
+  ) => {
+    if (!isPascalCase(name)) return;
+
+    declarations.push({
+      name,
+      kind,
+      ...getPosition(sourceFile, node),
+    });
+  };
 
   const visit = (node: ts.Node): void => {
-    if (
-      isPageFile(filePath) &&
-      (ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node)) &&
-      hasDefaultModifier(node)
-    ) {
-      pages.push({
-        name: node.name?.text ?? "default",
-        line: lineOf(sourceFile, node),
-        kind: "default-export",
-      });
+    if (ts.isFunctionDeclaration(node) && node.name) {
+      pushDeclaration(node, node.name.text, "function");
     }
 
-    if (
-      ts.isFunctionDeclaration(node) &&
-      node.name &&
-      isPascalCase(node.name.text)
-    ) {
-      components.push({
-        name: node.name.text,
-        line: lineOf(sourceFile, node),
-        kind: "function",
-      });
-    }
-
-    if (
-      ts.isClassDeclaration(node) &&
-      node.name &&
-      isPascalCase(node.name.text)
-    ) {
-      components.push({
-        name: node.name.text,
-        line: lineOf(sourceFile, node),
-        kind: "class",
-      });
+    if (ts.isClassDeclaration(node) && node.name) {
+      pushDeclaration(node, node.name.text, "class");
     }
 
     if (
       ts.isVariableDeclaration(node) &&
       ts.isIdentifier(node.name) &&
       node.initializer &&
-      isPascalCase(node.name.text) &&
       isFunctionLike(node.initializer)
     ) {
-      components.push({
-        name: node.name.text,
-        line: lineOf(sourceFile, node),
-        kind: "const",
-      });
+      pushDeclaration(node, node.name.text, "const");
     }
 
     if (ts.isCallExpression(node)) {
       const kind = getApiKind(node.expression, sourceFile);
-      if (kind) {
+      const target = getStringTarget(node);
+
+      if (kind && target) {
         apis.push({
-          name: node.expression.getText(sourceFile),
-          line: lineOf(sourceFile, node),
           kind,
-          target: getStringArg(node),
+          target,
+          method: getApiMethod(node.expression),
+          callee: node.expression.getText(sourceFile),
+          ...getPosition(sourceFile, node),
         });
       }
     }
@@ -151,13 +152,5 @@ export const detectSymbols = (filePath: string, content: string) => {
 
   visit(sourceFile);
 
-  if (isPageFile(filePath) && pages.length === 0) {
-    pages.push({
-      name: "page",
-      line: 1,
-      kind: "file",
-    });
-  }
-
-  return { components, apis, pages };
+  return { declarations, apis };
 };

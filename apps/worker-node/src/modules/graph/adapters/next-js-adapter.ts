@@ -18,20 +18,36 @@ const hasSegment = (relativePath: string, segments: string[]): boolean => {
   return segments.some((segment) => pathSegments.includes(segment));
 };
 
-const isJsTsFile = (fileName: string): boolean =>
-  /\.(tsx|ts|jsx|js)$/.test(fileName);
+const isJsTsFile = (fileName: string): boolean => /\.(tsx|ts|jsx|js)$/.test(fileName);
 
-const isJsxTsxFile = (fileName: string): boolean =>
-  /\.(tsx|jsx)$/.test(fileName);
+const isJsxTsxFile = (fileName: string): boolean => /\.(tsx|jsx)$/.test(fileName);
 
 const isTestOrStoryFile = (fileName: string): boolean =>
   /\.(test|spec|stories)\.(tsx|ts|jsx|js)$/.test(fileName);
+
+const isFrameworkOrConfigFile = (fileName: string): boolean =>
+  /(^|\.)(config|setup)\.(tsx|ts|jsx|js)$/.test(fileName) ||
+  [
+    "next-env.d.ts",
+    "middleware.ts",
+    "middleware.js",
+    "instrumentation.ts",
+    "instrumentation.js",
+  ].includes(fileName);
+
+const isLikelyComponentPath = (relativePath: string): boolean =>
+  hasSegment(relativePath, ["app", "pages", "src", "components", "ui"]);
 
 const isInsidePagesApi = (relativePath: string): boolean => {
   const segments = getPathSegments(relativePath);
   const pagesIndex = segments.indexOf("pages");
 
   return pagesIndex >= 0 && segments[pagesIndex + 1] === "api";
+};
+
+const isAppRouteFile = (relativePath: string): boolean => {
+  const fileName = getFileName(relativePath);
+  return hasSegment(relativePath, ["app"]) && ["route.ts", "route.js"].includes(fileName);
 };
 
 export const nextJsAdapter: FrameworkAdapter = {
@@ -63,9 +79,7 @@ export const nextJsAdapter: FrameworkAdapter = {
   isApi(relativePath: string): boolean {
     const fileName = getFileName(relativePath);
 
-    if (hasSegment(relativePath, ["app"]) && ["route.ts", "route.js"].includes(fileName)) {
-      return true;
-    }
+    if (isAppRouteFile(relativePath)) return true;
 
     return isInsidePagesApi(relativePath) && isJsTsFile(fileName);
   },
@@ -76,9 +90,22 @@ export const nextJsAdapter: FrameworkAdapter = {
 
     if (!isJsxTsxFile(fileName)) return false;
     if (isTestOrStoryFile(fileName)) return false;
+    if (isFrameworkOrConfigFile(fileName)) return false;
+    if (!isLikelyComponentPath(relativePath)) return false;
 
     if (hasSegment(relativePath, ["components", "ui"])) return true;
 
     return /^[A-Z]/.test(stem);
+  },
+
+  classifySymbols(relativePath, symbols) {
+    return {
+      pages: this.isPage(relativePath) ? symbols.declarations : [],
+      components:
+        this.isComponent(relativePath) || this.isPage(relativePath)
+          ? symbols.declarations
+          : [],
+      apis: this.isApi(relativePath) || symbols.apis.length > 0 ? symbols.apis : [],
+    };
   },
 };

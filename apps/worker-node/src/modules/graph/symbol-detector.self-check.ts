@@ -1,3 +1,4 @@
+import { strict as assert } from "node:assert";
 import { detectSymbols } from "./symbol-detector";
 
 const source = `
@@ -27,45 +28,27 @@ class LegacyWidget {}
 
 const result = detectSymbols("app/dashboard/page.tsx", source);
 
-function hasComponent(name: string) {
-  return result.components.some((symbol) => symbol.name === name);
-}
+const hasDeclaration = (name: string) =>
+  result.declarations.some((symbol) => symbol.name === name);
 
-function hasApi(name: string, target?: string) {
-  return result.apis.some(
+const hasApi = (callee: string, target: string, method?: string) =>
+  result.apis.some(
     (symbol) =>
-      symbol.name === name && (target === undefined || symbol.target === target),
+      symbol.callee === callee &&
+      symbol.target === target &&
+      symbol.method === method,
   );
-}
 
-if (result.pages.length !== 1) {
-  throw new Error(`expected 1 page symbol, got ${result.pages.length}`);
-}
+assert.equal(result.declarations.length, 4);
+assert.equal(result.apis.length, 2);
 
-if (!hasComponent("Page")) {
-  throw new Error("default page component symbol missing");
-}
+assert.ok(hasDeclaration("Page"));
+assert.ok(hasDeclaration("Dashboard"));
+assert.ok(hasDeclaration("InlineCard"));
+assert.ok(hasDeclaration("LegacyWidget"));
+assert.equal(hasDeclaration("NotAComponent"), false);
 
-if (!hasComponent("Dashboard")) {
-  throw new Error("function component symbol missing");
-}
-
-if (!hasComponent("InlineCard")) {
-  throw new Error("arrow component symbol missing");
-}
-
-if (!hasComponent("LegacyWidget")) {
-  throw new Error("class component symbol missing");
-}
-
-if (hasComponent("NotAComponent")) {
-  throw new Error("non-function const should not be component");
-}
-
-if (!hasApi("fetch", "/api/project")) {
-  throw new Error("fetch API symbol missing");
-}
-
-if (!hasApi("client.get", "/api/client")) {
-  throw new Error("custom client API symbol missing");
-}
+assert.ok(hasApi("fetch", "/api/project"));
+assert.ok(hasApi("client.get", "/api/client", "GET"));
+assert.equal(result.apis[0]?.line, 16);
+assert.equal(result.apis[0]?.column, 10);
