@@ -72,6 +72,81 @@ export interface GraphResponse {
   edges: GraphEdge[];
   summary: GraphSummary;
 }
+
+// Legacy GraphResponse is file-level graph for compatibility.
+// ProductionGraphResponse is symbol-level graph target for R5+.
+export type ProductionGraphNodeKind =
+  | "file"
+  | "page"
+  | "component"
+  | "hook"
+  | "api-route"
+  | "api-client-method"
+  | "utility"
+  | "external-endpoint";
+
+export type ProductionGraphEdgeKind =
+  | "import"
+  | "render"
+  | "call"
+  | "http"
+  | "route";
+
+export type GraphConfidence = "high" | "medium" | "low";
+
+export interface ProductionGraphLoc {
+  startLine: number;
+  endLine: number;
+}
+
+export interface ProductionGraphRouteInfo {
+  path: string;
+  kind: "page" | "api";
+}
+
+export interface ProductionGraphHttpInfo {
+  method?: string;
+  path?: string;
+}
+
+export interface ProductionGraphNode {
+  id: string;
+  kind: ProductionGraphNodeKind;
+  name: string;
+  filePath?: string;
+  loc?: ProductionGraphLoc;
+  route?: ProductionGraphRouteInfo;
+  http?: ProductionGraphHttpInfo;
+  confidence: GraphConfidence;
+  reason: string;
+}
+
+export interface ProductionGraphEdge {
+  id: string;
+  kind: ProductionGraphEdgeKind;
+  source: string;
+  target: string;
+  confidence: GraphConfidence;
+  reason: string;
+}
+
+export interface ProductionGraphSummary {
+  fileCount: number;
+  pageCount: number;
+  componentCount: number;
+  hookCount: number;
+  apiRouteCount: number;
+  apiClientMethodCount: number;
+  externalEndpointCount: number;
+  edgeCount: number;
+}
+
+export interface ProductionGraphResponse {
+  mode: "symbol-level";
+  nodes: ProductionGraphNode[];
+  edges: ProductionGraphEdge[];
+  summary: ProductionGraphSummary;
+}
 export interface ReportSummary {
   scanId: string;
   createdAt: string;
@@ -195,6 +270,30 @@ const isLatestReportState = (value: unknown): value is LatestReportState =>
 
 const isScanStatus = (value: unknown): value is ScanResponse["status"] =>
   value === "passed" || value === "failed" || value === "warning";
+
+const isProductionGraphNodeKind = (
+  value: unknown,
+): value is ProductionGraphNodeKind =>
+  value === "file" ||
+  value === "page" ||
+  value === "component" ||
+  value === "hook" ||
+  value === "api-route" ||
+  value === "api-client-method" ||
+  value === "utility" ||
+  value === "external-endpoint";
+
+const isProductionGraphEdgeKind = (
+  value: unknown,
+): value is ProductionGraphEdgeKind =>
+  value === "import" ||
+  value === "render" ||
+  value === "call" ||
+  value === "http" ||
+  value === "route";
+
+const isGraphConfidence = (value: unknown): value is GraphConfidence =>
+  value === "high" || value === "medium" || value === "low";
 
 const rejectUnknownKeys = (
   value: Record<string, unknown>,
@@ -495,4 +594,213 @@ export const validateScanResponse = (
   };
 };
 
+
+
+
+
+const schemaInvalid = <T>(message: string): ValidationResult<T> => ({
+  ok: false,
+  code: "SCHEMA_INVALID",
+  message,
+});
+
+const isCount = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0;
+
+const validateProductionGraphLoc = (
+  value: unknown,
+): ValidationResult<ProductionGraphLoc> => {
+  if (!isRecord(value)) return schemaInvalid("loc must be an object");
+  const startLine = value.startLine;
+  const endLine = value.endLine;
+  if (!isCount(startLine) || startLine < 1) {
+    return schemaInvalid("loc.startLine must be a positive integer");
+  }
+  if (!isCount(endLine) || endLine < startLine) {
+    return schemaInvalid("loc.endLine must be greater than or equal to startLine");
+  }
+  return { ok: true, value: { startLine, endLine } };
+};
+
+const validateProductionGraphRouteInfo = (
+  value: unknown,
+): ValidationResult<ProductionGraphRouteInfo> => {
+  if (!isRecord(value)) return schemaInvalid("route must be an object");
+  const routePath = value.path;
+  const kind = value.kind;
+  if (!isNonEmptyString(routePath)) {
+    return schemaInvalid("route.path must be a non-empty string");
+  }
+  if (kind !== "page" && kind !== "api") {
+    return schemaInvalid("route.kind must be page or api");
+  }
+  return { ok: true, value: { path: routePath, kind } };
+};
+
+const validateProductionGraphHttpInfo = (
+  value: unknown,
+): ValidationResult<ProductionGraphHttpInfo> => {
+  if (!isRecord(value)) return schemaInvalid("http must be an object");
+  const method = value.method;
+  const httpPath = value.path;
+  if (!isOptionalNonEmptyString(method)) {
+    return schemaInvalid("http.method must be a non-empty string");
+  }
+  if (!isOptionalNonEmptyString(httpPath)) {
+    return schemaInvalid("http.path must be a non-empty string");
+  }
+  return { ok: true, value: { method, path: httpPath } };
+};
+
+export const validateProductionGraphNode = (
+  input: unknown,
+): ValidationResult<ProductionGraphNode> => {
+  if (!isRecord(input)) return schemaInvalid("ProductionGraphNode must be an object");
+
+  const id = input.id;
+  const kind = input.kind;
+  const name = input.name;
+  const filePath = input.filePath;
+  const confidence = input.confidence;
+  const reason = input.reason;
+
+  if (!isNonEmptyString(id)) return schemaInvalid("node.id must be a non-empty string");
+  if (!isProductionGraphNodeKind(kind)) return schemaInvalid("node.kind is invalid");
+  if (!isNonEmptyString(name)) return schemaInvalid("node.name must be a non-empty string");
+  if (!isOptionalNonEmptyString(filePath)) return schemaInvalid("node.filePath must be a non-empty string");
+  if (!isGraphConfidence(confidence)) return schemaInvalid("node.confidence is invalid");
+  if (!isNonEmptyString(reason)) return schemaInvalid("node.reason must be a non-empty string");
+
+  let loc: ProductionGraphLoc | undefined;
+  if (input.loc !== undefined) {
+    const validation = validateProductionGraphLoc(input.loc);
+    if (!validation.ok) return validation;
+    loc = validation.value;
+  }
+
+  let route: ProductionGraphRouteInfo | undefined;
+  if (input.route !== undefined) {
+    const validation = validateProductionGraphRouteInfo(input.route);
+    if (!validation.ok) return validation;
+    route = validation.value;
+  }
+
+  let http: ProductionGraphHttpInfo | undefined;
+  if (input.http !== undefined) {
+    const validation = validateProductionGraphHttpInfo(input.http);
+    if (!validation.ok) return validation;
+    http = validation.value;
+  }
+
+  return {
+    ok: true,
+    value: { id, kind, name, filePath, loc, route, http, confidence, reason },
+  };
+};
+
+export const validateProductionGraphEdge = (
+  input: unknown,
+): ValidationResult<ProductionGraphEdge> => {
+  if (!isRecord(input)) return schemaInvalid("ProductionGraphEdge must be an object");
+
+  const id = input.id;
+  const kind = input.kind;
+  const source = input.source;
+  const target = input.target;
+  const confidence = input.confidence;
+  const reason = input.reason;
+
+  if (!isNonEmptyString(id)) return schemaInvalid("edge.id must be a non-empty string");
+  if (!isProductionGraphEdgeKind(kind)) return schemaInvalid("edge.kind is invalid");
+  if (!isNonEmptyString(source)) return schemaInvalid("edge.source must be a non-empty string");
+  if (!isNonEmptyString(target)) return schemaInvalid("edge.target must be a non-empty string");
+  if (!isGraphConfidence(confidence)) return schemaInvalid("edge.confidence is invalid");
+  if (!isNonEmptyString(reason)) return schemaInvalid("edge.reason must be a non-empty string");
+
+  return { ok: true, value: { id, kind, source, target, confidence, reason } };
+};
+
+const validateProductionGraphSummary = (
+  input: unknown,
+): ValidationResult<ProductionGraphSummary> => {
+  if (!isRecord(input)) return schemaInvalid("ProductionGraphSummary must be an object");
+
+  const fileCount = input.fileCount;
+  const pageCount = input.pageCount;
+  const componentCount = input.componentCount;
+  const hookCount = input.hookCount;
+  const apiRouteCount = input.apiRouteCount;
+  const apiClientMethodCount = input.apiClientMethodCount;
+  const externalEndpointCount = input.externalEndpointCount;
+  const edgeCount = input.edgeCount;
+
+  if (!isCount(fileCount)) return schemaInvalid("summary.fileCount must be a non-negative integer");
+  if (!isCount(pageCount)) return schemaInvalid("summary.pageCount must be a non-negative integer");
+  if (!isCount(componentCount)) return schemaInvalid("summary.componentCount must be a non-negative integer");
+  if (!isCount(hookCount)) return schemaInvalid("summary.hookCount must be a non-negative integer");
+  if (!isCount(apiRouteCount)) return schemaInvalid("summary.apiRouteCount must be a non-negative integer");
+  if (!isCount(apiClientMethodCount)) return schemaInvalid("summary.apiClientMethodCount must be a non-negative integer");
+  if (!isCount(externalEndpointCount)) return schemaInvalid("summary.externalEndpointCount must be a non-negative integer");
+  if (!isCount(edgeCount)) return schemaInvalid("summary.edgeCount must be a non-negative integer");
+
+  return {
+    ok: true,
+    value: {
+      fileCount,
+      pageCount,
+      componentCount,
+      hookCount,
+      apiRouteCount,
+      apiClientMethodCount,
+      externalEndpointCount,
+      edgeCount,
+    },
+  };
+};
+
+export const validateProductionGraphResponse = (
+  input: unknown,
+): ValidationResult<ProductionGraphResponse> => {
+  if (!isRecord(input)) return schemaInvalid("ProductionGraphResponse must be an object");
+  if (input.mode !== "symbol-level") return schemaInvalid("graph.mode must be symbol-level");
+  if (!Array.isArray(input.nodes)) return schemaInvalid("graph.nodes must be an array");
+  if (!Array.isArray(input.edges)) return schemaInvalid("graph.edges must be an array");
+
+  const nodes: ProductionGraphNode[] = [];
+  for (const rawNode of input.nodes) {
+    const validation = validateProductionGraphNode(rawNode);
+    if (!validation.ok) return validation;
+    nodes.push(validation.value);
+  }
+
+  const edges: ProductionGraphEdge[] = [];
+  for (const rawEdge of input.edges) {
+    const validation = validateProductionGraphEdge(rawEdge);
+    if (!validation.ok) return validation;
+    edges.push(validation.value);
+  }
+
+  const summaryValidation = validateProductionGraphSummary(input.summary);
+  if (!summaryValidation.ok) return summaryValidation;
+  const summary = summaryValidation.value;
+
+  const countedSummary: ProductionGraphSummary = {
+    fileCount: nodes.filter((node) => node.kind === "file").length,
+    pageCount: nodes.filter((node) => node.kind === "page").length,
+    componentCount: nodes.filter((node) => node.kind === "component").length,
+    hookCount: nodes.filter((node) => node.kind === "hook").length,
+    apiRouteCount: nodes.filter((node) => node.kind === "api-route").length,
+    apiClientMethodCount: nodes.filter((node) => node.kind === "api-client-method").length,
+    externalEndpointCount: nodes.filter((node) => node.kind === "external-endpoint").length,
+    edgeCount: edges.length,
+  };
+
+  for (const [key, expected] of Object.entries(countedSummary)) {
+    if (summary[key as keyof ProductionGraphSummary] !== expected) {
+      return schemaInvalid(`summary.${key} does not match graph contents`);
+    }
+  }
+
+  return { ok: true, value: { mode: "symbol-level", nodes, edges, summary } };
+};
 

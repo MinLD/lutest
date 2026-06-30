@@ -619,3 +619,64 @@ Remaining risks:
 
 Next phase:
 - R4 — Production graph contracts.
+
+## R4 — Production graph contracts
+
+Status: Done
+Updated: 2026-06-30
+
+Contracts added:
+- `ProductionGraphNodeKind`: `file`, `page`, `component`, `hook`, `api-route`, `api-client-method`, `utility`, `external-endpoint`.
+- `ProductionGraphEdgeKind`: `import`, `render`, `call`, `http`, `route`.
+- `GraphConfidence`: `high`, `medium`, `low`.
+- `ProductionGraphNode` with id, kind, name, optional file path, optional loc/route/http metadata, confidence, reason.
+- `ProductionGraphEdge` with id, kind, source, target, confidence, reason.
+- `ProductionGraphSummary` with file/page/component/hook/api route/api client/external endpoint/edge counts.
+- `ProductionGraphResponse` with `mode: "symbol-level"`.
+
+Validators added:
+- `validateProductionGraphResponse(input: unknown): ValidationResult<ProductionGraphResponse>`.
+- `validateProductionGraphNode(input: unknown): ValidationResult<ProductionGraphNode>`.
+- `validateProductionGraphEdge(input: unknown): ValidationResult<ProductionGraphEdge>`.
+- Validators construct typed outputs and do not use `as unknown as`.
+- Validator enforces summary counts against graph contents, including `edgeCount`.
+
+Self-check status:
+- Added `packages/contracts/src/production-graph.self-check.ts`.
+- Covers valid production graph, invalid node kind, invalid edge kind, missing confidence, missing reason, and summary edgeCount mismatch.
+
+Legacy graph compatibility status:
+- Legacy `GraphResponse`, `GraphNode`, `GraphEdge`, and `GraphSummary` remain unchanged for current worker/UI file-level graph compatibility.
+- R4 did not pretend legacy graph is symbol-level.
+- No legacy-to-production adapter added yet; R5 should produce real symbol graph or an explicitly marked low-confidence compatibility adapter if needed.
+
+GET /api/graph behavior:
+- Unchanged in R4.
+- Still returns legacy file-level `GraphResponse` from current graph service.
+- No new graph endpoint added.
+
+Files changed:
+- `packages/contracts/src/index.ts`
+- `packages/contracts/src/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npm run build -w @lutest/cli-host` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/latest-report.self-check.ts` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed, exit `0`.
+
+Remaining risks:
+- R4 is contract-only; AST symbol extraction is not implemented yet.
+- Current graph summary remains legacy file-level until R5.
+- Import alias resolver, route discovery production, render/call/http edge extraction remain R5 scope.
+
+Next phase:
+- R5 — AST symbol graph engine.

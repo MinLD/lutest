@@ -48,6 +48,56 @@ export interface GraphResponse {
     edges: GraphEdge[];
     summary: GraphSummary;
 }
+export type ProductionGraphNodeKind = "file" | "page" | "component" | "hook" | "api-route" | "api-client-method" | "utility" | "external-endpoint";
+export type ProductionGraphEdgeKind = "import" | "render" | "call" | "http" | "route";
+export type GraphConfidence = "high" | "medium" | "low";
+export interface ProductionGraphLoc {
+    startLine: number;
+    endLine: number;
+}
+export interface ProductionGraphRouteInfo {
+    path: string;
+    kind: "page" | "api";
+}
+export interface ProductionGraphHttpInfo {
+    method?: string;
+    path?: string;
+}
+export interface ProductionGraphNode {
+    id: string;
+    kind: ProductionGraphNodeKind;
+    name: string;
+    filePath?: string;
+    loc?: ProductionGraphLoc;
+    route?: ProductionGraphRouteInfo;
+    http?: ProductionGraphHttpInfo;
+    confidence: GraphConfidence;
+    reason: string;
+}
+export interface ProductionGraphEdge {
+    id: string;
+    kind: ProductionGraphEdgeKind;
+    source: string;
+    target: string;
+    confidence: GraphConfidence;
+    reason: string;
+}
+export interface ProductionGraphSummary {
+    fileCount: number;
+    pageCount: number;
+    componentCount: number;
+    hookCount: number;
+    apiRouteCount: number;
+    apiClientMethodCount: number;
+    externalEndpointCount: number;
+    edgeCount: number;
+}
+export interface ProductionGraphResponse {
+    mode: "symbol-level";
+    nodes: ProductionGraphNode[];
+    edges: ProductionGraphEdge[];
+    summary: ProductionGraphSummary;
+}
 export interface ReportSummary {
     scanId: string;
     createdAt: string;
@@ -121,3 +171,6 @@ export declare const validateGraphQuery: (value: unknown) => ValidationResult<Pr
 export declare const validateLatestReportQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
 export declare const validateLatestReportResponse: (value: unknown) => ValidationResult<LatestReportResponse>;
 export declare const validateScanResponse: (value: unknown) => ValidationResult<ScanResponse>;
+export declare const validateProductionGraphNode: (input: unknown) => ValidationResult<ProductionGraphNode>;
+export declare const validateProductionGraphEdge: (input: unknown) => ValidationResult<ProductionGraphEdge>;
+export declare const validateProductionGraphResponse: (input: unknown) => ValidationResult<ProductionGraphResponse>;
