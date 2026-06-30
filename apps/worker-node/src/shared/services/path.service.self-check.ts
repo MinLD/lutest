@@ -1,4 +1,4 @@
-import fs from "node:fs/promises";
+﻿import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathService } from "./path.service";
@@ -25,15 +25,16 @@ const rejects = async (
 };
 
 const run = async (): Promise<void> => {
-  const oldAllowedRoots = process.env.LUTEST_ALLOWED_ROOTS;
-  process.env.LUTEST_ALLOWED_ROOTS = "";
+  const oldProjectPath = process.env.LUTEST_PROJECT_PATH;
 
   try {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-path-policy-"));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-path-service-"));
     const project = path.join(root, "project");
+    const child = path.join(project, "child");
     const outside = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-path-outside-"));
 
-    await fs.mkdir(project);
+    await fs.mkdir(child, { recursive: true });
+    process.env.LUTEST_PROJECT_PATH = project;
 
     const resolved = await pathService.resolveProjectPaths({
       cwd: root,
@@ -55,8 +56,17 @@ const run = async (): Promise<void> => {
 
     const fallback = await pathService.resolveProjectPaths({ cwd: root });
     assert(
-      fallback.targetProjectRoot === normalizePath(await fs.realpath(root)),
-      "cwd fallback works",
+      fallback.targetProjectRoot === normalizePath(await fs.realpath(project)),
+      "allowed root fallback works",
+    );
+
+    const childPath = await pathService.resolveProjectPaths({
+      cwd: root,
+      projectPath: child,
+    });
+    assert(
+      childPath.targetProjectRoot === normalizePath(await fs.realpath(child)),
+      "child path inside allowed root works",
     );
 
     await rejects(
@@ -68,37 +78,17 @@ const run = async (): Promise<void> => {
       () =>
         pathService.resolveProjectPaths({
           cwd: root,
-          projectPath: path.join(root, ".."),
-        }),
-      "path traversal rejected",
-    );
-
-    await rejects(
-      () =>
-        pathService.resolveProjectPaths({
-          cwd: root,
           projectPath: "relative/path",
         }),
       "relative path rejected",
     );
 
-    process.env.LUTEST_ALLOWED_ROOTS = outside;
-    const allowedOutside = await pathService.resolveProjectPaths({
-      cwd: root,
-      projectPath: outside,
-    });
-
-    assert(
-      allowedOutside.targetProjectRoot === normalizePath(await fs.realpath(outside)),
-      "configured allowed root works",
-    );
-
-    console.log("path policy self-check passed");
+    console.log("path service self-check passed");
   } finally {
-    if (oldAllowedRoots === undefined) {
-      delete process.env.LUTEST_ALLOWED_ROOTS;
+    if (oldProjectPath === undefined) {
+      delete process.env.LUTEST_PROJECT_PATH;
     } else {
-      process.env.LUTEST_ALLOWED_ROOTS = oldAllowedRoots;
+      process.env.LUTEST_PROJECT_PATH = oldProjectPath;
     }
   }
 };

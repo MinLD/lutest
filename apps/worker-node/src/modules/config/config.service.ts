@@ -18,7 +18,7 @@ const getWorkerConfig = (env: NodeJS.ProcessEnv): WorkerConfig => {
     port: toNumber(env.PORT, 6532),
     env: env.LUTEST_ENV ?? "development",
     workerTimeoutMs: toNumber(env.WORKER_TIMEOUT, 30000),
-    projectPath: env.PROJECT_PATH,
+    projectPath: env.LUTEST_PROJECT_PATH ?? env.PROJECT_PATH,
   };
 };
 

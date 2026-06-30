@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { HttpError } from "../errors/http-error";
+import { pathPolicyService } from "./path-policy.service";
 
 export interface ProjectPaths {
   workerRoot: string;
@@ -49,64 +50,10 @@ const resolveRealDirectory = async (value: string): Promise<string> => {
   return realPath;
 };
 
-const assertLocalAbsolutePath = (value: string): void => {
-  if (!path.isAbsolute(value)) {
-    throw new HttpError(
-      400,
-      "PATH_NOT_ALLOWED",
-      "Project path must be absolute",
-    );
-  }
-
-  // ponytail: Windows-only UNC block. Upgrade when remote workspaces needed.
-  if (value.startsWith("\\\\")) {
-    throw new HttpError(
-      400,
-      "PATH_NOT_ALLOWED",
-      "Network paths are not allowed",
-    );
-  }
-};
-
-const isSubPath = (parent: string, child: string): boolean => {
-  const relative = path.relative(parent, child);
-  return (
-    relative === "" ||
-    (!!relative && !relative.startsWith("..") && !path.isAbsolute(relative))
-  );
-};
-
 const getRawRoot = (input: ResolveInput): string =>
-  input.projectPath ?? input.envProjectPath ?? input.cwd;
-
-const getAllowedRoots = async (workerRoot: string): Promise<string[]> => {
-  const configuredRoots = (process.env.LUTEST_ALLOWED_ROOTS ?? "")
-    .split(path.delimiter)
-    .filter(Boolean);
-
-  const realConfiguredRoots = await Promise.all(
-    configuredRoots.map((root) => resolveRealDirectory(root)),
-  );
-
-  return [workerRoot, ...realConfiguredRoots];
-};
-
-const assertAllowedRoot = (
-  allowedRoots: readonly string[],
-  targetProjectRoot: string,
-): void => {
-  if (allowedRoots.some((root) => isSubPath(root, targetProjectRoot))) return;
-
-  throw new HttpError(
-    400,
-    "PATH_NOT_ALLOWED",
-    "Project path must stay inside allowed roots",
-    {
-      allowedRoots: allowedRoots.map(normalizePath),
-      targetProjectRoot: normalizePath(targetProjectRoot),
-    },
-  );
-};
+  input.projectPath ??
+  input.envProjectPath ??
+  pathPolicyService.getPathPolicyConfig().allowedRoot;
 
 const buildProjectPaths = (
   workerRoot: string,
@@ -138,10 +85,11 @@ const resolveProjectPaths = async (
 ): Promise<ProjectPaths> => {
   const workerRoot = await resolveRealDirectory(input.cwd);
   const rawRoot = getRawRoot(input);
-
-  assertLocalAbsolutePath(rawRoot);
-
-  const targetProjectRoot = await resolveRealDirectory(rawRoot);
+  const policy = await pathPolicyService.assertProjectRoot(rawRoot);
+  if (!policy.ok) {
+    throw new HttpError(400, policy.code, policy.message, policy.details);
+  }
+  const targetProjectRoot = policy.rootDir;
 
   return buildProjectPaths(workerRoot, targetProjectRoot);
 };

@@ -23,8 +23,6 @@ export const getValidatedProjectPath = async (
   }
 
   const projectPath = validation.value.path;
-  if (!projectPath) return undefined;
-
   const policy = await pathPolicyService.assertProjectRoot(projectPath);
   if (!policy.ok) {
     sendPathError(res, policy.message);

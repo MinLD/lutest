@@ -451,3 +451,112 @@ Remaining issues:
 Next phase:
 - R2 — Path policy production.
 
+
+## R2 — Path policy production
+
+Status: Done
+Updated: 2026-06-30
+
+AllowedRoot source:
+- Canonical worker allowed root comes from `LUTEST_PROJECT_PATH`.
+- Backward-compatible fallback uses `PROJECT_PATH`.
+- If neither exists, fallback is `process.cwd()` for current dev runner compatibility until R7 CLI lifecycle passes explicit project root.
+
+Rules implemented:
+- Request project path must be absolute.
+- Network/UNC paths are rejected.
+- Path must exist and be a directory.
+- Path must equal allowedRoot or be inside allowedRoot.
+- Sibling/outside paths fail with `PATH_NOT_ALLOWED`.
+- Generated/ignored directories cannot be project roots: `.git`, `node_modules`, `.next`, `dist`, `build`, `.lutest`.
+- Missing request path uses allowedRoot, so `GET /api/project` and other no-path API calls stay functional.
+- `pathService.resolveProjectPaths` now enforces `pathPolicyService.assertProjectRoot` before building `.lutest` paths.
+
+Endpoints affected:
+- `GET /api/project?path=...`
+- `GET /api/graph?path=...`
+- `GET /api/report/latest?path=...`
+- `POST /api/actions/scan { projectPath }`
+- Legacy `POST /api/scan { projectPath }`
+
+Files changed:
+- `apps/worker-node/src/shared/services/path-policy.service.ts`
+- `apps/worker-node/src/shared/services/path-policy.service.self-check.ts`
+- `apps/worker-node/src/shared/services/path.service.ts`
+- `apps/worker-node/src/shared/services/path.service.self-check.ts`
+- `apps/worker-node/src/shared/http/validated-project-path.ts`
+- `apps/worker-node/src/modules/config/config.service.ts`
+- `docs/plan/production-refactor-progress.md`
+
+What was removed:
+- Dead `LUTEST_ALLOWED_ROOTS` policy path from `path.service.ts`.
+- Old path-service self-check assumptions around `LUTEST_ALLOWED_ROOTS`.
+- Request/API ability to select arbitrary sibling/outside folders as scan roots.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npm run build -w @lutest/cli-host` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path.service.self-check.ts` — passed, exit `0`.
+
+Remaining risks:
+- Until R7, CLI does not always pass explicit `LUTEST_PROJECT_PATH`; dev fallback remains `process.cwd()`.
+- Controllers still pass `process.cwd()` as worker root; pathService now treats scan target separately via allowedRoot policy.
+- UI build workspace name remains `ui`, not `@lutest/ui`; R2 does not address UI package naming.
+
+Next phase:
+- R3 — Report integrity.
+
+## R2.1 — HTTP path-policy verification
+
+Status: Done
+Updated: 2026-06-30
+
+HTTP endpoints verified:
+- `GET /api/project` — allowed, uses allowedRoot.
+- `GET /api/project?path=<allowedRoot>` — allowed.
+- `GET /api/project?path=<outsideRoot>` — blocked with `PATH_NOT_ALLOWED` JSON.
+- `GET /api/graph` — allowed, uses allowedRoot.
+- `GET /api/graph?path=<allowedRoot>` — allowed.
+- `GET /api/graph?path=<outsideRoot>` — blocked with `PATH_NOT_ALLOWED` JSON.
+- `GET /api/report/latest` — allowed, returns normal report state.
+- `GET /api/report/latest?path=<allowedRoot>` — allowed.
+- `GET /api/report/latest?path=<outsideRoot>` — blocked with `PATH_NOT_ALLOWED` JSON.
+- `POST /api/actions/scan { "projectPath": "<allowedRoot>" }` — allowed.
+- `POST /api/actions/scan { "projectPath": "<outsideRoot>" }` — blocked with `PATH_NOT_ALLOWED` JSON.
+
+Outside path result:
+- Outside roots are rejected at HTTP boundary.
+- Existing policy response status is `403` for controller-level path rejection through `sendPathError`.
+- Error body is JSON and uses `error.code: "PATH_NOT_ALLOWED"`.
+
+Bypass search:
+- Searched `process.cwd()`, `resolveProjectPaths(`, `assertProjectRoot(`, and `projectPath` across worker/contracts source.
+- No module was found resolving request project roots outside `pathPolicyService`/`pathService`.
+- `process.cwd()` remains in controllers as worker-root/dev context input, but target root is policy-gated by `getValidatedProjectPath` and/or `pathService.resolveProjectPaths`.
+- `path-policy.service.ts` still falls back to `process.cwd()` only when `LUTEST_PROJECT_PATH` and `PROJECT_PATH` are both absent; this is R7/config cleanup debt, not an HTTP bypass in current path flow.
+
+Files changed:
+- `apps/worker-node/src/shared/services/path-policy.http-self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npm run build -w @lutest/cli-host` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path.service.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed, exit `0`.
+
+Remaining issues:
+- R7 should remove ambiguity by always starting worker with explicit `LUTEST_PROJECT_PATH` from CLI/config.
+- `process.cwd()` controller arguments should be cleaned during R7/config lifecycle if they become confusing, but current scan target remains policy-gated.
+- UI workspace naming remains `ui`, not `@lutest/ui`; not part of R2.1.
+
+Next phase:
+- R3 — Report integrity.
