@@ -5,7 +5,7 @@ import { fileSystemService } from "../../shared/services/file-system.service";
 import { graphRepository } from "./graph.repository";
 import { detectSymbols, type DetectedApiSymbol } from "./symbol-detector";
 import { frameworkAdapterRegistry } from "./adapters/framework-adapter-registry";
-import type { FrameworkAdapter } from "./adapters/framework-adapter";
+import type { LegacyFrameworkAdapter } from "./adapters/legacy-framework-adapter";
 
 export interface BuildAndSaveGraphInput {
   cwd: string;
@@ -36,7 +36,7 @@ const isGraphSourceFile = (filePath: string): boolean =>
 const toNode = (
   rootDir: string,
   filePath: string,
-  adapter: FrameworkAdapter,
+  adapter: LegacyFrameworkAdapter,
 ): GraphNode => {
   const relativePath = normalizePath(path.relative(rootDir, filePath));
 
@@ -170,7 +170,7 @@ const buildGraph = async (input: {
     input.rootDir,
     sourceFilePaths,
   );
-  const adapter = await frameworkAdapterRegistry.getAdapterForProject(
+  const adapter = await frameworkAdapterRegistry.getLegacyAdapterForProject(
     input.rootDir,
   );
   const filesWithSymbols = sourceFiles.map((file) => ({
@@ -231,3 +231,4 @@ export const graphService = {
   buildGraph,
   buildAndSaveGraph,
 };
+

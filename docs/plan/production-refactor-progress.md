@@ -680,3 +680,778 @@ Remaining risks:
 
 Next phase:
 - R5 — AST symbol graph engine.
+
+## R5.0 — AST symbol graph engine audit + integration plan
+
+Status: Done
+Updated: 2026-06-30
+
+### Current graph engine status
+
+Graph build flow today:
+- `apps/worker-node/src/modules/graph/graph.controller.ts` keeps `GET /api/graph` typed as legacy `GraphResponse` and calls `graphService.buildAndSaveGraph`.
+- `apps/worker-node/src/modules/graph/graph.service.ts` lists source files with extensions `.ts`, `.tsx`, `.js`, `.jsx`, excluding `node_modules`, `.git`, `dist`, `build`, `.next`, `.lutest`, and test/story/type files.
+- `graph.service.ts` reads full file contents, gets framework adapter via `frameworkAdapterRegistry.getAdapterForProject`, runs `detectSymbols`, then creates one graph node per file with `toNode`.
+- `toNode` emits ids like `file:<relativePath>` and type `file | page | component | api` based on adapter path heuristics.
+- `toApiAwareNode` can change a file node from `file` to `api` when detected API calls exist and attaches API call data under `node.data.apiCalls`.
+- `buildGraph` counts `pageCount`, `componentCount`, and `apiCount` by node type and sets `fileCount` to node count.
+- `buildImportEdges` creates only legacy import edges between file nodes.
+
+Current count mode:
+- Counts are file-level, not symbol-level.
+- A file containing multiple React components still becomes one node.
+- `symbol-detector` declarations are currently used only by adapters for classification; declarations are not emitted as graph nodes.
+- API calls are metadata on file nodes, not `api-client-method` or `external-endpoint` production nodes.
+
+Import resolver status:
+- `apps/worker-node/src/modules/graph/graph.service.ts` resolves only relative import specifiers that start with `.`.
+- It supports raw target, extension candidates `.ts/.tsx/.js/.jsx`, and `index` candidates.
+- `apps/worker-node/src/modules/graph/graph.mapper.ts` has similar legacy relative import resolver logic for old mapper path.
+- No `tsconfig.json` `baseUrl`, `paths`, or `@/*` alias resolver exists.
+- No package import semantic resolution exists.
+
+AST/parser status:
+- `apps/worker-node/src/modules/graph/symbol-detector.ts` uses TypeScript `ts.createSourceFile` already.
+- It walks the AST with `ts.forEachChild`.
+- This is a starting parser, not yet a production graph engine.
+
+Symbol detector status:
+- `symbol-detector.ts` extracts PascalCase `function` declarations, `class` declarations, and `const` variable declarations with arrow/function-expression initializer.
+- It records declaration name, kind, line, and column.
+- It filters declarations through PascalCase only; hooks/utilities/lowercase functions are not represented.
+- It detects call expressions for direct `fetch`, direct `ofetch`, property access root `axios`, `ky`, `ofetch`, and any property method named `get/post/put/patch/delete/head/options/request` as `custom-client`.
+- It only records API call targets when first argument is a string literal.
+- It records API kind, target string, optional method, line, column, and callee text.
+- It does not extract JSX render usage, normal function calls, imports as AST nodes, routes, dynamic endpoints, or confidence.
+
+API call detector status:
+- `apps/worker-node/src/modules/graph/api-call-detector.ts` does not exist.
+- Current API-call detection lives inside `symbol-detector.ts`.
+
+Graph snapshot persistence:
+- `apps/worker-node/src/modules/graph/graph.repository.ts` saves legacy graph snapshots to `paths.latestGraphPath`, which resolves to `.lutest/graph/latest-graph.json`.
+- `graph.repository.findLatest` reads legacy `GraphResponse | null` through storage legacy wrapper.
+
+Legacy graph dependencies:
+- `apps/ui/src/lib/api-client.ts` calls `/api/graph` and expects `GraphResponse`.
+- `apps/ui/src/lib/use-dashboard-data.ts` stores `graph: GraphResponse | null` and reloads graph after scan.
+- `apps/ui/src/components/dashboard-shell.tsx` renders legacy graph summary/nodes/edges and latest report state.
+- `scan.service.ts` calls `graphService.buildAndSaveGraph` during scan, but scan response itself does not expose graph response.
+
+Missing/unused files:
+- Missing: `apps/worker-node/src/modules/graph/api-call-detector.ts`.
+- Existing but not used by current graph service path: `apps/worker-node/src/modules/graph/graph.mapper.ts` legacy source-file graph mapper.
+
+### Recommended migration strategy
+
+Recommended: Option A for R5.1–R5.6, with optional Option B after builder is useful.
+
+Option A — keep `GET /api/graph` returning legacy `GraphResponse` short-term:
+- Safest for UI compatibility.
+- Build production graph internally and validate/persist it in parallel once R5 builder exists.
+- R8 can later migrate UI deliberately.
+
+Option B — add `GET /api/graph/production` later for dev/test:
+- Useful once R5.5 has a validated `ProductionGraphResponse` builder.
+- Should not be added in R5.0.
+- Good bridge before R8 UI migration.
+
+Option C — change `GET /api/graph` to `ProductionGraphResponse` now:
+- Not recommended.
+- Current UI and worker graph code still depend on legacy shape.
+- Current engine is file-level and would misrepresent mode if returned as `symbol-level`.
+
+R5.0 decision:
+- Do not change `GET /api/graph` behavior.
+- Do not create new endpoint yet.
+- Implement production builder as internal module first.
+
+### Proposed R5 module structure
+
+Target structure:
+- `apps/worker-node/src/modules/graph/ast/parse-source-file.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-imports.ts`
+- `apps/worker-node/src/modules/graph/ast/resolve-imports.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-jsx-usage.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-calls.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-api-calls.ts`
+- `apps/worker-node/src/modules/graph/ast/production-graph-builder.ts`
+- `apps/worker-node/src/modules/graph/ast/production-graph.mapper.ts`
+
+Data shape approach:
+- Parse source file once into `ts.SourceFile` plus normalized relative path.
+- Extract neutral intermediate facts first: declarations, imports, JSX usages, call expressions, API calls, routes.
+- Resolve imports after all source facts are collected.
+- Build `ProductionGraphResponse` only after facts are resolved and confidence/reasons assigned.
+
+### R5.1 — AST parse + symbol extraction
+
+Files to change:
+- Add `apps/worker-node/src/modules/graph/ast/parse-source-file.ts`.
+- Add `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`.
+- Add focused self-check under graph/ast.
+- Reuse lessons from `symbol-detector.ts`; do not delete it yet.
+
+Expected output:
+- Parsed source facts for declarations with kind candidates: page/component/hook/utility/api route candidate.
+- Include file path, symbol name, loc start/end if available, export status if cheap.
+
+Acceptance criteria:
+- Parses `.ts/.tsx/.js/.jsx` fixtures without throwing.
+- Extracts PascalCase components, hooks starting with `use`, exported utilities, Next page/route candidates by path.
+- Does not create graph response yet.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- `npm run build -w @lutest/worker-node`
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/<self-check>.ts`
+
+### R5.2 — Import extraction + resolver
+
+Files to change:
+- Add `extract-imports.ts`.
+- Add `resolve-imports.ts`.
+- Add tsconfig reader helper if needed.
+
+Expected output:
+- Extract import specifiers with source file and imported bindings.
+- Resolve relative imports, extension candidates, index candidates.
+- Add initial support for `baseUrl` and `paths` including `@/*`.
+
+Acceptance criteria:
+- Relative imports resolve to source files.
+- `@/*` alias resolves in fixture with `tsconfig.json` paths.
+- Unresolved imports stay unresolved facts with low confidence reason; no false certainty.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- `npm run build -w @lutest/worker-node`
+- import resolver self-check.
+
+### R5.3 — JSX render edge extraction
+
+Files to change:
+- Add `extract-jsx-usage.ts`.
+- Update intermediate fact types.
+
+Expected output:
+- JSX component usage facts such as page/component rendering component.
+- Candidate render edges can be built only when symbol resolution is confident.
+
+Acceptance criteria:
+- `<ProductCard />` in a page resolves to component declaration when imported or same file.
+- Lowercase HTML elements are ignored.
+- Dynamic component cases are low confidence or skipped with reason.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- JSX usage self-check.
+
+### R5.4 — Call/API/http edge extraction
+
+Files to change:
+- Add `extract-calls.ts`.
+- Add `extract-api-calls.ts` or move current API-call logic out of `symbol-detector.ts`.
+- Optionally add `api-call-detector.ts` if keeping non-ast folder naming.
+
+Expected output:
+- Call facts between local symbols when resolvable.
+- API client method facts.
+- External endpoint facts.
+- HTTP edges from API client method/caller to endpoint.
+
+Acceptance criteria:
+- Detects `fetch('/api/products')`, `axios.get('/api/products')`, `ky.post(...)`, `ofetch(...)`, and custom client methods when statically obvious.
+- Dynamic endpoint is not marked high-confidence static endpoint.
+- Method and target path are retained when known.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- API/call extraction self-check.
+
+### R5.5 — ProductionGraphResponse builder
+
+Files to change:
+- Add `production-graph-builder.ts`.
+- Add `production-graph.mapper.ts`.
+- Optionally update `graph.service.ts` to build production graph internally without changing `GET /api/graph` response.
+- Optionally update `graph.repository.ts` to save production snapshot separately only after stable file path decision.
+
+Expected output:
+- Valid `ProductionGraphResponse` with `mode: "symbol-level"`.
+- Nodes: file/page/component/hook/api-route/api-client-method/utility/external-endpoint.
+- Edges: import/render/call/http/route.
+- Summary matches validator counts.
+
+Acceptance criteria:
+- Output passes `validateProductionGraphResponse`.
+- Legacy `GET /api/graph` remains unchanged unless explicit migration decision is made.
+- If mapping from legacy exists, it must be marked low confidence and not called symbol-level production output.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- `npm run build -w @lutest/worker-node`
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts`
+- production builder self-check.
+
+### R5.6 — Fixtures/self-checks
+
+Files to change:
+- Add minimal fixtures under planned `fixtures/next-basic-shop` and `fixtures/next-custom-api-client` if R6 is not yet reached, or add temporary local self-check fixtures under graph/ast test data.
+- Add graph production self-check command(s).
+
+Expected output:
+- Regression checks prove symbol-level graph cannot regress to file-level counting.
+
+Acceptance criteria:
+- Framework detection correct.
+- Route/page/api route counts correct.
+- Component declaration count correct.
+- Render/call/http edges correct for minimal fixture.
+- `@/*` alias import resolves when supported.
+- Dynamic endpoint is not reported as high-confidence static endpoint.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- graph fixture self-check(s).
+
+### R5.7 — API migration decision
+
+Files to change:
+- `graph.controller.ts`, `graph.routes.ts`, `graph.service.ts`, and UI API client only if migration is approved.
+
+Expected output:
+- Decision between continuing Option A, adding `GET /api/graph/production` Option B, or migrating `GET /api/graph` Option C.
+
+Acceptance criteria:
+- UI not broken.
+- API response mode is honest.
+- Legacy graph consumers still have compatibility path.
+- Production graph response passes runtime validator before exposure.
+
+Verification commands:
+- `npm run typecheck --workspaces --if-present`
+- `npm run build -w @lutest/worker-node`
+- `npm run build -w @lutest/contracts`
+- endpoint self-check if new route added.
+
+### Risks
+
+- Current `symbol-detector.ts` has AST traversal but not enough semantic resolution for production graph.
+- Import alias support needs careful tsconfig path resolution and Windows path normalization.
+- JSX/call resolution can over-report if symbol import binding is not tracked; default should be lower confidence or skipped.
+- API client wrapper detection can produce false positives because current logic treats any `.get/.post/...` property access as custom client.
+- Large rewrite risk in `graph.service.ts`; R5 should isolate new AST modules and integrate only after self-checks pass.
+- UI still consumes legacy `GraphResponse`; changing `/api/graph` too early will break dashboard.
+
+### Next action
+
+Start R5.1 — AST parse + symbol extraction.
+
+## R5.1 — AST parse + symbol extraction
+
+Status: Done
+Updated: 2026-06-30
+
+Files created:
+- `apps/worker-node/src/modules/graph/ast/ast.types.ts`
+- `apps/worker-node/src/modules/graph/ast/parse-source-file.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`
+- `apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts`
+
+Symbol kinds supported:
+- `component`: PascalCase function/class/arrow/function-expression symbols; high confidence when TSX/JSX function body contains JSX; medium confidence in `components/` or `ui/` paths.
+- `hook`: function-like names matching `use[A-Z0-9]`.
+- `page`: Next `app/**/page.*` and `pages/**/*` excluding `pages/api/**` when component-like page export exists.
+- `api-route`: Next `app/**/route.*` or `pages/api/**` HTTP method handlers such as `GET`/`POST`.
+- `api-client-method`: function-like symbols containing direct `fetch`, `axios`, `ky`, or `ofetch` string-literal network calls.
+- `utility`: exported function-like symbols that do not match higher-priority classifications.
+
+Parser behavior:
+- Uses TypeScript compiler API via `ts.createSourceFile`.
+- Supports `.ts`, `.tsx`, `.js`, `.jsx`; unsupported extensions return kind `unsupported` and no symbols.
+- Returns parse diagnostics as strings without throwing on normal syntax errors.
+- Loc uses 1-based `startLine` and `endLine` from `getLineAndCharacterOfPosition`.
+
+Self-check coverage:
+- TSX function component: `ProductCard`.
+- TSX arrow component: `ProductGrid`.
+- Hook: `useProducts`.
+- Next page file: `app/products/page.tsx` default export component.
+- Next route handler: `app/api/products/route.ts` `GET` export.
+- API client method: `getProducts` with direct `fetch('/api/products')`.
+- Lowercase helper: `formatMoney` is not emitted as component/symbol.
+- Parse diagnostics are collected for broken source.
+
+Limitations:
+- No import resolver yet.
+- No JSX render edges yet.
+- No call graph or external endpoint nodes yet.
+- No `ProductionGraphResponse` builder yet.
+- No graph repository/API/UI integration changed.
+- API client detection is direct-only and requires string-literal target.
+- Custom client chain detection remains R5.4 scope.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed, exit `0`.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+## R5.1.1 — Generic AST extraction + framework adapter classification boundary
+
+Status: Done
+Updated: 2026-06-30
+
+Files changed:
+- `apps/worker-node/src/modules/graph/ast/ast.types.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`
+- `apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter-registry.ts`
+- `apps/worker-node/src/modules/graph/adapters/next-js-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/react.adapter.ts`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Generic AST extraction now emits `RawAstSymbol[]` with syntax facts only: raw kind, export/default state, PascalCase, hook-like name, JSX presence, direct network calls, and source loc.
+- Next-specific page/API/component file rules moved out of `extract-symbols.ts` into `next-js-adapter.ts`.
+- `FrameworkAdapter` now owns `classifyFile()` and `classifySymbol()` for raw-symbol-to-production-kind classification.
+- Legacy adapter methods remain for existing file-level graph service compatibility.
+- React and default adapters were updated to classify raw AST symbols without changing `GET /api/graph`.
+
+Removed from generic extractor:
+- Next app router page detection.
+- Next pages router page detection.
+- Next app route file detection.
+- `pages/api/**` API route detection.
+- `components/**` and `ui/**` component path classification.
+
+Self-check coverage:
+- Generic TSX component raw symbol has `pascalCase: true` and `hasJsx: true`.
+- Generic hook raw symbol has `hookName: true`.
+- Generic API client raw symbol has `hasDirectNetworkCall: true` and direct target `/api/products`.
+- Lowercase helper remains raw-only and is not classified into component by generic extraction.
+- Next adapter classifies `app/products/page.tsx` default export as `page`.
+- Next adapter classifies `app/api/products/route.ts` `GET` handler as `api-route`.
+- Next adapter classifies PascalCase JSX component as `component`.
+- Next adapter classifies direct fetch wrapper as `api-client-method`.
+
+Limitations:
+- No import resolver yet.
+- No JSX render edges yet.
+- No call graph or endpoint graph nodes yet.
+- No `ProductionGraphResponse` builder yet.
+- No `/api/graph` response shape change.
+- Generic direct network detection remains direct-only and string-literal-only.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed, exit `0`.
+- PowerShell emitted npm/npx shim `Test-Path : Access is denied` warnings after commands; explicit exit markers were all `0`.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+## R5.1.2 — Adapter interface cleanup + vite-react mapping
+
+Status: Done
+Updated: 2026-06-30
+
+Files changed:
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter-registry.ts`
+- `apps/worker-node/src/modules/graph/adapters/next-js-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/react.adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts`
+- `apps/worker-node/src/modules/graph/graph.service.ts`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Production `FrameworkAdapter` now contains only `name`, `classifyFile()`, and `classifySymbol()`.
+- Legacy file-level graph API moved to separate `LegacyFrameworkAdapter`.
+- `nextJsAdapter` and `reactAdapter` are production adapters only.
+- `nextJsLegacyAdapter` and `reactLegacyAdapter` keep graph v1 file-level behavior.
+- `graph.service.ts` now explicitly requests `getLegacyAdapterForProject()` for legacy `GraphResponse` building.
+- Registry now exposes `getAdapterForFramework()` for production graph phases and keeps `getAdapterForProject()` as compatibility framework detection helper.
+
+Registry mapping:
+- `next` -> `nextJsAdapter`.
+- `react` -> `reactAdapter`.
+- `vite-react` -> `reactAdapter`.
+- Unknown/unsupported frameworks fall back to conservative default adapter.
+
+Default adapter behavior:
+- Production default adapter classifies only generic evidence: hook name, direct network call, PascalCase JSX, exported utility.
+- Legacy default adapter no longer returns all declarations as components; it returns no pages, no components, and detected API calls only.
+
+Self-check coverage:
+- Next adapter classifies `app/products/page.tsx` default export component as `page`.
+- Next adapter classifies `app/api/products/route.ts` `GET` as `api-route`.
+- React adapter classifies `src/pages/Home.tsx` `Home` component as `page`.
+- Registry maps `vite-react` to `reactAdapter`.
+- Unknown default adapter does not blindly classify a lowercase helper as component.
+- Unknown legacy adapter does not blindly return declarations as components.
+
+Limitations:
+- No import resolver yet.
+- No JSX render edges yet.
+- No call graph or production graph builder yet.
+- `GET /api/graph` remains legacy `GraphResponse`.
+- `getAdapterForProject()` still detects framework by reading `package.json`; duplicate detection cleanup remains later config/lifecycle scope.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed, exit `0`.
+- PowerShell emitted npm/npx shim `Test-Path : Access is denied` warnings after commands; explicit exit markers were all `0`.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+## R5.1.2 — Adapter interface cleanup + generic AST boundary hardening
+
+Status: Done
+Updated: 2026-06-30
+
+Files changed:
+- `apps/worker-node/src/modules/graph/ast/ast.types.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`
+- `apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/legacy-framework-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter-registry.ts`
+- `apps/worker-node/src/modules/graph/adapters/next-js-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/react.adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts`
+- `apps/worker-node/src/modules/graph/graph.service.ts`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- `ParsedSourceFile.symbols` is now raw `RawAstSymbol[]`; generic extraction no longer stores classified output in `symbols`.
+- Classified output is returned only by `classifyParsedSourceFile()` / `parseAndClassifySymbols()` after a `FrameworkAdapter` is provided.
+- Production `FrameworkAdapter` imports only AST raw types and no longer imports `DetectedApiSymbol` or `DetectedDeclarationSymbol` from `symbol-detector.ts`.
+- Legacy graph v1 adapter types moved to `legacy-framework-adapter.ts`.
+- `graph.service.ts` explicitly uses `LegacyFrameworkAdapter` through `getLegacyAdapterForProject()`.
+- Registry maps `vite-react` to `reactAdapter` and keeps unknown/null fallback conservative.
+
+Boundary verification:
+- `extract-symbols.ts` contains no Next app/page/pages/api/route/component path rules.
+- `framework-adapter.ts` contains no legacy file-level methods and no symbol-detector imports.
+- Legacy detector types are isolated to `legacy-framework-adapter.ts` and graph v1 usage.
+
+Default adapter behavior:
+- `hookName` -> `hook`.
+- `hasDirectNetworkCall` -> `api-client-method`.
+- `hasJsx && pascalCase` -> `component` with medium confidence.
+- `exported` -> `utility` with low confidence.
+- Else -> `null`.
+- Legacy default adapter returns no page/component declarations blindly.
+
+Self-check coverage:
+- Generic extractor verifies PascalCase JSX, hook-like name, direct fetch target `/api/products`, and lowercase helper raw-only behavior.
+- Next adapter verifies page route, API route handler, and component classification.
+- React adapter verifies page and component classification.
+- Registry verifies `vite-react` maps to `reactAdapter`.
+- Unknown/null fallback does not classify lowercase helper as component.
+
+Limitations:
+- No import resolver yet.
+- No JSX render edges yet.
+- No call graph or production graph builder yet.
+- No graph repository changes.
+- No `/api/graph` response shape change.
+- `getAdapterForProject()` still exists as compatibility helper and reads `package.json`.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed, exit `0`.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed, exit `0`.
+- Boundary search: no framework-specific rules in `extract-symbols.ts`; no legacy imports/methods in `framework-adapter.ts`.
+- PowerShell emitted npm/npx shim `Test-Path : Access is denied` warnings after commands; explicit exit markers were all `0`.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+## R5.1.3 — Move adapter classification helpers out of AST extractor
+
+Status: Done
+Updated: 2026-06-30
+
+Files changed:
+- `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`
+- `apps/worker-node/src/modules/graph/adapters/classify-parsed-source-file.ts`
+- `apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- `extract-symbols.ts` now exports raw extraction only: `extractRawSymbolsFromParsedSource()` and `parseAndExtractRawSymbols()`.
+- Adapter classification helpers moved to `adapters/classify-parsed-source-file.ts`.
+- `ast-symbol.self-check.ts` now imports classification helpers from adapter layer.
+
+Boundary verification:
+- `extract-symbols.ts` no longer imports `FrameworkAdapter`.
+- `extract-symbols.ts` no longer exports `classifyParsedSourceFile()` or `parseAndClassifySymbols()`.
+- Classification helpers now live in adapter layer and import `FrameworkAdapter` there.
+- `/api/graph` response shape unchanged.
+
+Limitations:
+- No import resolver yet.
+- No JSX render edges yet.
+- No call graph or production graph builder yet.
+- No graph repository or UI changes.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed, exit `0`.
+- `npm run build -w @lutest/contracts` — passed, exit `0`.
+- `npm run build -w @lutest/worker-node` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts` — passed, exit `0`.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed, exit `0`.
+- Boundary search: no adapter/classification imports or exports remain in `extract-symbols.ts`.
+- PowerShell emitted npm/npx shim `Test-Path : Access is denied` warnings after commands; explicit exit markers were all `0`.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+## R5.1.4 — Source extractor architecture cleanup
+
+Status: Done
+Updated: 2026-06-30
+
+Architecture status:
+- New canonical source extractor layer exists at `apps/worker-node/src/modules/graph/source-extractors/`.
+- TS/JS extractor lives under `source-extractors/ts-js/`.
+- Old `apps/worker-node/src/modules/graph/ast/` files remain as deprecated compatibility re-exports only.
+- `/api/graph`, graph repository, UI, and scan flow response shape were not changed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/source-extractors/source-extractor.types.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/source-extractor-registry.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js.types.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/classify-extracted-source-file.ts`
+- `apps/worker-node/src/modules/graph/adapters/classify-parsed-source-file.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts`
+- `apps/worker-node/src/modules/graph/ast/ast.types.ts`
+- `apps/worker-node/src/modules/graph/ast/parse-source-file.ts`
+- `apps/worker-node/src/modules/graph/ast/extract-symbols.ts`
+- `apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+TS/JS extractor support:
+- Supported extensions: `.ts`, `.tsx`, `.js`, `.jsx`.
+- Unsupported extensions currently return `kind: "unsupported"`, `language: "unsupported"`, empty `symbols`, and parse diagnostic `Unsupported source file type: <filePath>`.
+- `.vue` and `.php` are intentionally unsupported in this phase and do not throw during normal extraction.
+
+Dependency direction:
+- Source extractor layer does not import framework adapters.
+- Framework adapter layer imports source extractor types through `source-extractors/source-extractor.types.ts`.
+- Classification helper `classify-extracted-source-file.ts` composes `ExtractedSourceFile` + `FrameworkAdapter`.
+
+Type rename status:
+- New source types added: `RawSourceSymbol`, `RawSymbolKind`, `ExtractedSourceFile`, `ClassifiedSourceSymbol`, `GraphConfidence`.
+- Framework adapter now uses `RawSourceSymbol` and `GraphConfidence`.
+- Compatibility aliases remain for old names: `RawAstSymbol`, `RawAstSymbolKind`, `AstSymbolDeclaration`, `AstConfidence`, `ParsedSourceFile`.
+
+Self-check coverage:
+- `.tsx ProductCard` produces raw symbol with `pascalCase: true` and `hasJsx: true`.
+- `useProducts` produces `hookName: true`.
+- `getProducts` with `fetch('/api/products')` records direct network target `/api/products`.
+- `.vue` file returns unsupported result without crash.
+- `.php` file returns unsupported result without crash.
+- Next adapter still classifies extracted TSX symbols.
+- React adapter still classifies extracted TSX symbols.
+- Deprecated `ast/` compatibility self-check still passes.
+
+Removed:
+- No runtime behavior was removed.
+- Old `ast/` implementation bodies were replaced with compatibility re-exports.
+- `classify-parsed-source-file.ts` implementation body was replaced with compatibility re-exports to `classify-extracted-source-file.ts`.
+
+Limitations:
+- No real Vue extractor yet.
+- No real PHP extractor yet.
+- No import resolver changes.
+- No JSX render edges, call graph, production graph response builder, `/api/graph` response change, UI change, or Playwright work.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/ast/ast-symbol.self-check.ts` — passed.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+## R5.1.5 — Source extractor and adapter correctness cleanup
+
+Status: Done
+Updated: 2026-06-30
+
+Unsupported handling:
+- `parse-ts-js-source-file.ts` no longer falls back to `ts.ScriptKind.TS` for unsupported files.
+- Unsupported TS/JS parse now returns `sourceFile: null` and diagnostic `Unsupported TS/JS source file type: <filePath>`.
+- Normal scan path still does not throw for unsupported source files.
+
+`.d.ts` handling:
+- `tsJsSourceExtractor.supports(filePath)` now excludes `*.d.ts`.
+- `parseTsJsSourceFile` treats `*.d.ts` as unsupported.
+- Self-check covers `next-env.d.ts` and `src/types/global.d.ts`.
+
+Raw symbol ID uniqueness:
+- Raw symbol IDs now include source location: `raw:<kind>:<file>#<name>@<startLine>-<endLine>`.
+- Duplicate methods with the same name in the same file now produce deterministic distinct IDs.
+
+Classified symbol ID uniqueness:
+- Classified symbol IDs now derive from raw symbol IDs: `<classifiedKind>:<rawSymbolId>`.
+- Duplicate classified symbols with the same name now stay distinct if raw source symbols are distinct.
+
+Nested symbol contamination fix:
+- JSX and direct network scans now stop at nested function/class/method/arrow/function-expression boundaries.
+- Parent functions are no longer marked `hasJsx` or `hasDirectNetworkCall` only because nested functions/classes contain JSX/fetch.
+
+Adapter classification priority:
+- React and Next adapters now classify page/component/hook identities before `api-client-method`.
+- `api-client-method` now requires `hasDirectNetworkCall && !hasJsx`.
+- React page/component with fetch remains page/component.
+- Next component with fetch remains component.
+- Hook with fetch remains hook.
+- Unknown adapter remains conservative but does not convert JSX components with fetch into API client methods.
+
+Registry-based extraction/classification:
+- `classify-extracted-source-file.ts` now uses `sourceExtractorRegistry.extract(...)` in `extractAndClassifySymbols`.
+- The classification helper no longer hardcodes the TS/JS extractor, keeping future Vue/PHP extractors pluggable.
+
+DirectNetworkTarget decision:
+- `DirectNetworkTarget.client` changed from TS/JS-only string union to `string` because source extractor types are shared across future languages.
+
+Self-check coverage:
+- `.tsx` component yields `pascalCase=true` and `hasJsx=true`.
+- Hook yields `hookName=true`.
+- Direct fetch records target.
+- `.vue` and `.php` return unsupported without crash.
+- `.d.ts` returns no source symbols.
+- Duplicate class methods produce unique raw IDs.
+- Duplicate classified component symbols produce unique classified IDs.
+- Parent symbol not contaminated by nested fetch/JSX.
+- React/Next page/component with fetch is not classified as `api-client-method`.
+- `vite-react` maps to `reactAdapter`.
+- Unknown/default adapter remains conservative.
+
+Limitations:
+- No import resolver changes.
+- No JSX render edges.
+- No call graph.
+- No ProductionGraphResponse builder.
+- No graph service migration.
+- No `/api/graph` response shape change.
+- No UI or Playwright work.
+- No real Vue/PHP extractor.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+
+Next phase:
+- R5.2 — Import extraction + resolver.
+
+### R5.1.5 addendum — Graph service guard
+
+Status: Verified
+Updated: 2026-06-30
+
+Guard result:
+- `apps/worker-node/src/modules/graph/graph.service.ts` remains the legacy `/api/graph` builder.
+- Return type is still `GraphResponse` from `@lutest/contracts`.
+- It still builds legacy `GraphNode` / `GraphEdge` objects.
+- It still uses `frameworkAdapterRegistry.getLegacyAdapterForProject(...)`.
+- It still uses `LegacyFrameworkAdapter`.
+- It still uses `detectSymbols(...)` for legacy symbol hints.
+- It still uses `IMPORT_REGEX` and local relative import candidates for legacy import edges.
+- It does not import or return `ProductionGraphResponse`.
+- It does not import `sourceExtractorRegistry`.
+- It does not use the new source extractor architecture directly.
+- It does not use a production import resolver.
+
+Decision:
+- No runtime code change required.
+- Keep `graph.service.ts` stable until R5.2–R5.5 introduce production extractor/resolver/graph-builder modules separately.
+
+Tests/checks:
+- Guard verified by reading `apps/worker-node/src/modules/graph/graph.service.ts` and searching for production graph/source-extractor/resolver imports.
+- No new test run required because no runtime files changed in this addendum.
+
+### R5.1.5 verification rerun — Attachment 51ac0186
+
+Status: Done
+Updated: 2026-06-30
+
+Result:
+- No additional runtime code changes needed.
+- R5.1.5 correctness cleanup was already present and verified again against the repeated attachment checklist.
+- `graph.service.ts` remains legacy `GraphResponse` path and was not migrated.
+
+Checklist verified:
+- Unsupported TS/JS file handling does not parse as TypeScript.
+- `.d.ts` is unsupported and produces no source symbols.
+- Raw symbol IDs include location and are deterministic/unique.
+- Classified symbol IDs derive from raw symbol IDs and are deterministic/unique.
+- Nested function/class JSX/network calls do not contaminate parent symbol flags.
+- React/Next/default adapters keep page/component/hook priority above `api-client-method`.
+- `classify-extracted-source-file.ts` uses `sourceExtractorRegistry.extract(...)`.
+- `DirectNetworkTarget.client` is generic `string`.
+- `graph.service.ts` still uses legacy `GraphResponse`, `GraphNode`, `GraphEdge`, `LegacyFrameworkAdapter`, `detectSymbols`, and legacy `IMPORT_REGEX`.
+
+Verification rerun:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+
+Next phase:
+- R5.2 — Import extraction + resolver.

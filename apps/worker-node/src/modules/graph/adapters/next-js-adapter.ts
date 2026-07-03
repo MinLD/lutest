@@ -1,4 +1,15 @@
 import type { FrameworkAdapter } from "./framework-adapter";
+import type { LegacyFrameworkAdapter } from "./legacy-framework-adapter";
+
+const HTTP_METHODS = new Set([
+  "GET",
+  "POST",
+  "PUT",
+  "PATCH",
+  "DELETE",
+  "HEAD",
+  "OPTIONS",
+]);
 
 const normalizePath = (value: string): string => value.replaceAll("\\", "/");
 
@@ -47,65 +58,118 @@ const isInsidePagesApi = (relativePath: string): boolean => {
 
 const isAppRouteFile = (relativePath: string): boolean => {
   const fileName = getFileName(relativePath);
-  return hasSegment(relativePath, ["app"]) && ["route.ts", "route.js"].includes(fileName);
+  return hasSegment(relativePath, ["app"]) && ["route.ts", "route.tsx", "route.js", "route.jsx"].includes(fileName);
+};
+
+const isPage = (relativePath: string): boolean => {
+  const fileName = getFileName(relativePath);
+
+  if (!isJsTsFile(fileName)) return false;
+  if (isTestOrStoryFile(fileName)) return false;
+
+  if (
+    hasSegment(relativePath, ["app"]) &&
+    ["page.tsx", "page.ts", "page.jsx", "page.js"].includes(fileName)
+  ) {
+    return true;
+  }
+
+  if (hasSegment(relativePath, ["pages"])) {
+    if (isInsidePagesApi(relativePath)) return false;
+    if (fileName.startsWith("_")) return false;
+
+    return true;
+  }
+
+  return false;
+};
+
+const isApi = (relativePath: string): boolean => {
+  const fileName = getFileName(relativePath);
+
+  if (isAppRouteFile(relativePath)) return true;
+
+  return isInsidePagesApi(relativePath) && isJsTsFile(fileName);
+};
+
+const isComponent = (relativePath: string): boolean => {
+  const fileName = getFileName(relativePath);
+  const stem = getFileStem(relativePath);
+
+  if (!isJsxTsxFile(fileName)) return false;
+  if (isTestOrStoryFile(fileName)) return false;
+  if (isFrameworkOrConfigFile(fileName)) return false;
+  if (!isLikelyComponentPath(relativePath)) return false;
+
+  if (hasSegment(relativePath, ["components", "ui"])) return true;
+
+  return /^[A-Z]/.test(stem);
 };
 
 export const nextJsAdapter: FrameworkAdapter = {
   name: "next",
 
-  isPage(relativePath: string): boolean {
-    const fileName = getFileName(relativePath);
+  classifyFile({ relativePath }) {
+    return {
+      isPageFile: isPage(relativePath),
+      isApiRouteFile: isApi(relativePath),
+      isComponentFile: isComponent(relativePath),
+    };
+  },
 
-    if (!isJsTsFile(fileName)) return false;
-    if (isTestOrStoryFile(fileName)) return false;
+  classifySymbol({ relativePath, symbol }) {
+    const file = this.classifyFile({ relativePath });
 
     if (
-      hasSegment(relativePath, ["app"]) &&
-      ["page.tsx", "page.ts", "page.jsx", "page.js"].includes(fileName)
+      file.isPageFile &&
+      (symbol.defaultExport || (symbol.pascalCase && symbol.hasJsx))
     ) {
-      return true;
+      return { kind: "page", confidence: "high", reason: "Next page file component export" };
     }
 
-    if (hasSegment(relativePath, ["pages"])) {
-      if (isInsidePagesApi(relativePath)) return false;
-      if (fileName.startsWith("_")) return false;
-
-      return true;
+    if (file.isApiRouteFile && HTTP_METHODS.has(symbol.name)) {
+      return { kind: "api-route", confidence: "high", reason: "HTTP method handler in Next API route file" };
     }
 
-    return false;
+    if (symbol.hookName) {
+      return { kind: "hook", confidence: "high", reason: "React hook naming convention" };
+    }
+
+    if (symbol.hasJsx && symbol.pascalCase) {
+      return { kind: "component", confidence: "high", reason: "PascalCase symbol with JSX" };
+    }
+
+    if (symbol.pascalCase && file.isComponentFile) {
+      return { kind: "component", confidence: "medium", reason: "PascalCase symbol in Next component path" };
+    }
+
+    if (symbol.hasDirectNetworkCall && !symbol.hasJsx) {
+      return { kind: "api-client-method", confidence: "high", reason: "Direct network call inside function" };
+    }
+
+    if (symbol.exported) {
+      return { kind: "utility", confidence: "low", reason: "Exported symbol without framework-specific role" };
+    }
+
+    return null;
   },
+};
 
-  isApi(relativePath: string): boolean {
-    const fileName = getFileName(relativePath);
-
-    if (isAppRouteFile(relativePath)) return true;
-
-    return isInsidePagesApi(relativePath) && isJsTsFile(fileName);
-  },
-
-  isComponent(relativePath: string): boolean {
-    const fileName = getFileName(relativePath);
-    const stem = getFileStem(relativePath);
-
-    if (!isJsxTsxFile(fileName)) return false;
-    if (isTestOrStoryFile(fileName)) return false;
-    if (isFrameworkOrConfigFile(fileName)) return false;
-    if (!isLikelyComponentPath(relativePath)) return false;
-
-    if (hasSegment(relativePath, ["components", "ui"])) return true;
-
-    return /^[A-Z]/.test(stem);
-  },
+export const nextJsLegacyAdapter: LegacyFrameworkAdapter = {
+  name: "next",
+  isPage,
+  isApi,
+  isComponent,
 
   classifySymbols(relativePath, symbols) {
     return {
-      pages: this.isPage(relativePath) ? symbols.declarations : [],
+      pages: isPage(relativePath) ? symbols.declarations : [],
       components:
-        this.isComponent(relativePath) || this.isPage(relativePath)
+        isComponent(relativePath) || isPage(relativePath)
           ? symbols.declarations
           : [],
-      apis: this.isApi(relativePath) || symbols.apis.length > 0 ? symbols.apis : [],
+      apis: isApi(relativePath) || symbols.apis.length > 0 ? symbols.apis : [],
     };
   },
 };
+

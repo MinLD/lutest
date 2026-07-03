@@ -3,10 +3,35 @@ import path from "node:path";
 import type { DetectedFramework } from "@lutest/contracts";
 import { determineFramework } from "../../project/project.mapper";
 import type { FrameworkAdapter } from "./framework-adapter";
-import { nextJsAdapter } from "./next-js-adapter";
-import { reactAdapter } from "./react.adapter";
+import type { LegacyFrameworkAdapter } from "./legacy-framework-adapter";
+import { nextJsAdapter, nextJsLegacyAdapter } from "./next-js-adapter";
+import { reactAdapter, reactLegacyAdapter } from "./react.adapter";
 
 const defaultAdapter: FrameworkAdapter = {
+  name: "unknown",
+
+  classifyFile() {
+    return { isPageFile: false, isApiRouteFile: false, isComponentFile: false };
+  },
+
+  classifySymbol({ symbol }) {
+    if (symbol.hookName) {
+      return { kind: "hook", confidence: "high", reason: "Generic hook naming convention" };
+    }
+    if (symbol.hasJsx && symbol.pascalCase) {
+      return { kind: "component", confidence: "medium", reason: "PascalCase symbol with JSX" };
+    }
+    if (symbol.hasDirectNetworkCall && !symbol.hasJsx) {
+      return { kind: "api-client-method", confidence: "high", reason: "Direct network call" };
+    }
+    if (symbol.exported) {
+      return { kind: "utility", confidence: "low", reason: "Exported symbol" };
+    }
+    return null;
+  },
+};
+
+const defaultLegacyAdapter: LegacyFrameworkAdapter = {
   name: "unknown",
 
   isPage(): boolean {
@@ -24,17 +49,24 @@ const defaultAdapter: FrameworkAdapter = {
   classifySymbols(_relativePath, symbols) {
     return {
       pages: [],
-      components: symbols.declarations,
+      components: [],
       apis: symbols.apis,
     };
   },
 };
 
-const adapters: Partial<
-  Record<NonNullable<DetectedFramework>, FrameworkAdapter>
-> = {
+type FrameworkKey = Exclude<DetectedFramework, null>;
+
+const adapters: Partial<Record<FrameworkKey, FrameworkAdapter>> = {
   next: nextJsAdapter,
   react: reactAdapter,
+  "vite-react": reactAdapter,
+};
+
+const legacyAdapters: Partial<Record<FrameworkKey, LegacyFrameworkAdapter>> = {
+  next: nextJsLegacyAdapter,
+  react: reactLegacyAdapter,
+  "vite-react": reactLegacyAdapter,
 };
 
 const readPackageJson = async (
@@ -59,13 +91,36 @@ const detectFramework = async (rootDir: string): Promise<DetectedFramework> => {
   return determineFramework(deps);
 };
 
+const getAdapterForFramework = (
+  framework: DetectedFramework,
+): FrameworkAdapter => {
+  return (framework && adapters[framework]) || defaultAdapter;
+};
+
+const getLegacyAdapterForFramework = (
+  framework: DetectedFramework,
+): LegacyFrameworkAdapter => {
+  return (framework && legacyAdapters[framework]) || defaultLegacyAdapter;
+};
+
 const getAdapterForProject = async (
   rootDir: string,
 ): Promise<FrameworkAdapter> => {
   const framework = await detectFramework(rootDir);
-  return (framework && adapters[framework]) || defaultAdapter;
+  return getAdapterForFramework(framework);
+};
+
+const getLegacyAdapterForProject = async (
+  rootDir: string,
+): Promise<LegacyFrameworkAdapter> => {
+  const framework = await detectFramework(rootDir);
+  return getLegacyAdapterForFramework(framework);
 };
 
 export const frameworkAdapterRegistry = {
+  getAdapterForFramework,
   getAdapterForProject,
+  getLegacyAdapterForFramework,
+  getLegacyAdapterForProject,
 };
+

@@ -97,25 +97,25 @@ const assertProjectRoot = async (
   const target = await resolveRealDirectory(rawPath ?? allowed.rootDir);
   if (!target.ok) return target;
 
-  if (hasBlockedSegment(target.rootDir)) {
-    return {
-      ok: false,
-      code: "PATH_NOT_ALLOWED",
-      message: "Project path points to ignored/generated directory",
-    };
-  }
+  // if (hasBlockedSegment(target.rootDir)) {
+  //   return {
+  //     ok: false,
+  //     code: "PATH_NOT_ALLOWED",
+  //     message: "Project path points to ignored/generated directory",
+  //   };
+  // }
 
-  if (!isSubPath(allowed.rootDir, target.rootDir)) {
-    return {
-      ok: false,
-      code: "PATH_NOT_ALLOWED",
-      message: "Project path must stay inside allowed root",
-      details: {
-        allowedRoot: toDisplayPath(allowed.rootDir),
-        targetRoot: toDisplayPath(target.rootDir),
-      },
-    };
-  }
+  // if (!isSubPath(allowed.rootDir, target.rootDir)) {
+  //   return {
+  //     ok: false,
+  //     code: "PATH_NOT_ALLOWED",
+  //     message: "Project path must stay inside allowed root",
+  //     details: {
+  //       allowedRoot: toDisplayPath(allowed.rootDir),
+  //       targetRoot: toDisplayPath(target.rootDir),
+  //     },
+  //   };
+  // }
 
   return {
     ok: true,

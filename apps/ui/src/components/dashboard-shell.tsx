@@ -456,7 +456,7 @@ function ScanList({
   const issues = report?.issues.slice(0, 6) ?? [];
   const invalidMessage =
     latestReport && latestReport.state !== "valid"
-      ? latestReport.error?.message
+      ? latestReport.error?.message?
       : null;
 
   return (

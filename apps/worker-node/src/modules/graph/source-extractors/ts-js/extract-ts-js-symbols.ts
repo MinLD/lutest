@@ -1,0 +1,304 @@
+﻿import ts from "typescript";
+import type {
+  DirectNetworkTarget,
+  ExtractedSourceFile,
+  RawSourceSymbol,
+  RawSymbolKind,
+  SourceFileKind,
+} from "../source-extractor.types";
+import { parseTsJsSourceFile, type ParsedTsJsSourceFile } from "./parse-ts-js-source-file";
+
+const CLIENT_METHODS = new Set([
+  "get",
+  "post",
+  "put",
+  "patch",
+  "delete",
+  "head",
+  "options",
+  "request",
+]);
+
+const normalizePath = (value: string): string => value.replaceAll("\\", "/");
+
+const isPascalCase = (name: string): boolean => /^[A-Z][A-Za-z0-9]*$/.test(name);
+
+const isHookName = (name: string): boolean => /^use[A-Z0-9]/.test(name);
+
+const isSupportedJsKind = (kind: SourceFileKind): boolean =>
+  kind === "ts" || kind === "tsx" || kind === "js" || kind === "jsx";
+
+const hasExportModifier = (node: ts.Node): boolean =>
+  ts.canHaveModifiers(node) &&
+  (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) ?? false);
+
+const hasDefaultModifier = (node: ts.Node): boolean =>
+  ts.canHaveModifiers(node) &&
+  (ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword) ?? false);
+
+const getLoc = (sourceFile: ts.SourceFile, node: ts.Node) => {
+  const start = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  const end = sourceFile.getLineAndCharacterOfPosition(node.getEnd());
+  return {
+    startLine: start.line + 1,
+    endLine: end.line + 1,
+  };
+};
+
+const rawSymbolId = (input: {
+  rawKind: RawSymbolKind;
+  filePath: string;
+  name: string;
+  loc: { startLine: number; endLine: number };
+}): string =>
+  `raw:${input.rawKind}:${normalizePath(input.filePath)}#${input.name}@${input.loc.startLine}-${input.loc.endLine}`;
+
+const isNestedSymbolBoundary = (node: ts.Node): boolean =>
+  ts.isFunctionDeclaration(node) ||
+  ts.isClassDeclaration(node) ||
+  ts.isMethodDeclaration(node) ||
+  ts.isFunctionExpression(node) ||
+  ts.isArrowFunction(node);
+
+const containsJsx = (node: ts.Node): boolean => {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) return;
+    if (
+      ts.isJsxElement(child) ||
+      ts.isJsxSelfClosingElement(child) ||
+      ts.isJsxFragment(child)
+    ) {
+      found = true;
+      return;
+    }
+    if (child !== node && isNestedSymbolBoundary(child)) return;
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+};
+
+const getCallTarget = (node: ts.CallExpression): string | null => {
+  const first = node.arguments[0];
+  return first && ts.isStringLiteralLike(first) ? first.text : null;
+};
+
+const getNetworkTarget = (
+  node: ts.CallExpression,
+  sourceFile: ts.SourceFile,
+): DirectNetworkTarget | null => {
+  const target = getCallTarget(node);
+  if (!target) return null;
+  const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  const line = position.line + 1;
+  const expression = node.expression;
+
+  if (ts.isIdentifier(expression)) {
+    if (expression.text === "fetch") return { client: "fetch", target, line };
+    if (expression.text === "ofetch") return { client: "ofetch", target, line };
+    return null;
+  }
+
+  if (!ts.isPropertyAccessExpression(expression)) return null;
+  const root = expression.expression.getText(sourceFile);
+  const method = expression.name.text;
+
+  if (root === "axios" && CLIENT_METHODS.has(method)) {
+    return { client: "axios", method: method.toUpperCase(), target, line };
+  }
+  if (root === "ky" && CLIENT_METHODS.has(method)) {
+    return { client: "ky", method: method.toUpperCase(), target, line };
+  }
+  if (root === "ofetch" && CLIENT_METHODS.has(method)) {
+    return { client: "ofetch", method: method.toUpperCase(), target, line };
+  }
+
+  return null;
+};
+
+const extractDirectNetworkTargets = (
+  node: ts.Node,
+  sourceFile: ts.SourceFile,
+): DirectNetworkTarget[] => {
+  const targets: DirectNetworkTarget[] = [];
+  const visit = (child: ts.Node): void => {
+    if (ts.isCallExpression(child)) {
+      const target = getNetworkTarget(child, sourceFile);
+      if (target) targets.push(target);
+    }
+    if (child !== node && isNestedSymbolBoundary(child)) return;
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return targets;
+};
+
+const getVariableFunctionInitializer = (
+  node: ts.VariableDeclaration,
+): { node: ts.ArrowFunction | ts.FunctionExpression; rawKind: RawSymbolKind } | null => {
+  if (!node.initializer) return null;
+  if (ts.isArrowFunction(node.initializer)) {
+    return { node: node.initializer, rawKind: "arrow-function" };
+  }
+  if (ts.isFunctionExpression(node.initializer)) {
+    return { node: node.initializer, rawKind: "function-expression" };
+  }
+  return null;
+};
+
+const getVariableStatement = (node: ts.VariableDeclaration): ts.VariableStatement | null => {
+  const declarationList = node.parent;
+  const statement = declarationList.parent;
+  return ts.isVariableStatement(statement) ? statement : null;
+};
+
+const toRawSymbol = (input: {
+  filePath: string;
+  name: string;
+  rawKind: RawSymbolKind;
+  node: ts.Node;
+  body?: ts.Node;
+  exported: boolean;
+  defaultExport: boolean;
+  parsed: ParsedTsJsSourceFile;
+}): RawSourceSymbol => {
+  if (!input.parsed.sourceFile) {
+    throw new Error("TS/JS parsed source file is missing SourceFile");
+  }
+  const scanNode = input.body ?? input.node;
+  const directNetworkTargets = extractDirectNetworkTargets(scanNode, input.parsed.sourceFile);
+  const loc = getLoc(input.parsed.sourceFile, input.node);
+  return {
+    id: rawSymbolId({
+      rawKind: input.rawKind,
+      filePath: input.filePath,
+      name: input.name,
+      loc,
+    }),
+    rawKind: input.rawKind,
+    name: input.name,
+    filePath: normalizePath(input.filePath),
+    exported: input.exported,
+    defaultExport: input.defaultExport,
+    pascalCase: isPascalCase(input.name),
+    hookName: isHookName(input.name),
+    hasJsx: containsJsx(scanNode),
+    hasDirectNetworkCall: directNetworkTargets.length > 0,
+    directNetworkTargets,
+    loc,
+  };
+};
+
+export const extractRawSymbolsFromParsedSource = (
+  parsed: ParsedTsJsSourceFile,
+): RawSourceSymbol[] => {
+  if (!parsed.sourceFile) return [];
+  if (!isSupportedJsKind(parsed.kind)) return [];
+
+  const symbols: RawSourceSymbol[] = [];
+  const filePath = normalizePath(parsed.filePath);
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name) {
+      symbols.push(
+        toRawSymbol({
+          filePath,
+          name: node.name.text,
+          rawKind: "function",
+          node,
+          body: node.body,
+          exported: hasExportModifier(node),
+          defaultExport: hasDefaultModifier(node),
+          parsed,
+        }),
+      );
+    }
+
+    if (ts.isFunctionDeclaration(node) && !node.name && hasDefaultModifier(node)) {
+      symbols.push(
+        toRawSymbol({
+          filePath,
+          name: "default",
+          rawKind: "function",
+          node,
+          body: node.body,
+          exported: hasExportModifier(node),
+          defaultExport: true,
+          parsed,
+        }),
+      );
+    }
+
+    if (ts.isClassDeclaration(node) && node.name) {
+      symbols.push(
+        toRawSymbol({
+          filePath,
+          name: node.name.text,
+          rawKind: "class",
+          node,
+          exported: hasExportModifier(node),
+          defaultExport: hasDefaultModifier(node),
+          parsed,
+        }),
+      );
+    }
+
+    if (ts.isMethodDeclaration(node) && ts.isIdentifier(node.name)) {
+      symbols.push(
+        toRawSymbol({
+          filePath,
+          name: node.name.text,
+          rawKind: "method",
+          node,
+          body: node.body,
+          exported: hasExportModifier(node),
+          defaultExport: false,
+          parsed,
+        }),
+      );
+    }
+
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      const initializer = getVariableFunctionInitializer(node);
+      if (initializer) {
+        const statement = getVariableStatement(node);
+        symbols.push(
+          toRawSymbol({
+            filePath,
+            name: node.name.text,
+            rawKind: initializer.rawKind,
+            node,
+            body: initializer.node.body,
+            exported: statement ? hasExportModifier(statement) : false,
+            defaultExport: statement ? hasDefaultModifier(statement) : false,
+            parsed,
+          }),
+        );
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(parsed.sourceFile);
+  return symbols;
+};
+
+export const parseAndExtractRawSymbols = (
+  filePath: string,
+  content: string,
+): ExtractedSourceFile => {
+  const parsed = parseTsJsSourceFile(filePath, content);
+  return {
+    filePath: normalizePath(filePath),
+    kind: parsed.kind,
+    language: "ts-js",
+    symbols: extractRawSymbolsFromParsedSource(parsed),
+    parseDiagnostics: parsed.parseDiagnostics,
+  };
+};
+
+
+
+

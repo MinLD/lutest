@@ -1,24 +1,36 @@
-import type {
-  DetectedApiSymbol,
-  DetectedDeclarationSymbol,
-} from "../symbol-detector";
+﻿import type {
+  GraphConfidence,
+  RawSourceSymbol,
+} from "../source-extractors/source-extractor.types";
 
-export type ClassifiedGraphSymbols = {
-  pages: DetectedDeclarationSymbol[];
-  components: DetectedDeclarationSymbol[];
-  apis: DetectedApiSymbol[];
+export type ClassifiedGraphSymbolKind =
+  | "page"
+  | "component"
+  | "hook"
+  | "api-route"
+  | "api-client-method"
+  | "utility";
+
+export type ClassifiedGraphSymbol = {
+  kind: ClassifiedGraphSymbolKind;
+  confidence: GraphConfidence;
+  reason: string;
+};
+
+export type ClassifiedFile = {
+  isPageFile: boolean;
+  isApiRouteFile: boolean;
+  isComponentFile: boolean;
 };
 
 export interface FrameworkAdapter {
   readonly name: string;
-  isPage(relativePath: string): boolean;
-  isApi(relativePath: string): boolean;
-  isComponent(relativePath: string): boolean;
-  classifySymbols(
-    relativePath: string,
-    symbols: {
-      declarations: DetectedDeclarationSymbol[];
-      apis: DetectedApiSymbol[];
-    },
-  ): ClassifiedGraphSymbols;
+  classifyFile(input: { relativePath: string }): ClassifiedFile;
+  classifySymbol(input: {
+    relativePath: string;
+    symbol: RawSourceSymbol;
+  }): ClassifiedGraphSymbol | null;
 }
+
+export type ClassifiedAstSymbolKind = ClassifiedGraphSymbolKind;
+export type ClassifiedAstSymbol = ClassifiedGraphSymbol;
