@@ -1,6 +1,6 @@
-﻿import type { ProductionGraphResponse, ProductionGraphSummary } from "@lutest/contracts";
+import type { ProductionGraphResponse, ProductionGraphSummary } from "@lutest/contracts";
 import { validateProductionGraphResponse } from "@lutest/contracts";
-import { buildProductionImportEdges } from "./production-edge-builder";
+import { buildProductionEdges } from "./production-edge-builder";
 import { buildProductionGraphNodes } from "./production-node-builder";
 import { scanProductionProjectSymbols } from "./production-project-scanner";
 
@@ -23,7 +23,7 @@ export const buildProductionGraph = async (input: {
   const graph: ProductionGraphResponse = {
     mode: "symbol-level",
     nodes,
-    edges: await buildProductionImportEdges({ scan, nodes }),
+    edges: await buildProductionEdges({ scan, nodes }),
     summary: {
       fileCount: 0,
       pageCount: 0,

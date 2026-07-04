@@ -1864,3 +1864,76 @@ Tests/checks run:
 
 Next phase:
 - R5.4.2 — JSX render edges.
+
+## R5.4.2 — JSX render edges
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/production/production-edge-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Extraction strategy:
+- JSX usage extraction uses the TypeScript AST, not regex.
+- It reads `JsxSelfClosingElement` and `JsxOpeningElement` tags.
+- Native lowercase tags such as `main`, `section`, `button`, and fragments are ignored.
+- Custom PascalCase tags such as `ProductCard` and conservative property tags such as `Cards.ProductCard` are considered.
+
+Source/target node convention:
+- Render edge source is the classified `page` or `component` symbol whose `loc` contains the JSX usage line.
+- Render edge target is a classified `component` symbol.
+- Edge id is deterministic: `render:<sourceSymbolId>-><targetSymbolId>`.
+
+Import-aware mapping supported:
+- Same-file component lookup is supported.
+- Default imports are supported when the target file has matching/single component evidence.
+- Named imports such as `import { ProductCard } from "./ProductCard"` are supported.
+- Namespace imports have conservative support for `Namespace.Component` when target file contains a matching component symbol.
+- Global component-name fallback is used only when exactly one component symbol has that name.
+
+Unsupported JSX patterns:
+- Ambiguous duplicate component names are skipped unless import context resolves them.
+- Complex re-export binding resolution is not expanded beyond existing import resolver/file evidence.
+- Dynamic component variables and non-literal JSX factories are skipped.
+
+Dedupe behavior:
+- Render edges are stored in the same deterministic edge map as import edges.
+- Multiple `<ProductCard />` usages inside the same source symbol create one render edge.
+
+Self-check coverage:
+- Page renders imported `ProductCard` and creates page -> component render edge.
+- Page duplicate `<ProductCard />` usage dedupes.
+- Page renders imported `ProductList` and creates page -> component render edge.
+- `ProductList` renders `ProductCard` and creates component -> component render edge.
+- Same-file `Parent` renders `Child` and creates component -> component render edge.
+- Native HTML tags and unknown `MissingComponent` do not create bad edges.
+- R5.4.1 import edges still exist.
+- `ProductionGraphResponse` validates and `summary.edgeCount === graph.edges.length`.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- `/api/graph` still uses legacy `GraphResponse` path.
+
+What remains:
+- No call edges.
+- No HTTP edges.
+- No external-endpoint nodes.
+- No production graph HTTP endpoint.
+- No UI graph migration.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.4.3 — Call edges.

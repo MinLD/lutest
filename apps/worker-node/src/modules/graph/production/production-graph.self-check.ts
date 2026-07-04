@@ -21,12 +21,24 @@ const assertNoNodeFor = (graph: Awaited<ReturnType<typeof buildProductionGraph>>
   );
 };
 
-const hasImportEdge = (
+const symbolNode = (
   graph: Awaited<ReturnType<typeof buildProductionGraph>>,
+  kind: string,
+  filePath: string,
+  name: string,
+) => {
+  const node = graph.nodes.find((item) => item.kind === kind && item.filePath === filePath && item.name === name);
+  assert(node, `${kind} ${name} in ${filePath} missing`);
+  return node;
+};
+
+const hasEdge = (
+  graph: Awaited<ReturnType<typeof buildProductionGraph>>,
+  kind: string,
   source: string,
   target: string,
 ): boolean =>
-  graph.edges.some((edge) => edge.kind === "import" && edge.source === source && edge.target === target);
+  graph.edges.some((edge) => edge.kind === kind && edge.source === source && edge.target === target);
 
 const buildMiniNextProject = async (): Promise<string> => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-next-production-"));
@@ -37,8 +49,9 @@ const buildMiniNextProject = async (): Promise<string> => {
     import ProductCard from "../components/ProductCard";
     import ProductCardAgain from "../components/ProductCard";
     import Components from "../components";
+    import ProductList from "../components/ProductList";
     import "../globals.css";
-    export default function HomePage() { return <main><ProductCard /></main>; }
+    export default function HomePage() { return <main><ProductCard /><ProductCard /><ProductList /><MissingComponent /><button /></main>; }
   `);
   await writeFile(path.join(root, "app", "products", "page.tsx"), `
     import ProductCard from "@/components/ProductCard";
@@ -51,8 +64,9 @@ const buildMiniNextProject = async (): Promise<string> => {
   await writeFile(path.join(root, "src", "pages", "about.tsx"), "export default function AboutPage() { return <main />; }");
   await writeFile(path.join(root, "src", "pages", "api", "users.ts"), "export function GET() { return Response.json([]); }");
   await writeFile(path.join(root, "components", "ProductCard.tsx"), "export function ProductCard() { return <article />; }");
-  await writeFile(path.join(root, "components", "ProductList.tsx"), "export function ProductList() { return <section />; }");
-  await writeFile(path.join(root, "components", "index.ts"), "export { ProductCard } from './ProductCard';");
+  await writeFile(path.join(root, "components", "ProductList.tsx"), `import { ProductCard } from "./ProductCard"; export function ProductList() { return <section><ProductCard /></section>; }`);
+  await writeFile(path.join(root, "components", "index.ts"), "export { ProductCard } from './ProductCard'; export { ProductList } from './ProductList';");
+  await writeFile(path.join(root, "components", "SameFile.tsx"), "export function Parent() { return <Child />; } export function Child() { return <span />; }");
   await writeFile(path.join(root, "globals.css"), ":root {}");
   await writeFile(path.join(root, "lib", "api.ts"), "export async function getProducts() { return fetch('/api/products'); }");
   await writeFile(path.join(root, "hooks", "useProducts.ts"), "export function useProducts() { return []; }");
@@ -94,12 +108,24 @@ const main = async (): Promise<void> => {
   assert(nextGraph.nodes.some((node) => node.kind === "page" && node.route?.path === "/about"));
   assert(nextGraph.nodes.some((node) => node.kind === "api-route" && node.route?.path === "/products" && node.route.kind === "api"));
   assert(nextGraph.nodes.some((node) => node.kind === "api-route" && node.route?.path === "/api/users" && node.route.kind === "api"));
-  assert(hasImportEdge(nextGraph, "file:app/page.tsx", "file:components/ProductCard.tsx"));
-  assert(hasImportEdge(nextGraph, "file:app/products/page.tsx", "file:components/ProductCard.tsx"));
-  assert(hasImportEdge(nextGraph, "file:app/page.tsx", "file:components/index.ts"));
-  assert.equal(nextGraph.edges.filter((edge) => edge.source === "file:app/page.tsx" && edge.target === "file:components/ProductCard.tsx").length, 1);
+  assert(hasEdge(nextGraph, "import", "file:app/page.tsx", "file:components/ProductCard.tsx"));
+  assert(hasEdge(nextGraph, "import", "file:app/products/page.tsx", "file:components/ProductCard.tsx"));
+  assert(hasEdge(nextGraph, "import", "file:app/page.tsx", "file:components/index.ts"));
+  assert.equal(nextGraph.edges.filter((edge) => edge.kind === "import" && edge.source === "file:app/page.tsx" && edge.target === "file:components/ProductCard.tsx").length, 1);
   assert.equal(nextGraph.edges.some((edge) => edge.target === "file:globals.css"), false);
   assert.equal(nextGraph.edges.some((edge) => edge.target === "file:react"), false);
+
+  const homePage = symbolNode(nextGraph, "page", "app/page.tsx", "HomePage");
+  const productCard = symbolNode(nextGraph, "component", "components/ProductCard.tsx", "ProductCard");
+  const productList = symbolNode(nextGraph, "component", "components/ProductList.tsx", "ProductList");
+  const sameFileParent = symbolNode(nextGraph, "component", "components/SameFile.tsx", "Parent");
+  const sameFileChild = symbolNode(nextGraph, "component", "components/SameFile.tsx", "Child");
+  assert(hasEdge(nextGraph, "render", homePage.id, productCard.id));
+  assert(hasEdge(nextGraph, "render", homePage.id, productList.id));
+  assert(hasEdge(nextGraph, "render", productList.id, productCard.id));
+  assert(hasEdge(nextGraph, "render", sameFileParent.id, sameFileChild.id));
+  assert.equal(nextGraph.edges.filter((edge) => edge.kind === "render" && edge.source === homePage.id && edge.target === productCard.id).length, 1);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "render" && edge.target.includes("MissingComponent")), false);
   assert.equal(nextGraph.summary.edgeCount, nextGraph.edges.length);
 
   const reactGraph = await buildProductionGraph({ rootDir: await buildMiniReactProject() });
