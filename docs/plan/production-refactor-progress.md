@@ -2088,3 +2088,69 @@ Tests/checks run:
 
 Next phase:
 - R5.5 — Production graph exposure strategy / endpoint decision.
+
+## R5.5 — Production graph exposure endpoint
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/graph.routes.ts`
+- `apps/worker-node/src/modules/graph/graph.controller.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts`
+- `packages/contracts/src/index.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Endpoint added:
+- Added `GET /api/graph/production`.
+- Endpoint returns `ProductionGraphResponse` with `mode: "symbol-level"`.
+- Endpoint calls `buildProductionGraph({ rootDir })`, then validates with `validateProductionGraphResponse(...)` before response.
+- Invalid production graph validation returns standard worker `INTERNAL_ERROR` JSON through `HttpError` / error middleware.
+
+Legacy `/api/graph` unchanged:
+- `GET /api/graph` still calls legacy `graphService.buildAndSaveGraph(...)`.
+- Legacy response shape is not migrated and does not return `mode: "symbol-level"`.
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+
+Path-policy behavior:
+- Production endpoint uses `getValidatedProjectPath(req, res, validateGraphQuery)` like legacy graph/report/project endpoints.
+- No query path uses selected `allowedRoot`.
+- `path=<allowedRoot>` succeeds.
+- `projectPath=<allowedRoot>` succeeds as alias for production graph query.
+- Explicit outside path returns `400` or `403` with `PATH_NOT_ALLOWED`; no silent fallback.
+
+Validation behavior:
+- HTTP self-check validates response via `validateProductionGraphResponse(...)`.
+- Builder still validates internally before returning graph.
+- Endpoint validates again before sending response.
+
+Self-check coverage:
+- `GET /api/graph/production` no path returns `200` and `mode: "symbol-level"`.
+- Production response validates and contains page/component/api-route/api-client-method/external-endpoint nodes.
+- Production response contains import/render/call/http edges.
+- `summary.edgeCount === edges.length`.
+- `GET /api/graph/production?path=<allowedRoot>` returns `200`.
+- `GET /api/graph/production?projectPath=<allowedRoot>` returns `200`.
+- `GET /api/graph/production?path=<outsideRoot>` returns `PATH_NOT_ALLOWED`.
+- `GET /api/graph` remains legacy and does not return `mode: "symbol-level"`.
+
+What remains:
+- UI still uses legacy graph.
+- No `/api/graph` response migration yet.
+- No Playwright work.
+- No Vue/PHP extractor work.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.6 — UI production graph integration plan / migration.

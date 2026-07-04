@@ -1,8 +1,15 @@
-import type { Request, Response, NextFunction } from "express";
-import { validateGraphQuery, type GraphResponse } from "@lutest/contracts";
+﻿import type { Request, Response, NextFunction } from "express";
+import {
+  validateGraphQuery,
+  validateProductionGraphResponse,
+  type GraphResponse,
+  type ProductionGraphResponse,
+} from "@lutest/contracts";
 import { graphService } from "./graph.service";
+import { buildProductionGraph } from "./production/production-graph-builder";
 import { pathService } from "../../shared/services/path.service";
 import { getValidatedProjectPath } from "../../shared/http/validated-project-path";
+import { HttpError } from "../../shared/errors/http-error";
 
 export const graphController = {
   async getGraph(
@@ -28,6 +35,27 @@ export const graphController = {
       });
 
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getProductionGraph(
+    req: Request,
+    res: Response<ProductionGraphResponse>,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const projectPath = await getValidatedProjectPath(req, res, validateGraphQuery);
+      if (projectPath === null) return;
+
+      const graph = await buildProductionGraph({ rootDir: projectPath ?? process.cwd() });
+      const validation = validateProductionGraphResponse(graph);
+      if (!validation.ok) {
+        throw new HttpError(500, "INTERNAL_ERROR", validation.message, validation.details);
+      }
+
+      res.json(validation.value);
     } catch (error) {
       next(error);
     }

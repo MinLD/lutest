@@ -120,6 +120,7 @@ export interface ScanRequest {
 }
 export interface ProjectPathQuery {
     path?: string;
+    projectPath?: string;
 }
 export type ScanIssueType = "console" | "syntax" | "overflow" | "todo" | "large-file" | "maintainability" | "unknown";
 export interface ScanIssue {

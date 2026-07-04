@@ -1,4 +1,4 @@
-﻿export type ErrorCode =
+export type ErrorCode =
   | "INVALID_REQUEST"
   | "NOT_FOUND"
   | "INTERNAL_ERROR"
@@ -169,6 +169,7 @@ export interface ScanRequest {
 
 export interface ProjectPathQuery {
   path?: string;
+  projectPath?: string;
 }
 
 export type ScanIssueType =
@@ -355,10 +356,18 @@ export const validateProjectPathQuery = (
     };
   }
 
-  const keys = rejectUnknownKeys(value, ["path"]);
+  const keys = rejectUnknownKeys(value, ["path", "projectPath"]);
   if (!keys.ok) return keys;
 
-  const projectPath = value.path;
+  if (value.path !== undefined && value.projectPath !== undefined) {
+    return {
+      ok: false,
+      code: "INVALID_REQUEST",
+      message: "Use either path or projectPath, not both",
+    };
+  }
+
+  const projectPath = value.path ?? value.projectPath;
   if (Array.isArray(projectPath)) {
     return {
       ok: false,
@@ -373,7 +382,7 @@ export const validateProjectPathQuery = (
       message: "path query must be a non-empty string",
     };
   }
-  return { ok: true, value: { path: projectPath } };
+  return { ok: true, value: { path: projectPath, projectPath } };
 };
 
 export const validateGraphQuery = validateProjectPathQuery;
