@@ -1800,3 +1800,67 @@ Tests/checks run:
 
 Next phase:
 - R5.4 — Production edges: import/render/call/http.
+
+## R5.4.1 — Production import edges
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/production/production-edge-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Import edge source/target convention:
+- Source is file node id: `file:<relativePath>`.
+- Target is resolved internal source file node id: `file:<relativePath>`.
+- R5.4.1 intentionally does not target component/function symbols because import binding/export symbol resolution is out of scope.
+
+Resolver usage:
+- Import extraction uses `extractTsJsImports(...)` from `apps/worker-node/src/modules/graph/import-resolver/`.
+- Target resolution uses `resolveImportTarget(...)` and `readTsconfigPathSettings(...)` from the same import resolver module.
+- No legacy regex import resolver from `graph.service.ts` is used.
+
+Duplicate edge handling:
+- Edge ids are deterministic: `import:<source>-><target>`.
+- Edges are stored in a map by id, so repeated imports from the same source file to the same target file collapse into one edge.
+
+Unresolved import behavior:
+- External package imports such as `react` do not create internal edges.
+- CSS/asset imports such as `./globals.css` do not crash and do not create internal edges unless a supported source file node exists.
+- Missing imports do not create edges.
+
+Self-check coverage:
+- `app/page.tsx` relative import to `components/ProductCard.tsx` creates an import edge.
+- Alias import `@/components/ProductCard` resolves through `tsconfig.json` paths and creates an import edge.
+- Index import `../components` resolves to `components/index.ts` and creates an import edge.
+- Duplicate imports do not create duplicate edges.
+- External import `react` and CSS import `../globals.css` do not create internal edges.
+- `ProductionGraphResponse` validates and `summary.edgeCount === edges.length`.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- `/api/graph` still uses legacy `GraphResponse` path.
+
+What remains:
+- No render edges.
+- No call edges.
+- No HTTP edges.
+- No external-endpoint nodes.
+- No production graph HTTP endpoint.
+- No UI graph migration.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.4.2 — JSX render edges.

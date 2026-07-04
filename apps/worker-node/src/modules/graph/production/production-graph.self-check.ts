@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -21,11 +21,29 @@ const assertNoNodeFor = (graph: Awaited<ReturnType<typeof buildProductionGraph>>
   );
 };
 
+const hasImportEdge = (
+  graph: Awaited<ReturnType<typeof buildProductionGraph>>,
+  source: string,
+  target: string,
+): boolean =>
+  graph.edges.some((edge) => edge.kind === "import" && edge.source === source && edge.target === target);
+
 const buildMiniNextProject = async (): Promise<string> => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-next-production-"));
   await writeFile(path.join(root, "package.json"), JSON.stringify({ dependencies: { next: "latest", react: "latest" } }));
-  await writeFile(path.join(root, "app", "page.tsx"), "export default function HomePage() { return <main />; }");
-  await writeFile(path.join(root, "app", "products", "page.tsx"), "export default function ProductsPage() { return <main />; }");
+  await writeFile(path.join(root, "tsconfig.json"), JSON.stringify({ compilerOptions: { baseUrl: ".", paths: { "@/*": ["*"] } } }));
+  await writeFile(path.join(root, "app", "page.tsx"), `
+    import React from "react";
+    import ProductCard from "../components/ProductCard";
+    import ProductCardAgain from "../components/ProductCard";
+    import Components from "../components";
+    import "../globals.css";
+    export default function HomePage() { return <main><ProductCard /></main>; }
+  `);
+  await writeFile(path.join(root, "app", "products", "page.tsx"), `
+    import ProductCard from "@/components/ProductCard";
+    export default function ProductsPage() { return <main><ProductCard /></main>; }
+  `);
   await writeFile(path.join(root, "app", "api", "products", "route.ts"), "export async function GET() { return Response.json([]); }");
   await writeFile(path.join(root, "src", "app", "page.tsx"), "export default function SrcHomePage() { return <main />; }");
   await writeFile(path.join(root, "src", "app", "products", "page.tsx"), "export default function SrcProductsPage() { return <main />; }");
@@ -34,6 +52,8 @@ const buildMiniNextProject = async (): Promise<string> => {
   await writeFile(path.join(root, "src", "pages", "api", "users.ts"), "export function GET() { return Response.json([]); }");
   await writeFile(path.join(root, "components", "ProductCard.tsx"), "export function ProductCard() { return <article />; }");
   await writeFile(path.join(root, "components", "ProductList.tsx"), "export function ProductList() { return <section />; }");
+  await writeFile(path.join(root, "components", "index.ts"), "export { ProductCard } from './ProductCard';");
+  await writeFile(path.join(root, "globals.css"), ":root {}");
   await writeFile(path.join(root, "lib", "api.ts"), "export async function getProducts() { return fetch('/api/products'); }");
   await writeFile(path.join(root, "hooks", "useProducts.ts"), "export function useProducts() { return []; }");
   await writeFile(path.join(root, "next-env.d.ts"), "/// <reference types='next' />");
@@ -74,7 +94,13 @@ const main = async (): Promise<void> => {
   assert(nextGraph.nodes.some((node) => node.kind === "page" && node.route?.path === "/about"));
   assert(nextGraph.nodes.some((node) => node.kind === "api-route" && node.route?.path === "/products" && node.route.kind === "api"));
   assert(nextGraph.nodes.some((node) => node.kind === "api-route" && node.route?.path === "/api/users" && node.route.kind === "api"));
-  assert.equal(nextGraph.summary.edgeCount, 0);
+  assert(hasImportEdge(nextGraph, "file:app/page.tsx", "file:components/ProductCard.tsx"));
+  assert(hasImportEdge(nextGraph, "file:app/products/page.tsx", "file:components/ProductCard.tsx"));
+  assert(hasImportEdge(nextGraph, "file:app/page.tsx", "file:components/index.ts"));
+  assert.equal(nextGraph.edges.filter((edge) => edge.source === "file:app/page.tsx" && edge.target === "file:components/ProductCard.tsx").length, 1);
+  assert.equal(nextGraph.edges.some((edge) => edge.target === "file:globals.css"), false);
+  assert.equal(nextGraph.edges.some((edge) => edge.target === "file:react"), false);
+  assert.equal(nextGraph.summary.edgeCount, nextGraph.edges.length);
 
   const reactGraph = await buildProductionGraph({ rootDir: await buildMiniReactProject() });
   assertValidGraph(reactGraph);
@@ -82,7 +108,7 @@ const main = async (): Promise<void> => {
   assert(countKind(reactGraph, "component") >= 1, "React component nodes >= 1");
   assert(countKind(reactGraph, "api-client-method") >= 1, "React api-client-method nodes >= 1");
   assert(countKind(reactGraph, "hook") >= 1, "React hook nodes >= 1");
-  assert.equal(reactGraph.summary.edgeCount, 0);
+  assert.equal(reactGraph.summary.edgeCount, reactGraph.edges.length);
 
   console.log("production graph builder self-check passed");
 };
