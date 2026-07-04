@@ -1455,3 +1455,85 @@ Verification rerun:
 
 Next phase:
 - R5.2 — Import extraction + resolver.
+
+## R5.2 — Import extraction + resolver
+
+Status: Done
+Updated: 2026-07-04
+
+Files created:
+- `apps/worker-node/src/modules/graph/import-resolver/import-resolver.types.ts`
+- `apps/worker-node/src/modules/graph/import-resolver/extract-ts-js-imports.ts`
+- `apps/worker-node/src/modules/graph/import-resolver/tsconfig-paths.ts`
+- `apps/worker-node/src/modules/graph/import-resolver/resolve-import-target.ts`
+- `apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts`
+
+Import kinds supported:
+- `static-import`
+- `type-import`
+- `side-effect-import`
+- `export-from`
+- `require`
+- `dynamic-import` when argument is a string literal
+
+Resolver capabilities:
+- Relative imports: `./Button`, `../lib/api`.
+- Exact source candidates.
+- Extension candidates: `.ts`, `.tsx`, `.js`, `.jsx`.
+- Index candidates: `index.ts`, `index.tsx`, `index.js`, `index.jsx`.
+- External package imports are extracted but return `resolved: false`, `reason: "external-package"`.
+- Non-code imports such as `.css` are extracted but not resolved as TS/JS source.
+
+TS config support:
+- Reads `tsconfig.json` or `jsconfig.json` from project root.
+- Supports `compilerOptions.baseUrl`.
+- Supports `compilerOptions.paths`, including `@/*` and aliases such as `@lib/*`.
+- Missing config is handled as conservative fallback.
+- Malformed config returns diagnostics and does not throw in normal resolver flow.
+- Paths normalize Windows separators to `/`.
+
+Unresolved import behavior:
+- Missing target returns `resolved: false`, `targetFilePath: null`, `reason: "target-not-found"`.
+- External packages return `reason: "external-package"`.
+- Malformed config returns `reason: "config-invalid"` when provided to resolver.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` was not migrated.
+- `/api/graph` legacy `GraphResponse` shape remains unchanged.
+- Legacy regex import resolver remains in `graph.service.ts` until production graph builder phases.
+
+Self-check coverage:
+- Relative import `./Button` resolves to `Button.tsx`.
+- Relative index import `./components` resolves to `components/index.ts`.
+- Alias `@/components/Button` resolves through `@/*`.
+- Alias `@lib/*` resolves to `src/lib/*`.
+- `export-from` is detected.
+- `require("./legacy")` is detected.
+- `dynamic import("./lazy")` is detected.
+- External import `react` is unresolved with `external-package`.
+- CSS import is extracted and does not crash.
+- Missing target returns `target-not-found`.
+- Malformed tsconfig does not crash.
+
+Limitations:
+- Resolver is internal only; no production graph edges are built yet.
+- No `GET /api/graph` response change.
+- No `ProductionGraphResponse` builder.
+- No render/call/http edges.
+- No UI or Playwright changes.
+- No Vue/PHP import extraction.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- Optional `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- Optional `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed.
+- Optional `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — failed on pre-existing outside-root expectation; not part of R5.2 import resolver scope.
+
+Next phase:
+- R5.3 — Production project symbol scan / production node builder.
