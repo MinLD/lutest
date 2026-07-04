@@ -32,6 +32,7 @@ export const classifyExtractedSourceFile = (input: {
         loc: symbol.loc,
         confidence: classified.confidence,
         reason: classified.reason,
+        route: classified.route,
       },
     ];
   });

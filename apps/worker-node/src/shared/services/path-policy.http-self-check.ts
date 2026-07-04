@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import type http from "node:http";
 import os from "node:os";
@@ -88,6 +88,12 @@ async function main(): Promise<void> {
         `/api/project?path=${encodeURIComponent(allowedRoot)}`,
       ),
       "GET /api/project allowedRoot",
+    );    assertAllowed(
+      await requestJson(
+        baseUrl,
+        `/api/project?path=${encodeURIComponent(path.join(allowedRoot, "src"))}`,
+      ),
+      "GET /api/project allowedRoot child",
     );
     assertPathDenied(
       await requestJson(

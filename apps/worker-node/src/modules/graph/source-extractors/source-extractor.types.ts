@@ -11,6 +11,11 @@ export type ExtractorLanguage = "ts-js" | "vue" | "php" | "unsupported";
 
 export type GraphConfidence = "high" | "medium" | "low";
 
+export type SourceRouteInfo = {
+  path: string;
+  kind: "page" | "api";
+};
+
 export type RawSymbolKind =
   | "function"
   | "class"
@@ -68,6 +73,7 @@ export type ClassifiedSourceSymbol = {
   };
   confidence: GraphConfidence;
   reason: string;
+  route?: SourceRouteInfo;
 };
 
 export type ExtractedSourceFile = {

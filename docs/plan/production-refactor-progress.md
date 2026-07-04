@@ -1537,3 +1537,266 @@ Tests/checks run:
 
 Next phase:
 - R5.3 — Production project symbol scan / production node builder.
+
+## R5.3 — Production project symbol scan / production node builder
+
+Status: Done
+Updated: 2026-07-04
+
+Files created:
+- `apps/worker-node/src/modules/graph/production/production-project-scanner.ts`
+- `apps/worker-node/src/modules/graph/production/production-node-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+
+Scanner behavior:
+- Lists TS/JS source files under project root.
+- Ignores `node_modules`, `.git`, `dist`, `build`, `.next`, `.lutest`, `coverage`.
+- Ignores `.d.ts`, `.test.*`, `.spec.*`, `.stories.*`.
+- Reads file content and uses `sourceExtractorRegistry.extract(...)`.
+- Uses `frameworkAdapterRegistry.getAdapterForProject(rootDir)` unless framework override is passed.
+- Classifies symbols through `classifyExtractedSourceFile(...)`.
+- Does not hardcode Next in scanner; framework logic stays in adapters.
+
+Node kinds supported:
+- `file`
+- `page`
+- `component`
+- `hook`
+- `api-route`
+- `api-client-method`
+- `utility`
+
+Summary behavior:
+- Builds `fileCount`, `pageCount`, `componentCount`, `hookCount`, `apiRouteCount`, `apiClientMethodCount`, `externalEndpointCount`, `edgeCount`.
+- R5.3 sets `externalEndpointCount = 0` because endpoint nodes are not built yet.
+- R5.3 sets `edgeCount = 0` because edges are intentionally left for R5.4+.
+
+Validation behavior:
+- Internal builder returns `ProductionGraphResponse` with `mode: "symbol-level"`.
+- Builder validates output with `validateProductionGraphResponse(...)` before returning.
+- Builder throws if validation fails.
+
+Route metadata:
+- Basic Next route metadata added for App Router and Pages Router:
+  - `app/page.tsx` -> `/`
+  - `app/products/page.tsx` -> `/products`
+  - `app/api/products/route.ts` -> `/api/products`
+  - `pages/about.tsx` -> `/about`
+  - `pages/api/users.ts` -> `/api/users`
+
+Self-check coverage:
+- Mini Next project checks page/component/api-route/api-client-method/hook nodes.
+- Mini Next project verifies `.d.ts` and `.test.tsx` do not produce nodes.
+- Mini Next project verifies basic route metadata.
+- Mini React/Vite project checks page/component/api-client-method/hook nodes.
+- Both graphs validate with `validateProductionGraphResponse(...)`.
+
+What remains:
+- No import/render/call/http edges yet.
+- No `external-endpoint` nodes yet.
+- No `/api/graph` response change.
+- No `graph.service.ts` migration.
+- No UI or Playwright work.
+- No Vue/PHP production scanning.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` stayed legacy `GraphResponse` path.
+- R5.3 did not change `/api/graph` response shape.
+
+Known unrelated issue:
+- Command: `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts`
+- Result: `PATH_POLICY_HTTP_SELF_CHECK_EXIT_1`.
+- Error summary: `AssertionError [ERR_ASSERTION]: GET /api/project outsideRoot should return 400 or 403` at `path-policy.http-self-check.ts:37`.
+- Why unrelated to R5.3: R5.3 only adds internal production graph scanner/node builder modules and does not modify project/report/path HTTP controllers or path policy.
+- Owner phase to fix later: path policy hardening/regression phase, not production graph node builder.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- Optional `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- Optional `npx tsx ./apps/worker-node/src/modules/report/report-integrity.self-check.ts` — passed.
+- Optional `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — failed as known unrelated issue above.
+
+Next phase:
+- R5.4 — Production edges: import/render/call/http.
+
+## R5.3.1 — Production scanner/framework boundary cleanup
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/source-extractors/source-extractor.types.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/source-extractor-registry.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/classify-extracted-source-file.ts`
+- `apps/worker-node/src/modules/graph/adapters/next-js-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/react.adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts`
+- `apps/worker-node/src/modules/graph/production/production-project-scanner.ts`
+- `apps/worker-node/src/modules/graph/production/production-node-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Boundary cleanup:
+- Removed production scanner hardcoded `SOURCE_EXTENSIONS`.
+- Added/used `sourceExtractorRegistry.getExtractor(filePath)` and `sourceExtractorRegistry.isSupportedSourceFile(filePath)` discovery API.
+- Moved production route metadata ownership to framework adapters.
+- `ClassifiedGraphSymbol` and `ClassifiedSourceSymbol` now carry optional `route` metadata.
+- `production-node-builder.ts` now consumes `symbol.route`; it no longer owns Next App Router or Pages Router route logic.
+- `tsJsSourceExtractor.supports()` owns TS/JS inclusion rules and excludes `.d.ts`, `.test.*`, `.spec.*`, `.stories.*`.
+
+Route metadata:
+- Next adapter returns page route metadata for App Router and Pages Router pages.
+- Next adapter returns API route metadata for App Router `route.*` handlers and Pages API files.
+- React adapter returns page route metadata for `pages` / `routes` page components.
+- Component/hook/api-client symbols do not receive route metadata.
+
+Self-check coverage:
+- Scanner discovers supported files via source extractor registry behavior.
+- `.d.ts`, `.test.*`, `.spec.*`, `.stories.*` are excluded through extractor support rules.
+- Next `app/page.tsx`, `app/products/page.tsx`, `app/api/products/route.ts`, `pages/index.tsx`, and `pages/api/users.ts` route metadata covered.
+- React `src/pages/Home.tsx` route metadata covered.
+- Production graph still validates `ProductionGraphResponse` and edge count remains zero.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- Legacy `/api/graph` still returns `GraphResponse`.
+- Legacy path still uses `getLegacyAdapterForProject`, `detectSymbols`, and legacy import regex behavior.
+
+Remaining limitations:
+- No import/render/call/http edges yet.
+- No external endpoint nodes yet.
+- No production graph endpoint exposure yet.
+- No Vue/PHP source extractor or framework adapter yet.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+
+Next phase:
+- R5.4 — Production edges: import/render/call/http.
+
+## R5.3.2 — Production node ID and adapter route correctness
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/adapters/next-js-adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/react.adapter.ts`
+- `apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Node ID convention:
+- `ProductionGraphNode.id === ClassifiedSourceSymbol.id` for symbol nodes.
+- `production-node-builder.ts` already uses `symbol.id`; self-check now verifies no double prefix such as `component:component:`, `page:page:`, or `api-route:api-route:`.
+- This keeps future edge targets able to reference classified symbol IDs directly.
+
+Next route fixes:
+- Route derivation now uses `app` / `pages` segment index instead of `startsWith("app/")` or `startsWith("pages/")`.
+- `src/app/page.tsx` maps to `/`.
+- `src/app/products/page.tsx` maps to `/products`.
+- `src/app/products/route.ts` maps to `{ path: "/products", kind: "api" }`.
+- `src/pages/about.tsx` maps to `/about`.
+- `src/pages/api/users.ts` maps to `{ path: "/api/users", kind: "api" }`.
+- Route metadata remains attached only to page and api-route symbols.
+
+React priority fix:
+- React classify order is now hook -> page -> component with JSX -> component by component file/PascalCase -> api-client-method -> utility.
+- PascalCase component files with direct `fetch()` but no JSX remain components.
+- Service functions with direct `fetch()` remain api-client-method.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- Legacy `/api/graph` still returns `GraphResponse`.
+- No R5.4 edges added in this phase.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.4 — Production edges: import/render/call/http.
+
+## R2.2 — Path policy selected project root fix
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/shared/services/path-policy.service.ts`
+- `apps/worker-node/src/shared/services/path-policy.http-self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Investigation before fix:
+- Request URL: `GET /api/project?path=<outsideRoot>`.
+- Query passed: `path=C:\Users\DDML\AppData\Local\Temp\lutest-r22-probe-1Pqnud\outside`.
+- `allowedRoot` in probe: `C:\Users\DDML\AppData\Local\Temp\lutest-r22-probe-1Pqnud\allowed`.
+- `outsideRoot` in probe: `C:\Users\DDML\AppData\Local\Temp\lutest-r22-probe-1Pqnud\outside`.
+- Actual status before fix: `200`.
+- Actual response body before fix: project summary for `outside`, with `rootDir` pointing at outside root and `packageJsonExists: false`.
+
+Root cause:
+- `pathPolicyService.assertProjectRoot()` resolved the configured selected project root, then resolved explicit request path, but outside-root and blocked-segment guards were commented out.
+- Because those guards were disabled, explicit outside paths were accepted and downstream `/api/project` returned `200` instead of `PATH_NOT_ALLOWED`.
+
+Allowed root semantics after fix:
+- `allowedRoot` comes from `LUTEST_PROJECT_PATH`, then legacy `PROJECT_PATH`, then dev fallback `process.cwd()` only when no explicit project root env exists.
+- Selected project root may be outside Lutest repo and outside worker cwd.
+- No request path means selected `allowedRoot` is used.
+- Explicit request path must resolve to a directory inside or equal to selected `allowedRoot`.
+- Explicit outside path returns `PATH_NOT_ALLOWED`; no silent fallback to selected root.
+
+`/api/project` behavior after fix:
+- `GET /api/project` succeeds using selected `allowedRoot`.
+- `GET /api/project?path=<allowedRoot>` succeeds.
+- `GET /api/project?path=<allowedRoot>/src` succeeds when child directory exists.
+- `GET /api/project?path=<outsideRoot>` returns `400` or `403` with `PATH_NOT_ALLOWED`.
+
+Self-check coverage:
+- HTTP self-check covers `/api/project` no path, allowed root, allowed child, and outside root.
+- HTTP self-check covers `/api/graph`, `/api/report/latest`, and `POST /api/actions/scan` outside-root rejection.
+- Path service self-check proves worker cwd and selected project root can differ.
+- Path policy service self-check covers allowed root, child root, sibling/outside root, missing root, and blocked generated path.
+
+What was not changed:
+- No R5.4 edges.
+- No production graph endpoint.
+- No UI changes.
+- No `graph.service.ts` migration.
+- No source extractor changes.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.service.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path.service.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.4 — Production edges: import/render/call/http.

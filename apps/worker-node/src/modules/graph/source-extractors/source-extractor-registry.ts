@@ -1,11 +1,14 @@
-﻿import type { SourceExtractor } from "./source-extractor.types";
+﻿import type {
+  ExtractedSourceFile,
+  SourceExtractor,
+} from "./source-extractor.types";
 import { tsJsSourceExtractor } from "./ts-js/ts-js-source-extractor";
 
 const unsupportedSourceExtractor: SourceExtractor = {
   language: "unsupported",
 
   supports() {
-    return true;
+    return false;
   },
 
   extract({ filePath }) {
@@ -22,14 +25,15 @@ const unsupportedSourceExtractor: SourceExtractor = {
 const extractors = [tsJsSourceExtractor];
 
 export const sourceExtractorRegistry = {
-  getExtractor(filePath: string): SourceExtractor {
-    return (
-      extractors.find((extractor) => extractor.supports(filePath)) ??
-      unsupportedSourceExtractor
-    );
+  getExtractor(filePath: string): SourceExtractor | null {
+    return extractors.find((extractor) => extractor.supports(filePath)) ?? null;
   },
 
-  extract(input: { filePath: string; content: string }) {
-    return this.getExtractor(input.filePath).extract(input);
+  isSupportedSourceFile(filePath: string): boolean {
+    return this.getExtractor(filePath) !== null;
+  },
+
+  extract(input: { filePath: string; content: string }): ExtractedSourceFile {
+    return (this.getExtractor(input.filePath) ?? unsupportedSourceExtractor).extract(input);
   },
 };

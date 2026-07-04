@@ -1,6 +1,7 @@
 ﻿import type {
   GraphConfidence,
   RawSourceSymbol,
+  SourceRouteInfo,
 } from "../source-extractors/source-extractor.types";
 
 export type ClassifiedGraphSymbolKind =
@@ -15,6 +16,7 @@ export type ClassifiedGraphSymbol = {
   kind: ClassifiedGraphSymbolKind;
   confidence: GraphConfidence;
   reason: string;
+  route?: SourceRouteInfo;
 };
 
 export type ClassifiedFile = {

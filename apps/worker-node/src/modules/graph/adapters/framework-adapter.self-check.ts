@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { classifyExtractedSourceFile } from "./classify-extracted-source-file";
 import { parseAndExtractRawSymbols } from "../source-extractors/ts-js/extract-ts-js-symbols";
 import { frameworkAdapterRegistry } from "./framework-adapter-registry";
@@ -41,6 +41,94 @@ assert.equal(
   })?.kind,
   "api-route",
 );
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "app/page.tsx",
+    content: "export default function HomePage() { return <main />; }",
+  })?.route,
+  { path: "/", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "app/products/page.tsx",
+    content: "export default function ProductsPage() { return <main />; }",
+  })?.route,
+  { path: "/products", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "app/api/products/route.ts",
+    content: "export async function GET() { return Response.json([]); }",
+  })?.route,
+  { path: "/api/products", kind: "api" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "pages/index.tsx",
+    content: "export default function HomePage() { return <main />; }",
+  })?.route,
+  { path: "/", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "pages/api/users.ts",
+    content: "export function GET() { return Response.json([]); }",
+  })?.route,
+  { path: "/api/users", kind: "api" },
+);
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "src/app/page.tsx",
+    content: "export default function HomePage() { return <main />; }",
+  })?.route,
+  { path: "/", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "src/app/products/page.tsx",
+    content: "export default function ProductsPage() { return <main />; }",
+  })?.route,
+  { path: "/products", kind: "page" },
+);
+
+const srcAppRoute = classify({
+  framework: "next",
+  filePath: "src/app/products/route.ts",
+  content: "export async function GET() { return Response.json([]); }",
+});
+assert.equal(srcAppRoute?.kind, "api-route");
+assert.deepEqual(srcAppRoute?.route, { path: "/products", kind: "api" });
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "src/pages/about.tsx",
+    content: "export default function AboutPage() { return <main />; }",
+  })?.route,
+  { path: "/about", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "src/pages/api/users.ts",
+    content: "export function GET() { return Response.json([]); }",
+  })?.route,
+  { path: "/api/users", kind: "api" },
+);
+
 
 assert.equal(
   classify({
@@ -50,6 +138,15 @@ assert.equal(
   })?.kind,
   "page",
 );
+assert.deepEqual(
+  classify({
+    framework: "react",
+    filePath: "src/pages/Home.tsx",
+    content: "export function Home() { return <main />; }",
+  })?.route,
+  { path: "/home", kind: "page" },
+);
+
 
 assert.equal(
   frameworkAdapterRegistry.getAdapterForFramework("vite-react"),
@@ -69,6 +166,14 @@ assert.equal(
     framework: "react",
     filePath: "src/components/ProductCard.tsx",
     content: "export function ProductCard() { fetch('/api/products'); return <article />; }",
+  })?.kind,
+  "component",
+);
+assert.equal(
+  classify({
+    framework: "react",
+    filePath: "src/components/ProductCard.tsx",
+    content: "export function ProductCard() { return fetch('/api/products'); }",
   })?.kind,
   "component",
 );

@@ -106,6 +106,46 @@ const isComponent = (relativePath: string): boolean => {
   return /^[A-Z]/.test(stem);
 };
 
+
+const routeAfterSegment = (relativePath: string, segment: "app" | "pages") => {
+  const segments = getPathSegments(relativePath);
+  const segmentIndex = segments.indexOf(segment);
+  if (segmentIndex < 0) return undefined;
+  return segments.slice(segmentIndex + 1).join("/");
+};
+
+const routeFromAppPath = (relativePath: string) => {
+  const routeFilePath = routeAfterSegment(relativePath, "app");
+  if (routeFilePath === undefined) return undefined;
+  if (/(^|\/)page\.(tsx|jsx|ts|js)$/.test(routeFilePath)) {
+    const route = routeFilePath.replace(/(^|\/)page\.(tsx|jsx|ts|js)$/, "").replace(/\/$/, "");
+    return { path: route ? `/${route}` : "/", kind: "page" as const };
+  }
+  if (/(^|\/)route\.(tsx|jsx|ts|js)$/.test(routeFilePath)) {
+    const route = routeFilePath.replace(/(^|\/)route\.(tsx|jsx|ts|js)$/, "").replace(/\/$/, "");
+    return { path: route ? `/${route}` : "/", kind: "api" as const };
+  }
+  return undefined;
+};
+
+const routeFromPagesPath = (relativePath: string) => {
+  const routeFilePath = routeAfterSegment(relativePath, "pages");
+  if (routeFilePath === undefined) return undefined;
+  const route = routeFilePath
+    .replace(/\.(tsx|jsx|ts|js)$/, "")
+    .replace(/\/index$/, "")
+    .replace(/^index$/, "");
+  if (route.startsWith("api/")) return { path: `/${route}`, kind: "api" as const };
+  return { path: route ? `/${route}` : "/", kind: "page" as const };
+};
+
+const routeForSymbol = (relativePath: string, kind: "page" | "api-route") => {
+  const route = routeFromAppPath(relativePath) ?? routeFromPagesPath(relativePath);
+  if (!route) return undefined;
+  if (kind === "page" && route.kind === "page") return route;
+  if (kind === "api-route" && route.kind === "api") return route;
+  return undefined;
+};
 export const nextJsAdapter: FrameworkAdapter = {
   name: "next",
 
@@ -124,11 +164,11 @@ export const nextJsAdapter: FrameworkAdapter = {
       file.isPageFile &&
       (symbol.defaultExport || (symbol.pascalCase && symbol.hasJsx))
     ) {
-      return { kind: "page", confidence: "high", reason: "Next page file component export" };
+      return { kind: "page", confidence: "high", reason: "Next page file component export", route: routeForSymbol(relativePath, "page") };
     }
 
     if (file.isApiRouteFile && HTTP_METHODS.has(symbol.name)) {
-      return { kind: "api-route", confidence: "high", reason: "HTTP method handler in Next API route file" };
+      return { kind: "api-route", confidence: "high", reason: "HTTP method handler in Next API route file", route: routeForSymbol(relativePath, "api-route") };
     }
 
     if (symbol.hookName) {

@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { sourceExtractorRegistry } from "../source-extractor-registry";
 import { parseTsJsSourceFile } from "./parse-ts-js-source-file";
 import { tsJsSourceExtractor } from "./ts-js-source-extractor";
@@ -55,6 +55,11 @@ const declarationResult = sourceExtractorRegistry.extract({
 assert.equal(declarationResult.kind, "unsupported");
 assert.equal(declarationResult.symbols.length, 0);
 assert.equal(tsJsSourceExtractor.supports("next-env.d.ts"), false);
+assert.equal(tsJsSourceExtractor.supports("src/components/Card.test.tsx"), false);
+assert.equal(tsJsSourceExtractor.supports("src/components/Card.spec.tsx"), false);
+assert.equal(tsJsSourceExtractor.supports("src/components/Card.stories.tsx"), false);
+assert.equal(sourceExtractorRegistry.isSupportedSourceFile("src/components/Card.tsx"), true);
+assert.equal(sourceExtractorRegistry.isSupportedSourceFile("src/components/Card.test.tsx"), false);
 assert.equal(parseTsJsSourceFile("src/types/global.d.ts", "declare const x: string").sourceFile, null);
 
 const duplicateMethods = extract(
