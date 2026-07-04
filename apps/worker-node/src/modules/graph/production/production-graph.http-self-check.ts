@@ -55,8 +55,10 @@ const countKind = (graph: ProductionGraphResponse, kind: string): number =>
 
 const main = async (): Promise<void> => {
   const oldProjectPath = process.env.LUTEST_PROJECT_PATH;
+  const oldLegacyProjectPath = process.env.PROJECT_PATH;
   const { allowedRoot, outsideRoot } = await buildProject();
   process.env.LUTEST_PROJECT_PATH = allowedRoot;
+  delete process.env.PROJECT_PATH;
   const { baseUrl, server } = await listen(createApp());
 
   try {
@@ -87,7 +89,10 @@ const main = async (): Promise<void> => {
     assert(validateProductionGraphResponse(productionAllowedAlias.body).ok, "projectPath alias validates");
 
     const productionOutside = await requestJson(baseUrl, `/api/graph/production?path=${encodeURIComponent(outsideRoot)}`);
-    assert(productionOutside.status === 400 || productionOutside.status === 403, "outside path rejected");
+    assert(
+      productionOutside.status === 400 || productionOutside.status === 403,
+      `outside path rejected; got ${productionOutside.status} ${JSON.stringify(productionOutside.body)}`,
+    );
     assert.equal((productionOutside.body as { error?: { code?: string } }).error?.code, "PATH_NOT_ALLOWED");
 
     const legacy = await requestJson(baseUrl, "/api/graph");
@@ -103,6 +108,11 @@ const main = async (): Promise<void> => {
       delete process.env.LUTEST_PROJECT_PATH;
     } else {
       process.env.LUTEST_PROJECT_PATH = oldProjectPath;
+    }
+    if (oldLegacyProjectPath === undefined) {
+      delete process.env.PROJECT_PATH;
+    } else {
+      process.env.PROJECT_PATH = oldLegacyProjectPath;
     }
   }
 };

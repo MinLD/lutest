@@ -19,36 +19,72 @@
       "filePath": "src/app/page.tsx"
     },
     {
-      "id": "file:src/components/dashboard-shell.tsx",
-      "type": "component",
-      "label": "dashboard-shell.tsx",
-      "filePath": "src/components/dashboard-shell.tsx"
-    },
-    {
       "id": "file:src/lib/api-client.ts",
       "type": "file",
       "label": "api-client.ts",
       "filePath": "src/lib/api-client.ts"
     },
     {
+      "id": "file:src/lib/dashboard-data-request.self-check.ts",
+      "type": "file",
+      "label": "dashboard-data-request.self-check.ts",
+      "filePath": "src/lib/dashboard-data-request.self-check.ts"
+    },
+    {
+      "id": "file:src/lib/production-graph-adapter.self-check.ts",
+      "type": "file",
+      "label": "production-graph-adapter.self-check.ts",
+      "filePath": "src/lib/production-graph-adapter.self-check.ts"
+    },
+    {
+      "id": "file:src/lib/production-graph-adapter.ts",
+      "type": "file",
+      "label": "production-graph-adapter.ts",
+      "filePath": "src/lib/production-graph-adapter.ts"
+    },
+    {
       "id": "file:src/lib/use-dashboard-data.ts",
       "type": "file",
       "label": "use-dashboard-data.ts",
       "filePath": "src/lib/use-dashboard-data.ts"
+    },
+    {
+      "id": "file:src/components/dashboard-shell.tsx",
+      "type": "component",
+      "label": "dashboard-shell.tsx",
+      "filePath": "src/components/dashboard-shell.tsx"
     }
   ],
   "edges": [
+    {
+      "id": "import:file:src/lib/dashboard-data-request.self-check.ts->file:src/lib/api-client.ts",
+      "type": "import",
+      "source": "file:src/lib/dashboard-data-request.self-check.ts",
+      "target": "file:src/lib/api-client.ts"
+    },
+    {
+      "id": "import:file:src/lib/production-graph-adapter.self-check.ts->file:src/lib/production-graph-adapter.ts",
+      "type": "import",
+      "source": "file:src/lib/production-graph-adapter.self-check.ts",
+      "target": "file:src/lib/production-graph-adapter.ts"
+    },
     {
       "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
       "type": "import",
       "source": "file:src/lib/use-dashboard-data.ts",
       "target": "file:src/lib/api-client.ts"
+    },
+    {
+      "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/production-graph-adapter.ts",
+      "type": "import",
+      "source": "file:src/lib/use-dashboard-data.ts",
+      "target": "file:src/lib/production-graph-adapter.ts"
     }
   ],
   "summary": {
     "pageCount": 1,
     "componentCount": 1,
     "apiCount": 0,
-    "fileCount": 6
+    "fileCount": 9
   }
 }

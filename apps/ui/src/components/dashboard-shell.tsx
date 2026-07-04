@@ -8,7 +8,12 @@ import type {
   StatusResponse,
 } from "@lutest/contracts";
 import { BugOff, ChevronUp, Grid2X2, Menu, Moon, Rose, X } from "lucide-react";
-import { useDashboardData } from "@/lib/use-dashboard-data";
+import type { UiGraphModel } from "@/lib/production-graph-adapter";
+import {
+  DEFAULT_GRAPH_MODE,
+  type GraphMode,
+  useDashboardData,
+} from "@/lib/use-dashboard-data";
 
 const navPrimary: [string, string, boolean][] = [
   ["Endpoint", "⌘", true],
@@ -39,10 +44,7 @@ function latestReportLabel(report: LatestReportResponse | null) {
   if (!report) return ["no report", "empty"];
   if (report.state === "valid") return [report.report.scanId, report.report.status];
 
-  return [
-    report.error?.message ?? "report unavailable",
-    report.state,
-  ];
+  return ["report unavailable", report.state];
 }
 
 function BrandMark() {
@@ -239,10 +241,14 @@ function MobileHeader({ onOpenMenu }: { onOpenMenu: () => void }) {
 function Topbar({
   project,
   isScanning,
+  graphMode,
+  onGraphModeChange,
   onRunScan,
 }: {
   project: ProjectSummary | null;
   isScanning: boolean;
+  graphMode: GraphMode;
+  onGraphModeChange: (graphMode: GraphMode) => void;
   onRunScan: () => void;
 }) {
   return (
@@ -264,6 +270,22 @@ function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
+        <div className="flex rounded-xl border border-[#dbe7f5] bg-white p-1 text-xs font-bold text-[#667085]">
+          {(["legacy", "production"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => onGraphModeChange(mode)}
+              className={`rounded-lg px-3 py-1.5 transition ${
+                graphMode === mode
+                  ? "bg-[#2563eb] text-white"
+                  : "hover:bg-[#f2f6fb]"
+              }`}
+            >
+              {mode}
+            </button>
+          ))}
+        </div>
         <button className="flex items-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-sm font-bold text-pink-600">
           <Rose /> Donate
         </button>
@@ -388,6 +410,53 @@ function ProviderGrid({
   );
 }
 
+function ProductionProviderGrid({
+  graph,
+  latestReport,
+}: {
+  graph: UiGraphModel | null;
+  latestReport: LatestReportResponse | null;
+}) {
+  const providers = [
+    ["Pages", `${graph?.summary.pageCount ?? 0} nodes`, "production"],
+    ["Components", `${graph?.summary.componentCount ?? 0} nodes`, "production"],
+    ["API routes", `${graph?.summary.apiRouteCount ?? 0} nodes`, "production"],
+    ["Issues", `${countIssues(latestReport)} found`, "report"],
+  ];
+
+  return (
+    <section>
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <SectionTitle
+          icon="â–¤"
+          title="Production graph providers"
+          subtitle="Symbol-level graph data from /api/graph/production"
+        />
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {providers.map(([name, meta, state]) => (
+          <article
+            key={name}
+            className="rounded-[1.1rem] bg-white p-5 shadow-[0_1px_0_#dbe7f5,0_12px_28px_rgba(36,63,103,0.045)] transition hover:-translate-y-0.5"
+          >
+            <div className="mb-4 grid size-11 place-items-center rounded-xl bg-[#e8f1ff] text-xl text-[#2563eb]">
+              â—ˆ
+            </div>
+            <h3 className="text-lg font-semibold tracking-[-0.03em] text-[#111827]">
+              {name}
+            </h3>
+            <p className="mt-1 text-sm text-[#667085]">{meta}</p>
+            <p className="mt-4 inline-flex rounded-full bg-[#e6f7ee] px-3 py-1 text-xs font-bold text-[#0d9b51]">
+              {state}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function GraphPanel({ graph }: { graph: GraphResponse | null }) {
   const pages =
     graph?.nodes.filter((node) => node.type === "page").slice(0, 6) ?? [];
@@ -417,6 +486,43 @@ function GraphPanel({ graph }: { graph: GraphResponse | null }) {
             rows={components.map((node) => node.label)}
           />
           <GraphColumn title="APIs" rows={apis.map((node) => node.filePath)} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProductionGraphPanel({ graph }: { graph: UiGraphModel | null }) {
+  const pages = graph?.nodes.filter((node) => node.type === "page").slice(0, 6) ?? [];
+  const components =
+    graph?.nodes.filter((node) => node.type === "component").slice(0, 6) ?? [];
+  const endpoints =
+    graph?.nodes.filter((node) => node.type === "external-endpoint").slice(0, 6) ?? [];
+
+  return (
+    <section className="rounded-[1.35rem] bg-white p-4 shadow-[0_1px_0_#dbe7f5,0_18px_50px_rgba(36,63,103,0.06)] sm:p-7">
+      <SectionTitle
+        icon="â—‡"
+        title="Production route graph"
+        subtitle={`${graph?.summary.nodeCount ?? 0} nodes Â· ${
+          graph?.summary.edgeCount ?? 0
+        } edges`}
+      />
+
+      <div className="mt-6 min-h-[18rem] rounded-[1.1rem] border border-dashed border-[#dbe7f5] bg-[#fbfdff] p-4 sm:mt-7 sm:min-h-[22rem] sm:p-5">
+        <div className="grid h-full gap-4 md:grid-cols-[1fr_1.1fr_0.9fr]">
+          <GraphColumn
+            title="Pages"
+            rows={pages.map((node) => node.route?.path ?? node.filePath ?? node.label)}
+          />
+          <GraphColumn
+            title="Components"
+            rows={components.map((node) => node.label)}
+          />
+          <GraphColumn
+            title="Endpoints"
+            rows={endpoints.map((node) => node.label)}
+          />
         </div>
       </div>
     </section>
@@ -456,7 +562,7 @@ function ScanList({
   const issues = report?.issues.slice(0, 6) ?? [];
   const invalidMessage =
     latestReport && latestReport.state !== "valid"
-      ? latestReport.error?.message?
+      ? "Report unavailable"
       : null;
 
   return (
@@ -545,7 +651,9 @@ function SectionTitle({
 
 export function DashboardShell() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const { data, isLoading, isScanning, error, runScan } = useDashboardData();
+  const [graphMode, setGraphMode] = useState<GraphMode>(DEFAULT_GRAPH_MODE);
+  const { data, isLoading, isScanning, error, runScan } =
+    useDashboardData(undefined, graphMode);
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#fbfdff] text-[#111827]">
@@ -560,6 +668,8 @@ export function DashboardShell() {
           <Topbar
             project={data.project}
             isScanning={isScanning}
+            graphMode={graphMode}
+            onGraphModeChange={setGraphMode}
             onRunScan={runScan}
           />
           <div className="grid gap-5 sm:gap-6">
@@ -569,9 +679,20 @@ export function DashboardShell() {
               project={data.project}
               latestReport={data.latestReport}
             />
-            <ProviderGrid graph={data.graph} latestReport={data.latestReport} />
+            {graphMode === "production" ? (
+              <ProductionProviderGrid
+                graph={data.productionGraphView}
+                latestReport={data.latestReport}
+              />
+            ) : (
+              <ProviderGrid graph={data.graph} latestReport={data.latestReport} />
+            )}
             <div className="grid gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-              <GraphPanel graph={data.graph} />
+              {graphMode === "production" ? (
+                <ProductionGraphPanel graph={data.productionGraphView} />
+              ) : (
+                <GraphPanel graph={data.graph} />
+              )}
               <ScanList latestReport={data.latestReport} />
             </div>
           </div>

@@ -2154,3 +2154,251 @@ Tests/checks run:
 
 Next phase:
 - R5.6 — UI production graph integration plan / migration.
+
+## R5.6 — UI production graph integration
+
+Status: completed.
+
+Files changed:
+- `apps/ui/src/lib/api-client.ts`
+- `apps/ui/src/lib/use-dashboard-data.ts`
+- `apps/ui/src/lib/production-graph-adapter.ts`
+- `apps/ui/src/lib/production-graph-adapter.self-check.ts`
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/next.config.ts`
+- `apps/ui/tsconfig.json`
+- `docs/plan/production-refactor-progress.md`
+
+Client/API changes:
+- Added `lutestApi.getProductionGraph(projectPath?)` for `GET /api/graph/production`.
+- Production graph response is runtime-validated with `validateProductionGraphResponse(...)` before UI use.
+- Legacy `lutestApi.getGraph(projectPath?)` remains pointed at `GET /api/graph`.
+
+Adapter changes:
+- Added `adaptProductionGraphToUiGraph(...)` for `ProductionGraphResponse -> UiGraphModel`.
+- Adapter maps production node/edge types without framework route inference.
+- Adapter preserves `node.route` metadata from backend output.
+- Adapter self-check covers node mapping, edge mapping, endpoint label, summary counts, contract validation, and no source mutation.
+
+Dual-mode UI strategy:
+- Default graph mode is `legacy` unless `NEXT_PUBLIC_LUTEST_GRAPH_MODE=production`.
+- Dashboard has a small `legacy` / `production` toggle.
+- Legacy mode renders existing `ProviderGrid` and `GraphPanel` from legacy `GraphResponse`.
+- Production mode fetches only `/api/graph/production` and renders production summary/panel from the adapted model.
+
+Build cleanup:
+- Fixed existing UI report-state assumptions to match `LatestReportResponse` contract.
+- Disabled typed routes in `apps/ui/next.config.ts` and removed stale `.next/dev/types` cache after generated route types were corrupt.
+- `apps/ui/tsconfig.json` may still be auto-updated by Next to include `.next/dev/types/**/*.ts` during build.
+
+Not changed:
+- `GET /api/graph` legacy behavior unchanged.
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- No worker production graph builder changes.
+- No Playwright work.
+- No Vue/PHP extractor work.
+- No large UI layout rewrite.
+
+Known limitations:
+- Production UI is a minimal symbol-level list view, not visual grouping/layout hardening.
+- Production mode does not migrate existing graph visualization semantics beyond summary columns.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but checked commands exited `0`.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed after clearing corrupt `.next/dev` cache.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+
+Next phase:
+- R5.7 — Production graph UI hardening / visual grouping
+
+## R5.6.1 — UI selected project path sync fix
+
+Status: completed.
+
+Files changed:
+- `apps/ui/.env`
+- `apps/ui/src/lib/api-client.ts`
+- `apps/ui/src/lib/use-dashboard-data.ts`
+- `apps/ui/src/lib/dashboard-data-request.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Root cause:
+- `apps/ui/.env` set `NEXT_PUBLIC_LUTEST_PROJECT_PATH=D:\Projects\lutest\apps\ui`.
+- UI hook used `NEXT_PUBLIC_LUTEST_PROJECT_PATH` as default `projectPath`.
+- Every project/graph/report request therefore sent `?path=D:\Projects\lutest\apps\ui`.
+- When worker `allowedRoot` was `D:\Projects\lutest`, path-policy rejected that explicit UI app path in the failing dev run.
+
+Selected project root behavior:
+- Removed wrong `NEXT_PUBLIC_LUTEST_PROJECT_PATH` from `apps/ui/.env`.
+- If no UI project path is configured, UI calls `GET /api/project` without `path`.
+- Worker remains source of truth for selected root via its allowed root / path-policy flow.
+- Follow-up graph/report requests omit `path` when no explicit UI path is configured.
+- If `NEXT_PUBLIC_LUTEST_PROJECT_PATH` is explicitly configured, UI still sends that exact path and lets worker path-policy accept/reject it.
+
+PATH_NOT_ALLOWED behavior:
+- API client now parses standard `{ error: { code, message } }` responses.
+- UI maps `PATH_NOT_ALLOWED` to `Selected path is outside worker allowed root`.
+- UI does not silently fallback to empty graph on path-policy errors.
+
+Worker offline behavior:
+- Dashboard load checks `/api/status` first and stores status before project/graph/report loading.
+- `PATH_NOT_ALLOWED` is treated as selected-path error, not worker-offline state.
+- Worker offline remains represented by status fetch failure / unreachable worker.
+
+Not changed:
+- Path policy was not loosened.
+- Arbitrary outside paths are still rejected by worker.
+- Legacy `/api/graph` response unchanged.
+- Production `/api/graph/production` response unchanged.
+- No R5.7 visual grouping work.
+
+Self-check coverage:
+- No configured UI path calls `/api/project` without query.
+- Explicit child path is encoded into legacy `/api/graph?path=...`.
+- Production mode calls `/api/graph/production?path=...`.
+- `PATH_NOT_ALLOWED` JSON maps to typed `ApiClientError` and path error detection.
+- Legacy and production endpoint routing remain separate.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-data-request.self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.7 — Production graph UI hardening / visual grouping
+
+## R5.6.3 — Strict production graph accuracy audit for apps/ui
+
+Status: completed.
+
+Audited root:
+- `D:/Projects/lutest/apps/ui`
+
+Files changed:
+- `apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Generated audit output:
+- `apps/ui/.lutest/audits/production-graph-accuracy-apps-ui.json`
+
+Expected inventory counts:
+- Supported files: 9
+- Pages: 1
+- Components: 18
+- Hooks: 1
+- API client candidates: 6
+- Endpoint candidates: 6
+
+Actual production graph counts:
+- Files: 9
+- Pages: 1
+- Components: 18
+- Hooks: 1
+- API client methods: 0
+- External endpoints: 0
+- Edges: 32
+
+Mismatches:
+- Missing API client methods: `lutestApi.getStatus`, `lutestApi.getProject`, `lutestApi.getGraph`, `lutestApi.getProductionGraph`, `lutestApi.getLatestReport`, `lutestApi.runScan`.
+- Missing endpoint candidates: `/api/status`, `/api/project`, `/api/graph`, `/api/graph/production`, `/api/report/latest`, `/api/actions/scan`.
+- Missing HTTP edges for all six API client method -> endpoint pairs.
+- File/page/component/hook inventory matched expected independent AST audit.
+
+Root causes:
+- Production extractor/classifier likely does not emit exported object literal methods as `api-client-method` symbols.
+- HTTP endpoint extraction likely only sees direct network calls on classified symbols; `apps/ui/src/lib/api-client.ts` wraps endpoint strings behind `requestJson(...)` and `requestProductionGraph(...)` indirection.
+
+Verdict:
+- `PASS_WITH_KNOWN_LIMITATIONS`
+
+Recommended next fix phase:
+- `R5.6.4 — API client object-method and indirect HTTP detection`
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — failed existing path-policy assertion: outside path was not rejected.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — failed existing path-policy assertion: outside path did not return 400/403.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS_WITH_KNOWN_LIMITATIONS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied` before commands.
+
+Audit-only guard:
+- No detector changed.
+- No adapter changed.
+- No graph builder changed.
+- No UI source changed in this phase.
+- No `/api/graph` or `/api/graph/production` response changed.
+
+Next phase:
+- R5.6.4 — API client object-method and indirect HTTP detection
+
+## R2.3 — Path policy self-check isolation / regression fix
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/shared/services/path-policy.service.ts`
+- `apps/worker-node/src/shared/http/validated-project-path.ts`
+- `apps/worker-node/src/shared/services/path-policy.http-self-check.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Root cause:
+- Real path-policy regression found: `isSubPath(allowed.rootDir, target.rootDir)` guard in `path-policy.service.ts` was commented out.
+- Before fix, explicit outside path returned `200` instead of `PATH_NOT_ALLOWED`.
+- Probe evidence before fix:
+  - `process.cwd()` was `D:\Projects\lutest`.
+  - `process.env.LUTEST_PROJECT_PATH` was temp allowed root.
+  - `process.env.PROJECT_PATH` was unset.
+  - `allowedRoot` was temp `...\lutest-r23-allowed-*`.
+  - `outsideRoot` was temp `...\lutest-r23-outside-*`.
+  - `GET /api/project?path=<outsideRoot>` returned `200` with outside project summary.
+  - `GET /api/graph/production?path=<outsideRoot>` returned `200` with empty production graph.
+
+Fix:
+- Restored explicit outside-root rejection in `pathPolicyService.assertProjectRoot(...)`.
+- Repaired `getValidatedProjectPath(...)` to use `path ?? projectPath`, preserving production graph `projectPath` alias behavior.
+- Updated `path-policy.http-self-check.ts` to save/restore both `LUTEST_PROJECT_PATH` and `PROJECT_PATH`.
+- Updated `path-policy.http-self-check.ts` to cover both explicit `LUTEST_PROJECT_PATH` mode and no-env fallback `cwd` mode.
+- Updated `production-graph.http-self-check.ts` to isolate/restore `PROJECT_PATH` and improve outside-path assertion message.
+
+After behavior:
+- `GET /api/project?path=<outsideRoot>` returns `400` or `403` with `PATH_NOT_ALLOWED`.
+- `GET /api/graph/production?path=<outsideRoot>` returns `400` or `403` with `PATH_NOT_ALLOWED`.
+- Self-checks pass with normal terminal env.
+- Self-checks pass when terminal has `LUTEST_PROJECT_PATH=D:\Projects\lutest\apps\ui`.
+
+Not changed:
+- No path-policy loosening.
+- No `/api/graph` response shape change.
+- No `/api/graph/production` response shape change.
+- No source extractor, adapter, edge builder, or R5.6.4 work.
+
+Tests/checks run:
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `$env:LUTEST_PROJECT_PATH="D:\Projects\lutest\apps\ui"; npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `$env:LUTEST_PROJECT_PATH="D:\Projects\lutest\apps\ui"; npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS_WITH_KNOWN_LIMITATIONS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands above exited `0`.
+
+Next phase:
+- R5.6.4 — API client object-method and indirect HTTP detection

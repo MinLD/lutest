@@ -1,11 +1,13 @@
 import type {
   GraphResponse,
   LatestReportResponse,
+  ProductionGraphResponse,
   ProjectSummary,
   ScanRequest,
   ScanResponse,
   StatusResponse,
 } from "@lutest/contracts";
+import { validateProductionGraphResponse } from "@lutest/contracts";
 
 const DEFAULT_WORKER_URL = "http://localhost:6532";
 
@@ -13,6 +15,7 @@ export class ApiClientError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
+    public readonly code?: string,
   ) {
     super(message);
     this.name = "ApiClientError";
@@ -44,13 +47,45 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
+    const fallbackMessage = `Request failed: ${response.status} ${response.statusText}`;
+    const body = await response.json().catch(() => null);
+    const apiError = isApiErrorBody(body) ? body.error : null;
     throw new ApiClientError(
-      `Request failed: ${response.status} ${response.statusText}`,
+      apiError?.message ?? fallbackMessage,
       response.status,
+      apiError?.code,
     );
   }
 
   return response.json() as Promise<T>;
+}
+
+function isApiErrorBody(input: unknown): input is {
+  error: { code: string; message: string };
+} {
+  if (!input || typeof input !== "object" || !("error" in input)) {
+    return false;
+  }
+  const error = (input as { error?: unknown }).error;
+  return (
+    !!error &&
+    typeof error === "object" &&
+    typeof (error as { code?: unknown }).code === "string" &&
+    typeof (error as { message?: unknown }).message === "string"
+  );
+}
+
+export function isPathNotAllowedError(cause: unknown) {
+  return cause instanceof ApiClientError && cause.code === "PATH_NOT_ALLOWED";
+}
+
+async function requestProductionGraph(path: string) {
+  const response = await requestJson<unknown>(path);
+  const validation = validateProductionGraphResponse(response);
+  if (!validation.ok) {
+    throw new ApiClientError(validation.message);
+  }
+  return validation.value;
 }
 
 export const lutestApi = {
@@ -67,6 +102,12 @@ export const lutestApi = {
   getGraph(projectPath?: string) {
     return requestJson<GraphResponse>(
       withProjectPath("/api/graph", projectPath),
+    );
+  },
+
+  getProductionGraph(projectPath?: string): Promise<ProductionGraphResponse> {
+    return requestProductionGraph(
+      withProjectPath("/api/graph/production", projectPath),
     );
   },
 

@@ -1,0 +1,1147 @@
+{
+  "rootDir": "D:/Projects/lutest/apps/ui",
+  "expectedInventory": {
+    "files": [
+      {
+        "kind": "file",
+        "name": "next.config.ts",
+        "filePath": "next.config.ts",
+        "startLine": 1,
+        "endLine": 8,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/app/layout.tsx",
+        "filePath": "src/app/layout.tsx",
+        "startLine": 1,
+        "endLine": 36,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/app/page.tsx",
+        "filePath": "src/app/page.tsx",
+        "startLine": 1,
+        "endLine": 5,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/components/dashboard-shell.tsx",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 1,
+        "endLine": 704,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/lib/api-client.ts",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 1,
+        "endLine": 127,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/lib/dashboard-data-request.self-check.ts",
+        "filePath": "src/lib/dashboard-data-request.self-check.ts",
+        "startLine": 1,
+        "endLine": 67,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/lib/production-graph-adapter.self-check.ts",
+        "filePath": "src/lib/production-graph-adapter.self-check.ts",
+        "startLine": 1,
+        "endLine": 75,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/lib/production-graph-adapter.ts",
+        "filePath": "src/lib/production-graph-adapter.ts",
+        "startLine": 1,
+        "endLine": 93,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      },
+      {
+        "kind": "file",
+        "name": "src/lib/use-dashboard-data.ts",
+        "filePath": "src/lib/use-dashboard-data.ts",
+        "startLine": 1,
+        "endLine": 148,
+        "reason": "Supported source extension and not excluded by audit inventory rules",
+        "detectionMethod": "supported-file-walk"
+      }
+    ],
+    "pages": [
+      {
+        "kind": "page",
+        "name": "Home",
+        "filePath": "src/app/page.tsx",
+        "startLine": 1,
+        "endLine": 5,
+        "route": "/",
+        "reason": "Next App Router page file convention",
+        "evidence": "src/app/page.tsx -> /",
+        "detectionMethod": "independent-ast-audit"
+      }
+    ],
+    "components": [
+      {
+        "kind": "component",
+        "name": "RootLayout",
+        "filePath": "src/app/layout.tsx",
+        "startLine": 20,
+        "endLine": 36,
+        "exported": true,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "export default function RootLayout({ children, }: Readonly<{ children: React.ReactNode; }>) { return ( <html lang=\"en\" suppressHydrationWarning className={`${geistSans.variable} ${",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "BrandMark",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 50,
+        "endLine": 56,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function BrandMark() { return ( <div className=\"grid size-10 shrink-0 place-items-center rounded-[0.9rem] bg-[#2563eb] text-white shadow-[0_10px_28px_rgba(37,99,235,0.24)] sm:size-",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "Sidebar",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 58,
+        "endLine": 82,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function Sidebar() { return ( <aside className=\"fixed inset-y-0 left-0 z-30 hidden w-[18.5rem] overflow-hidden border-r border-[#dbe7f5] bg-[#fbfdff]/95 px-5 py-3 backdrop-blur md:",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "NavGroup",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 84,
+        "endLine": 105,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function NavGroup({ items }: { items: [string, string, boolean][] }) { return ( <div className=\"space-y-1.5\"> {items.map(([label, icon, active]) => ( <a key={label} href=\"#\" classN",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "NavDetails",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 107,
+        "endLine": 141,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function NavDetails({ onNavigate }: { onNavigate?: () => void }) { return ( <div className=\"space-y-2\"> {groupedNav.map((group) => ( <details key={group.label} className=\"group rou",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "MobileSidebar",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 143,
+        "endLine": 198,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function MobileSidebar({ isOpen, onClose, }: { isOpen: boolean; onClose: () => void; }) { return ( <div className={`fixed inset-0 z-40 md:hidden ${ isOpen ? \"pointer-events-auto\" :",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "MobileHeader",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 200,
+        "endLine": 239,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function MobileHeader({ onOpenMenu }: { onOpenMenu: () => void }) { return ( <header className=\"sticky top-0 z-20 -mx-4 mb-6 flex h-[4.7rem] items-center justify-between border-b b",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "Topbar",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 241,
+        "endLine": 317,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function Topbar({ project, isScanning, graphMode, onGraphModeChange, onRunScan, }: { project: ProjectSummary | null; isScanning: boolean; graphMode: GraphMode; onGraphModeChange: (",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "EndpointPanel",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 319,
+        "endLine": 364,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function EndpointPanel({ status, project, latestReport, }: { status: StatusResponse | null; project: ProjectSummary | null; latestReport: LatestReportResponse | null; }) { const [l",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "ProviderGrid",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 366,
+        "endLine": 411,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function ProviderGrid({ graph, latestReport, }: { graph: GraphResponse | null; latestReport: LatestReportResponse | null; }) { const providers = [ [\"Pages\", `${graph?.summary.pageC",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "ProductionProviderGrid",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 413,
+        "endLine": 458,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function ProductionProviderGrid({ graph, latestReport, }: { graph: UiGraphModel | null; latestReport: LatestReportResponse | null; }) { const providers = [ [\"Pages\", `${graph?.summ",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "GraphPanel",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 460,
+        "endLine": 493,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function GraphPanel({ graph }: { graph: GraphResponse | null }) { const pages = graph?.nodes.filter((node) => node.type === \"page\").slice(0, 6) ?? []; const components = graph?.nod",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "ProductionGraphPanel",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 495,
+        "endLine": 530,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function ProductionGraphPanel({ graph }: { graph: UiGraphModel | null }) { const pages = graph?.nodes.filter((node) => node.type === \"page\").slice(0, 6) ?? []; const components = g",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "GraphColumn",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 532,
+        "endLine": 554,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function GraphColumn({ title, rows }: { title: string; rows: string[] }) { return ( <div className=\"min-w-0 rounded-2xl bg-white p-4 shadow-sm\"> <p className=\"mb-3 text-sm font-bol",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "ScanList",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 556,
+        "endLine": 604,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function ScanList({ latestReport, }: { latestReport: LatestReportResponse | null; }) { const report = latestReport?.state === \"valid\" ? latestReport.report : null; const issues = r",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "DashboardNotice",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 606,
+        "endLine": 630,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function DashboardNotice({ isLoading, error, }: { isLoading: boolean; error: string | null; }) { if (isLoading) { return ( <div className=\"rounded-2xl border border-[#dbe7f5] bg-wh",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "SectionTitle",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 632,
+        "endLine": 650,
+        "exported": false,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "function SectionTitle({ icon, title, subtitle, }: { icon: string; title: string; subtitle: string; }) { return ( <div> <h2 className=\"flex items-center gap-3 text-xl font-semibold ",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "component",
+        "name": "DashboardShell",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "startLine": 652,
+        "endLine": 703,
+        "exported": true,
+        "reason": "PascalCase function/class/arrow function contains JSX",
+        "evidence": "export function DashboardShell() { const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); const [graphMode, setGraphMode] = useState<GraphMode>(DEFAULT_GRAPH_MODE);",
+        "detectionMethod": "independent-ast-audit"
+      }
+    ],
+    "hooks": [
+      {
+        "kind": "hook",
+        "name": "useDashboardData",
+        "filePath": "src/lib/use-dashboard-data.ts",
+        "startLine": 68,
+        "endLine": 147,
+        "exported": true,
+        "reason": "Function name starts with use[A-Z]",
+        "evidence": "export function useDashboardData( projectPath = DEFAULT_PROJECT_PATH, graphMode: GraphMode = DEFAULT_GRAPH_MODE, ) { const [data, setData] = useState<DashboardData>(emptyDashboardD",
+        "detectionMethod": "independent-ast-audit"
+      }
+    ],
+    "apiClientCandidates": [
+      {
+        "kind": "api-client-method",
+        "name": "lutestApi.getStatus",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 92,
+        "endLine": 94,
+        "reason": "exported object literal method/property with API request call",
+        "evidence": "getStatus() { return requestJson<StatusResponse>(\"/api/status\"); }",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "api-client-method",
+        "name": "lutestApi.getProject",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 96,
+        "endLine": 100,
+        "reason": "exported object literal method/property with API request call",
+        "evidence": "getProject(projectPath?: string) { return requestJson<ProjectSummary>( withProjectPath(\"/api/project\", projectPath), ); }",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "api-client-method",
+        "name": "lutestApi.getGraph",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 102,
+        "endLine": 106,
+        "reason": "exported object literal method/property with API request call",
+        "evidence": "getGraph(projectPath?: string) { return requestJson<GraphResponse>( withProjectPath(\"/api/graph\", projectPath), ); }",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "api-client-method",
+        "name": "lutestApi.getProductionGraph",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 108,
+        "endLine": 112,
+        "reason": "exported object literal method/property with API request call",
+        "evidence": "getProductionGraph(projectPath?: string): Promise<ProductionGraphResponse> { return requestProductionGraph( withProjectPath(\"/api/graph/production\", projectPath), ); }",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "api-client-method",
+        "name": "lutestApi.getLatestReport",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 114,
+        "endLine": 118,
+        "reason": "exported object literal method/property with API request call",
+        "evidence": "getLatestReport(projectPath?: string) { return requestJson<LatestReportResponse>( withProjectPath(\"/api/report/latest\", projectPath), ); }",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "api-client-method",
+        "name": "lutestApi.runScan",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 120,
+        "endLine": 125,
+        "reason": "exported object literal method/property with API request call",
+        "evidence": "runScan(input: ScanRequest = {}) { return requestJson<ScanResponse>(\"/api/actions/scan\", { method: \"POST\", body: JSON.stringify(input), }); }",
+        "detectionMethod": "independent-ast-audit"
+      }
+    ],
+    "endpointCandidates": [
+      {
+        "kind": "external-endpoint",
+        "name": "/api/status",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 92,
+        "endLine": 94,
+        "endpoint": "/api/status",
+        "reason": "API client candidate lutestApi.getStatus references endpoint string",
+        "evidence": "/api/status",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "external-endpoint",
+        "name": "/api/project",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 96,
+        "endLine": 100,
+        "endpoint": "/api/project",
+        "reason": "API client candidate lutestApi.getProject references endpoint string",
+        "evidence": "/api/project",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "external-endpoint",
+        "name": "/api/graph",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 102,
+        "endLine": 106,
+        "endpoint": "/api/graph",
+        "reason": "API client candidate lutestApi.getGraph references endpoint string",
+        "evidence": "/api/graph",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "external-endpoint",
+        "name": "/api/graph/production",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 108,
+        "endLine": 112,
+        "endpoint": "/api/graph/production",
+        "reason": "API client candidate lutestApi.getProductionGraph references endpoint string",
+        "evidence": "/api/graph/production",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "external-endpoint",
+        "name": "/api/report/latest",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 114,
+        "endLine": 118,
+        "endpoint": "/api/report/latest",
+        "reason": "API client candidate lutestApi.getLatestReport references endpoint string",
+        "evidence": "/api/report/latest",
+        "detectionMethod": "independent-ast-audit"
+      },
+      {
+        "kind": "external-endpoint",
+        "name": "/api/actions/scan",
+        "filePath": "src/lib/api-client.ts",
+        "startLine": 120,
+        "endLine": 125,
+        "endpoint": "/api/actions/scan",
+        "reason": "API client candidate lutestApi.runScan references endpoint string",
+        "evidence": "/api/actions/scan",
+        "detectionMethod": "independent-ast-audit"
+      }
+    ],
+    "importantImports": [
+      "next.config.ts",
+      "src/app/layout.tsx",
+      "src/app/page.tsx",
+      "src/components/dashboard-shell.tsx",
+      "src/lib/api-client.ts",
+      "src/lib/dashboard-data-request.self-check.ts",
+      "src/lib/production-graph-adapter.self-check.ts",
+      "src/lib/production-graph-adapter.ts",
+      "src/lib/use-dashboard-data.ts"
+    ],
+    "importantRenders": [
+      "src/app/page.tsx->DashboardShell",
+      "src/components/dashboard-shell.tsx->BrandMark",
+      "src/components/dashboard-shell.tsx->BugOff",
+      "src/components/dashboard-shell.tsx->ChevronUp",
+      "src/components/dashboard-shell.tsx->DashboardNotice",
+      "src/components/dashboard-shell.tsx->EndpointPanel",
+      "src/components/dashboard-shell.tsx->GraphColumn",
+      "src/components/dashboard-shell.tsx->GraphMode",
+      "src/components/dashboard-shell.tsx->GraphPanel",
+      "src/components/dashboard-shell.tsx->Grid2X2",
+      "src/components/dashboard-shell.tsx->Menu",
+      "src/components/dashboard-shell.tsx->MobileHeader",
+      "src/components/dashboard-shell.tsx->MobileSidebar",
+      "src/components/dashboard-shell.tsx->Moon",
+      "src/components/dashboard-shell.tsx->NavDetails",
+      "src/components/dashboard-shell.tsx->NavGroup",
+      "src/components/dashboard-shell.tsx->ProductionGraphPanel",
+      "src/components/dashboard-shell.tsx->ProductionProviderGrid",
+      "src/components/dashboard-shell.tsx->ProviderGrid",
+      "src/components/dashboard-shell.tsx->Rose",
+      "src/components/dashboard-shell.tsx->ScanList",
+      "src/components/dashboard-shell.tsx->SectionTitle",
+      "src/components/dashboard-shell.tsx->Sidebar",
+      "src/components/dashboard-shell.tsx->Topbar",
+      "src/components/dashboard-shell.tsx->X",
+      "src/lib/api-client.ts->GraphResponse",
+      "src/lib/api-client.ts->LatestReportResponse",
+      "src/lib/api-client.ts->ProductionGraphResponse",
+      "src/lib/api-client.ts->ProjectSummary",
+      "src/lib/api-client.ts->ScanResponse",
+      "src/lib/api-client.ts->StatusResponse",
+      "src/lib/api-client.ts->T",
+      "src/lib/production-graph-adapter.ts->ProductionGraphNodeKind",
+      "src/lib/use-dashboard-data.ts->DashboardData"
+    ],
+    "importantCalls": [
+      "src/components/dashboard-shell.tsx->useDashboardData",
+      "src/lib/use-dashboard-data.ts->useDashboardData"
+    ],
+    "httpEdges": [
+      "lutestApi.getGraph->/api/graph",
+      "lutestApi.getLatestReport->/api/report/latest",
+      "lutestApi.getProductionGraph->/api/graph/production",
+      "lutestApi.getProject->/api/project",
+      "lutestApi.getStatus->/api/status",
+      "lutestApi.runScan->/api/actions/scan"
+    ],
+    "ambiguous": []
+  },
+  "actualInventory": {
+    "files": [
+      {
+        "id": "file:next.config.ts",
+        "kind": "file",
+        "name": "next.config.ts",
+        "filePath": "next.config.ts",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/app/layout.tsx",
+        "kind": "file",
+        "name": "layout.tsx",
+        "filePath": "src/app/layout.tsx",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/app/page.tsx",
+        "kind": "file",
+        "name": "page.tsx",
+        "filePath": "src/app/page.tsx",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/components/dashboard-shell.tsx",
+        "kind": "file",
+        "name": "dashboard-shell.tsx",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/lib/api-client.ts",
+        "kind": "file",
+        "name": "api-client.ts",
+        "filePath": "src/lib/api-client.ts",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/lib/dashboard-data-request.self-check.ts",
+        "kind": "file",
+        "name": "dashboard-data-request.self-check.ts",
+        "filePath": "src/lib/dashboard-data-request.self-check.ts",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/lib/production-graph-adapter.self-check.ts",
+        "kind": "file",
+        "name": "production-graph-adapter.self-check.ts",
+        "filePath": "src/lib/production-graph-adapter.self-check.ts",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/lib/production-graph-adapter.ts",
+        "kind": "file",
+        "name": "production-graph-adapter.ts",
+        "filePath": "src/lib/production-graph-adapter.ts",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      },
+      {
+        "id": "file:src/lib/use-dashboard-data.ts",
+        "kind": "file",
+        "name": "use-dashboard-data.ts",
+        "filePath": "src/lib/use-dashboard-data.ts",
+        "confidence": "high",
+        "reason": "Source file included in production scan"
+      }
+    ],
+    "pages": [
+      {
+        "id": "page:raw:function:src/app/page.tsx#Home@3-5",
+        "kind": "page",
+        "name": "Home",
+        "filePath": "src/app/page.tsx",
+        "loc": {
+          "startLine": 3,
+          "endLine": 5
+        },
+        "route": {
+          "path": "/",
+          "kind": "page"
+        },
+        "confidence": "high",
+        "reason": "Next page file component export"
+      }
+    ],
+    "components": [
+      {
+        "id": "component:raw:function:src/app/layout.tsx#RootLayout@20-36",
+        "kind": "component",
+        "name": "RootLayout",
+        "filePath": "src/app/layout.tsx",
+        "loc": {
+          "startLine": 20,
+          "endLine": 36
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "kind": "component",
+        "name": "BrandMark",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 50,
+          "endLine": 56
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82",
+        "kind": "component",
+        "name": "Sidebar",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 58,
+          "endLine": 82
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#NavGroup@84-105",
+        "kind": "component",
+        "name": "NavGroup",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 84,
+          "endLine": 105
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#NavDetails@107-141",
+        "kind": "component",
+        "name": "NavDetails",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 107,
+          "endLine": 141
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198",
+        "kind": "component",
+        "name": "MobileSidebar",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 143,
+          "endLine": 198
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#MobileHeader@200-239",
+        "kind": "component",
+        "name": "MobileHeader",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 200,
+          "endLine": 239
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@241-317",
+        "kind": "component",
+        "name": "Topbar",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 241,
+          "endLine": 317
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPanel@319-364",
+        "kind": "component",
+        "name": "EndpointPanel",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 319,
+          "endLine": 364
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#ProviderGrid@366-411",
+        "kind": "component",
+        "name": "ProviderGrid",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 366,
+          "endLine": 411
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#ProductionProviderGrid@413-458",
+        "kind": "component",
+        "name": "ProductionProviderGrid",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 413,
+          "endLine": 458
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493",
+        "kind": "component",
+        "name": "GraphPanel",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 460,
+          "endLine": 493
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530",
+        "kind": "component",
+        "name": "ProductionGraphPanel",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 495,
+          "endLine": 530
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#GraphColumn@532-554",
+        "kind": "component",
+        "name": "GraphColumn",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 532,
+          "endLine": 554
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#ScanList@556-604",
+        "kind": "component",
+        "name": "ScanList",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 556,
+          "endLine": 604
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@606-630",
+        "kind": "component",
+        "name": "DashboardNotice",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 606,
+          "endLine": 630
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "component",
+        "name": "SectionTitle",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 632,
+          "endLine": 650
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      },
+      {
+        "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "kind": "component",
+        "name": "DashboardShell",
+        "filePath": "src/components/dashboard-shell.tsx",
+        "loc": {
+          "startLine": 652,
+          "endLine": 703
+        },
+        "confidence": "high",
+        "reason": "PascalCase symbol with JSX"
+      }
+    ],
+    "hooks": [
+      {
+        "id": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@68-147",
+        "kind": "hook",
+        "name": "useDashboardData",
+        "filePath": "src/lib/use-dashboard-data.ts",
+        "loc": {
+          "startLine": 68,
+          "endLine": 147
+        },
+        "confidence": "high",
+        "reason": "React hook naming convention"
+      }
+    ],
+    "apiClientMethods": [],
+    "externalEndpoints": [],
+    "imports": [
+      {
+        "id": "import:file:src/lib/dashboard-data-request.self-check.ts->file:src/lib/api-client.ts",
+        "kind": "import",
+        "source": "file:src/lib/dashboard-data-request.self-check.ts",
+        "target": "file:src/lib/api-client.ts",
+        "confidence": "high",
+        "reason": "static-import ./api-client resolved by relative-match"
+      },
+      {
+        "id": "import:file:src/lib/production-graph-adapter.self-check.ts->file:src/lib/production-graph-adapter.ts",
+        "kind": "import",
+        "source": "file:src/lib/production-graph-adapter.self-check.ts",
+        "target": "file:src/lib/production-graph-adapter.ts",
+        "confidence": "high",
+        "reason": "static-import ./production-graph-adapter resolved by relative-match"
+      },
+      {
+        "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
+        "kind": "import",
+        "source": "file:src/lib/use-dashboard-data.ts",
+        "target": "file:src/lib/api-client.ts",
+        "confidence": "high",
+        "reason": "static-import ./api-client resolved by relative-match"
+      },
+      {
+        "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/production-graph-adapter.ts",
+        "kind": "import",
+        "source": "file:src/lib/use-dashboard-data.ts",
+        "target": "file:src/lib/production-graph-adapter.ts",
+        "confidence": "high",
+        "reason": "static-import ./production-graph-adapter resolved by relative-match"
+      }
+    ],
+    "renders": [
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@606-630",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@606-630",
+        "confidence": "high",
+        "reason": "DashboardShell renders <DashboardNotice>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#EndpointPanel@319-364",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPanel@319-364",
+        "confidence": "high",
+        "reason": "DashboardShell renders <EndpointPanel>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493",
+        "confidence": "high",
+        "reason": "DashboardShell renders <GraphPanel>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#MobileHeader@200-239",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#MobileHeader@200-239",
+        "confidence": "high",
+        "reason": "DashboardShell renders <MobileHeader>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198",
+        "confidence": "high",
+        "reason": "DashboardShell renders <MobileSidebar>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530",
+        "confidence": "high",
+        "reason": "DashboardShell renders <ProductionGraphPanel>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#ProductionProviderGrid@413-458",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#ProductionProviderGrid@413-458",
+        "confidence": "high",
+        "reason": "DashboardShell renders <ProductionProviderGrid>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#ProviderGrid@366-411",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#ProviderGrid@366-411",
+        "confidence": "high",
+        "reason": "DashboardShell renders <ProviderGrid>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#ScanList@556-604",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#ScanList@556-604",
+        "confidence": "high",
+        "reason": "DashboardShell renders <ScanList>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82",
+        "confidence": "high",
+        "reason": "DashboardShell renders <Sidebar>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->component:raw:function:src/components/dashboard-shell.tsx#Topbar@241-317",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@241-317",
+        "confidence": "high",
+        "reason": "DashboardShell renders <Topbar>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPanel@319-364->component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPanel@319-364",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "confidence": "high",
+        "reason": "EndpointPanel renders <SectionTitle>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493->component:raw:function:src/components/dashboard-shell.tsx#GraphColumn@532-554",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#GraphColumn@532-554",
+        "confidence": "high",
+        "reason": "GraphPanel renders <GraphColumn>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493->component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPanel@460-493",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "confidence": "high",
+        "reason": "GraphPanel renders <SectionTitle>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileHeader@200-239->component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileHeader@200-239",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "confidence": "high",
+        "reason": "MobileHeader renders <BrandMark>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198->component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "confidence": "high",
+        "reason": "MobileSidebar renders <BrandMark>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198->component:raw:function:src/components/dashboard-shell.tsx#NavDetails@107-141",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#NavDetails@107-141",
+        "confidence": "high",
+        "reason": "MobileSidebar renders <NavDetails>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198->component:raw:function:src/components/dashboard-shell.tsx#NavGroup@84-105",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@143-198",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#NavGroup@84-105",
+        "confidence": "high",
+        "reason": "MobileSidebar renders <NavGroup>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530->component:raw:function:src/components/dashboard-shell.tsx#GraphColumn@532-554",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#GraphColumn@532-554",
+        "confidence": "high",
+        "reason": "ProductionGraphPanel renders <GraphColumn>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530->component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#ProductionGraphPanel@495-530",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "confidence": "high",
+        "reason": "ProductionGraphPanel renders <SectionTitle>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProductionProviderGrid@413-458->component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#ProductionProviderGrid@413-458",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "confidence": "high",
+        "reason": "ProductionProviderGrid renders <SectionTitle>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProviderGrid@366-411->component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#ProviderGrid@366-411",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "confidence": "high",
+        "reason": "ProviderGrid renders <SectionTitle>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScanList@556-604->component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#ScanList@556-604",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#SectionTitle@632-650",
+        "confidence": "high",
+        "reason": "ScanList renders <SectionTitle>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82->component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#BrandMark@50-56",
+        "confidence": "high",
+        "reason": "Sidebar renders <BrandMark>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82->component:raw:function:src/components/dashboard-shell.tsx#NavDetails@107-141",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#NavDetails@107-141",
+        "confidence": "high",
+        "reason": "Sidebar renders <NavDetails>"
+      },
+      {
+        "id": "render:component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82->component:raw:function:src/components/dashboard-shell.tsx#NavGroup@84-105",
+        "kind": "render",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@58-82",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#NavGroup@84-105",
+        "confidence": "high",
+        "reason": "Sidebar renders <NavGroup>"
+      },
+      {
+        "id": "render:page:raw:function:src/app/page.tsx#Home@3-5->component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "kind": "render",
+        "source": "page:raw:function:src/app/page.tsx#Home@3-5",
+        "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "confidence": "high",
+        "reason": "Home renders <DashboardShell>"
+      }
+    ],
+    "calls": [
+      {
+        "id": "call:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703->hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@68-147",
+        "kind": "call",
+        "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@652-703",
+        "target": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@68-147",
+        "confidence": "high",
+        "reason": "DashboardShell calls useDashboardData()"
+      }
+    ],
+    "http": [],
+    "summary": {
+      "fileCount": 9,
+      "pageCount": 1,
+      "componentCount": 18,
+      "hookCount": 1,
+      "apiRouteCount": 0,
+      "apiClientMethodCount": 0,
+      "externalEndpointCount": 0,
+      "edgeCount": 32
+    }
+  },
+  "mismatches": {
+    "missingFiles": [],
+    "unexpectedFiles": [],
+    "missingPages": [],
+    "unexpectedPages": [],
+    "wrongRoutes": [],
+    "missingComponents": [],
+    "unexpectedComponents": [],
+    "missingHooks": [],
+    "unexpectedHooks": [],
+    "missingApiClientMethods": [
+      "lutestApi.getStatus | src/lib/api-client.ts:92-94 | exported object literal method/property with API request call",
+      "lutestApi.getProject | src/lib/api-client.ts:96-100 | exported object literal method/property with API request call",
+      "lutestApi.getGraph | src/lib/api-client.ts:102-106 | exported object literal method/property with API request call",
+      "lutestApi.getProductionGraph | src/lib/api-client.ts:108-112 | exported object literal method/property with API request call",
+      "lutestApi.getLatestReport | src/lib/api-client.ts:114-118 | exported object literal method/property with API request call",
+      "lutestApi.runScan | src/lib/api-client.ts:120-125 | exported object literal method/property with API request call"
+    ],
+    "unexpectedApiClientMethods": [],
+    "missingExternalEndpoints": [
+      "/api/status | src/lib/api-client.ts:92-94 | API client candidate lutestApi.getStatus references endpoint string",
+      "/api/project | src/lib/api-client.ts:96-100 | API client candidate lutestApi.getProject references endpoint string",
+      "/api/graph | src/lib/api-client.ts:102-106 | API client candidate lutestApi.getGraph references endpoint string",
+      "/api/graph/production | src/lib/api-client.ts:108-112 | API client candidate lutestApi.getProductionGraph references endpoint string",
+      "/api/report/latest | src/lib/api-client.ts:114-118 | API client candidate lutestApi.getLatestReport references endpoint string",
+      "/api/actions/scan | src/lib/api-client.ts:120-125 | API client candidate lutestApi.runScan references endpoint string"
+    ],
+    "unexpectedExternalEndpoints": [],
+    "missingHttpEdges": [
+      "lutestApi.getGraph->/api/graph",
+      "lutestApi.getLatestReport->/api/report/latest",
+      "lutestApi.getProductionGraph->/api/graph/production",
+      "lutestApi.getProject->/api/project",
+      "lutestApi.getStatus->/api/status",
+      "lutestApi.runScan->/api/actions/scan"
+    ]
+  },
+  "rootCauses": [
+    "API client methods likely missed because production extractor does not emit exported object literal methods as source symbols or adapter only classifies symbols with direct network targets on emitted symbols.",
+    "External endpoints/HTTP edges likely missed because worker API paths are behind requestJson/requestProductionGraph indirection instead of direct fetch/axios calls inside classified api-client-method symbols."
+  ],
+  "verdict": "PASS_WITH_KNOWN_LIMITATIONS"
+}

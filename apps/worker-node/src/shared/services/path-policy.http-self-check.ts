@@ -36,7 +36,7 @@ const assertAllowed = (result: JsonResponse, label: string): void => {
 const assertPathDenied = (result: JsonResponse, label: string): void => {
   assert(
     result.status === 400 || result.status === 403,
-    `${label} should return 400 or 403`,
+    `${label} should return 400 or 403; got ${result.status} ${JSON.stringify(result.body)}`,
   );
   assert.equal(
     (result.body as { error?: { code?: string } }).error?.code,
@@ -57,8 +57,7 @@ const listen = (app: ReturnType<typeof createApp>): Promise<{
     });
   });
 
-async function main(): Promise<void> {
-  const oldProjectPath = process.env.LUTEST_PROJECT_PATH;
+const createFixture = async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-http-policy-"));
   const allowedRoot = path.join(root, "allowed");
   const outsideRoot = path.join(root, "outside");
@@ -76,92 +75,150 @@ async function main(): Promise<void> {
     "utf-8",
   );
 
-  process.env.LUTEST_PROJECT_PATH = allowedRoot;
+  return { allowedRoot, outsideRoot };
+};
+
+const runHttpAssertions = async (input: {
+  label: string;
+  allowedRoot: string;
+  outsideRoot: string;
+  includeScan: boolean;
+}) => {
   const app = createApp();
   const { baseUrl, server } = await listen(app);
 
   try {
-    assertAllowed(await requestJson(baseUrl, "/api/project"), "GET /api/project");
-    assertAllowed(
-      await requestJson(
-        baseUrl,
-        `/api/project?path=${encodeURIComponent(allowedRoot)}`,
-      ),
-      "GET /api/project allowedRoot",
-    );    assertAllowed(
-      await requestJson(
-        baseUrl,
-        `/api/project?path=${encodeURIComponent(path.join(allowedRoot, "src"))}`,
-      ),
-      "GET /api/project allowedRoot child",
-    );
-    assertPathDenied(
-      await requestJson(
-        baseUrl,
-        `/api/project?path=${encodeURIComponent(outsideRoot)}`,
-      ),
-      "GET /api/project outsideRoot",
+    console.log(
+      JSON.stringify({
+        label: input.label,
+        cwd: process.cwd(),
+        envLutest: process.env.LUTEST_PROJECT_PATH,
+        envProject: process.env.PROJECT_PATH,
+        allowedRoot: input.allowedRoot,
+        outsideRoot: input.outsideRoot,
+      }),
     );
 
-    assertAllowed(await requestJson(baseUrl, "/api/graph"), "GET /api/graph");
+    assertAllowed(await requestJson(baseUrl, "/api/project"), `${input.label} GET /api/project`);
     assertAllowed(
       await requestJson(
         baseUrl,
-        `/api/graph?path=${encodeURIComponent(allowedRoot)}`,
+        `/api/project?path=${encodeURIComponent(input.allowedRoot)}`,
       ),
-      "GET /api/graph allowedRoot",
+      `${input.label} GET /api/project allowedRoot`,
+    );
+    assertAllowed(
+      await requestJson(
+        baseUrl,
+        `/api/project?path=${encodeURIComponent(path.join(input.allowedRoot, "src"))}`,
+      ),
+      `${input.label} GET /api/project allowedRoot child`,
     );
     assertPathDenied(
       await requestJson(
         baseUrl,
-        `/api/graph?path=${encodeURIComponent(outsideRoot)}`,
+        `/api/project?path=${encodeURIComponent(input.outsideRoot)}`,
       ),
-      "GET /api/graph outsideRoot",
+      `${input.label} GET /api/project outsideRoot`,
+    );
+
+    assertAllowed(await requestJson(baseUrl, "/api/graph"), `${input.label} GET /api/graph`);
+    assertAllowed(
+      await requestJson(
+        baseUrl,
+        `/api/graph?path=${encodeURIComponent(input.allowedRoot)}`,
+      ),
+      `${input.label} GET /api/graph allowedRoot`,
+    );
+    assertPathDenied(
+      await requestJson(
+        baseUrl,
+        `/api/graph?path=${encodeURIComponent(input.outsideRoot)}`,
+      ),
+      `${input.label} GET /api/graph outsideRoot`,
     );
 
     assertAllowed(
       await requestJson(baseUrl, "/api/report/latest"),
-      "GET /api/report/latest",
+      `${input.label} GET /api/report/latest`,
     );
     assertAllowed(
       await requestJson(
         baseUrl,
-        `/api/report/latest?path=${encodeURIComponent(allowedRoot)}`,
+        `/api/report/latest?path=${encodeURIComponent(input.allowedRoot)}`,
       ),
-      "GET /api/report/latest allowedRoot",
+      `${input.label} GET /api/report/latest allowedRoot`,
     );
     assertPathDenied(
       await requestJson(
         baseUrl,
-        `/api/report/latest?path=${encodeURIComponent(outsideRoot)}`,
+        `/api/report/latest?path=${encodeURIComponent(input.outsideRoot)}`,
       ),
-      "GET /api/report/latest outsideRoot",
+      `${input.label} GET /api/report/latest outsideRoot`,
     );
 
-    assertAllowed(
-      await requestJson(baseUrl, "/api/actions/scan", {
-        method: "POST",
-        body: JSON.stringify({ projectPath: allowedRoot }),
-      }),
-      "POST /api/actions/scan allowedRoot",
-    );
-    assertPathDenied(
-      await requestJson(baseUrl, "/api/actions/scan", {
-        method: "POST",
-        body: JSON.stringify({ projectPath: outsideRoot }),
-      }),
-      "POST /api/actions/scan outsideRoot",
-    );
-
-    console.log("path policy HTTP self-check passed");
+    if (input.includeScan) {
+      assertAllowed(
+        await requestJson(baseUrl, "/api/actions/scan", {
+          method: "POST",
+          body: JSON.stringify({ projectPath: input.allowedRoot }),
+        }),
+        `${input.label} POST /api/actions/scan allowedRoot`,
+      );
+      assertPathDenied(
+        await requestJson(baseUrl, "/api/actions/scan", {
+          method: "POST",
+          body: JSON.stringify({ projectPath: input.outsideRoot }),
+        }),
+        `${input.label} POST /api/actions/scan outsideRoot`,
+      );
+    }
   } finally {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     });
+  }
+};
+
+async function main(): Promise<void> {
+  const oldProjectPath = process.env.LUTEST_PROJECT_PATH;
+  const oldLegacyProjectPath = process.env.PROJECT_PATH;
+  const oldCwd = process.cwd();
+
+  try {
+    const envFixture = await createFixture();
+    process.env.LUTEST_PROJECT_PATH = envFixture.allowedRoot;
+    delete process.env.PROJECT_PATH;
+    await runHttpAssertions({
+      label: "explicit LUTEST_PROJECT_PATH",
+      allowedRoot: envFixture.allowedRoot,
+      outsideRoot: envFixture.outsideRoot,
+      includeScan: true,
+    });
+
+    const cwdFixture = await createFixture();
+    delete process.env.LUTEST_PROJECT_PATH;
+    delete process.env.PROJECT_PATH;
+    process.chdir(cwdFixture.allowedRoot);
+    await runHttpAssertions({
+      label: "fallback cwd",
+      allowedRoot: cwdFixture.allowedRoot,
+      outsideRoot: cwdFixture.outsideRoot,
+      includeScan: false,
+    });
+
+    console.log("path policy HTTP self-check passed");
+  } finally {
+    process.chdir(oldCwd);
     if (oldProjectPath === undefined) {
       delete process.env.LUTEST_PROJECT_PATH;
     } else {
       process.env.LUTEST_PROJECT_PATH = oldProjectPath;
+    }
+    if (oldLegacyProjectPath === undefined) {
+      delete process.env.PROJECT_PATH;
+    } else {
+      process.env.PROJECT_PATH = oldLegacyProjectPath;
     }
   }
 }
