@@ -1,4 +1,4 @@
-﻿export type SourceFileKind =
+export type SourceFileKind =
   | "ts"
   | "tsx"
   | "js"
@@ -62,6 +62,7 @@ export type ClassifiedSourceSymbolKind =
 
 export type ClassifiedSourceSymbol = {
   id: string;
+  rawSymbolId: string;
   kind: ClassifiedSourceSymbolKind;
   name: string;
   filePath: string;
@@ -74,6 +75,8 @@ export type ClassifiedSourceSymbol = {
   confidence: GraphConfidence;
   reason: string;
   route?: SourceRouteInfo;
+  hasDirectNetworkCall: boolean;
+  directNetworkTargets: DirectNetworkTarget[];
 };
 
 export type ExtractedSourceFile = {

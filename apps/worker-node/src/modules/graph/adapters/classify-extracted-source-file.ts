@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   ClassifiedSourceSymbol,
   ExtractedSourceFile,
 } from "../source-extractors/source-extractor.types";
@@ -24,6 +24,7 @@ export const classifyExtractedSourceFile = (input: {
     return [
       {
         id: symbolId(classified.kind, symbol.id),
+        rawSymbolId: symbol.id,
         kind: classified.kind,
         name: symbol.name,
         filePath: symbol.filePath,
@@ -33,6 +34,8 @@ export const classifyExtractedSourceFile = (input: {
         confidence: classified.confidence,
         reason: classified.reason,
         route: classified.route,
+        hasDirectNetworkCall: symbol.hasDirectNetworkCall,
+        directNetworkTargets: symbol.directNetworkTargets,
       },
     ];
   });

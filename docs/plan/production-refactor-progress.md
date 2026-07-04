@@ -2008,3 +2008,83 @@ Tests/checks run:
 
 Next phase:
 - R5.4.4 — HTTP edges + external-endpoint nodes.
+
+## R5.4.4 — HTTP edges + external-endpoint nodes
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/source-extractors/source-extractor.types.ts`
+- `apps/worker-node/src/modules/graph/adapters/classify-extracted-source-file.ts`
+- `apps/worker-node/src/modules/graph/production/build-http-edges.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Direct network target source:
+- HTTP graph building uses `ClassifiedSourceSymbol.directNetworkTargets`, preserved from raw TS/JS source extraction.
+- `ClassifiedSourceSymbol` now carries `rawSymbolId`, `hasDirectNetworkCall`, and `directNetworkTargets` so HTTP builder does not parse data back out of `symbol.id`.
+
+External endpoint node convention:
+- Endpoint node kind is `external-endpoint`.
+- Endpoint node id is `external-endpoint:<METHOD>:<target>`.
+- Endpoint node name is `<METHOD> <target>`.
+- Endpoint node `http` stores `{ method, path }`.
+- `fetch(...)` and `ofetch(...)` default to `GET` when method is not explicit.
+- `axios.<method>(...)` and `ky.<method>(...)` preserve uppercased method when extracted.
+
+HTTP edge convention:
+- Edge kind is `http`.
+- Source is the classified symbol node that owns the direct network target.
+- Target is the external-endpoint node.
+- Edge id is deterministic: `http:<sourceSymbolId>-><endpointNodeId>`.
+
+Dedupe behavior:
+- Duplicate endpoint targets collapse into one external-endpoint node.
+- Duplicate network calls from the same symbol to the same endpoint collapse into one HTTP edge.
+- Same endpoint used by different symbols creates one endpoint node and multiple HTTP edges.
+
+Unsupported network patterns:
+- Non-static/dynamic targets remain skipped by existing extractor behavior.
+- Indirect client wrappers such as `api.get(...)` remain future work unless direct extractor support exists.
+
+Edge builder structure:
+- HTTP node/edge logic is split into `apps/worker-node/src/modules/graph/production/build-http-edges.ts`.
+- `production-edge-builder.ts` remains responsible for import/render/call edge orchestration and does not own HTTP node creation.
+
+Self-check coverage:
+- API client method with duplicate `fetch("/api/products")` creates one endpoint node and one HTTP edge for that symbol.
+- Page direct `fetch("/api/products")` creates page -> endpoint HTTP edge.
+- `axios.post("/api/orders")` creates `POST /api/orders` endpoint and HTTP edge.
+- `ky.get("/api/products")` creates HTTP edge to shared `GET /api/products` endpoint.
+- Same endpoint used by multiple symbols shares one endpoint node.
+- Import/render/call edges from R5.4.1–R5.4.3 still exist.
+- `summary.externalEndpointCount` matches external endpoint nodes.
+- `summary.edgeCount === graph.edges.length`.
+- `ProductionGraphResponse` validates.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- `/api/graph` still uses legacy `GraphResponse` path.
+
+What remains:
+- No production graph HTTP endpoint exposure yet.
+- No `/api/graph` response migration.
+- No UI graph migration.
+- No Playwright work.
+- No Vue/PHP extractor work.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.5 — Production graph exposure strategy / endpoint decision.

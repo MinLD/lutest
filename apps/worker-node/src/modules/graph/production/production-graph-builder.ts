@@ -1,5 +1,6 @@
-import type { ProductionGraphResponse, ProductionGraphSummary } from "@lutest/contracts";
+﻿import type { ProductionGraphResponse, ProductionGraphSummary } from "@lutest/contracts";
 import { validateProductionGraphResponse } from "@lutest/contracts";
+import { buildProductionHttpGraph } from "./build-http-edges";
 import { buildProductionEdges } from "./production-edge-builder";
 import { buildProductionGraphNodes } from "./production-node-builder";
 import { scanProductionProjectSymbols } from "./production-project-scanner";
@@ -19,11 +20,16 @@ export const buildProductionGraph = async (input: {
   rootDir: string;
 }): Promise<ProductionGraphResponse> => {
   const scan = await scanProductionProjectSymbols({ rootDir: input.rootDir });
-  const nodes = buildProductionGraphNodes(scan.files);
+  const baseNodes = buildProductionGraphNodes(scan.files);
+  const httpGraph = buildProductionHttpGraph({ scan });
+  const nodes = [...baseNodes, ...httpGraph.nodes];
   const graph: ProductionGraphResponse = {
     mode: "symbol-level",
     nodes,
-    edges: await buildProductionEdges({ scan, nodes }),
+    edges: [
+      ...(await buildProductionEdges({ scan, nodes: baseNodes })),
+      ...httpGraph.edges,
+    ],
     summary: {
       fileCount: 0,
       pageCount: 0,
