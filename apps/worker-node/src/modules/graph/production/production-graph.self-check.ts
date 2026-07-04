@@ -50,8 +50,17 @@ const buildMiniNextProject = async (): Promise<string> => {
     import ProductCardAgain from "../components/ProductCard";
     import Components from "../components";
     import ProductList from "../components/ProductList";
+    import { useProducts } from "../hooks/useProducts";
     import "../globals.css";
-    export default function HomePage() { return <main><ProductCard /><ProductCard /><ProductList /><MissingComponent /><button /></main>; }
+    export default function HomePage() {
+      const products = useProducts();
+      console.log(products);
+      setTimeout(() => products, 0);
+      Promise.all([]);
+      fetch("/api/products");
+      missingFunction();
+      return <main><ProductCard /><ProductCard /><ProductList /><MissingComponent /><button /></main>;
+    }
   `);
   await writeFile(path.join(root, "app", "products", "page.tsx"), `
     import ProductCard from "@/components/ProductCard";
@@ -63,10 +72,10 @@ const buildMiniNextProject = async (): Promise<string> => {
   await writeFile(path.join(root, "src", "app", "products", "route.ts"), "export async function GET() { return Response.json([]); }");
   await writeFile(path.join(root, "src", "pages", "about.tsx"), "export default function AboutPage() { return <main />; }");
   await writeFile(path.join(root, "src", "pages", "api", "users.ts"), "export function GET() { return Response.json([]); }");
-  await writeFile(path.join(root, "components", "ProductCard.tsx"), "export function ProductCard() { return <article />; }");
-  await writeFile(path.join(root, "components", "ProductList.tsx"), `import { ProductCard } from "./ProductCard"; export function ProductList() { return <section><ProductCard /></section>; }`);
+  await writeFile(path.join(root, "components", "ProductCard.tsx"), "export function formatMoney(value: number) { return String(value); } export function ProductCard() { return <article>{formatMoney(100)}</article>; }");
+  await writeFile(path.join(root, "components", "ProductList.tsx"), `import { ProductCard } from "./ProductCard"; import { getProducts } from "../lib/api"; export function ProductList() { getProducts(); getProducts(); return <section><ProductCard /></section>; }`);
   await writeFile(path.join(root, "components", "index.ts"), "export { ProductCard } from './ProductCard'; export { ProductList } from './ProductList';");
-  await writeFile(path.join(root, "components", "SameFile.tsx"), "export function Parent() { return <Child />; } export function Child() { return <span />; }");
+  await writeFile(path.join(root, "components", "SameFile.tsx"), "export function helper() { return 1; } export function Parent() { helper(); return <Child />; } export function Child() { return <span />; }");
   await writeFile(path.join(root, "globals.css"), ":root {}");
   await writeFile(path.join(root, "lib", "api.ts"), "export async function getProducts() { return fetch('/api/products'); }");
   await writeFile(path.join(root, "hooks", "useProducts.ts"), "export function useProducts() { return []; }");
@@ -117,15 +126,29 @@ const main = async (): Promise<void> => {
 
   const homePage = symbolNode(nextGraph, "page", "app/page.tsx", "HomePage");
   const productCard = symbolNode(nextGraph, "component", "components/ProductCard.tsx", "ProductCard");
+  const formatMoney = symbolNode(nextGraph, "utility", "components/ProductCard.tsx", "formatMoney");
   const productList = symbolNode(nextGraph, "component", "components/ProductList.tsx", "ProductList");
   const sameFileParent = symbolNode(nextGraph, "component", "components/SameFile.tsx", "Parent");
+  const sameFileHelper = symbolNode(nextGraph, "utility", "components/SameFile.tsx", "helper");
   const sameFileChild = symbolNode(nextGraph, "component", "components/SameFile.tsx", "Child");
+  const useProducts = symbolNode(nextGraph, "hook", "hooks/useProducts.ts", "useProducts");
+  const getProducts = symbolNode(nextGraph, "api-client-method", "lib/api.ts", "getProducts");
+
   assert(hasEdge(nextGraph, "render", homePage.id, productCard.id));
   assert(hasEdge(nextGraph, "render", homePage.id, productList.id));
   assert(hasEdge(nextGraph, "render", productList.id, productCard.id));
   assert(hasEdge(nextGraph, "render", sameFileParent.id, sameFileChild.id));
   assert.equal(nextGraph.edges.filter((edge) => edge.kind === "render" && edge.source === homePage.id && edge.target === productCard.id).length, 1);
   assert.equal(nextGraph.edges.some((edge) => edge.kind === "render" && edge.target.includes("MissingComponent")), false);
+
+  assert(hasEdge(nextGraph, "call", homePage.id, useProducts.id));
+  assert(hasEdge(nextGraph, "call", productCard.id, formatMoney.id));
+  assert(hasEdge(nextGraph, "call", productList.id, getProducts.id));
+  assert(hasEdge(nextGraph, "call", sameFileParent.id, sameFileHelper.id));
+  assert.equal(nextGraph.edges.filter((edge) => edge.kind === "call" && edge.source === productList.id && edge.target === getProducts.id).length, 1);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.source === homePage.id && edge.target === productCard.id), false);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.target.includes("missingFunction")), false);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.target.includes("fetch")), false);
   assert.equal(nextGraph.summary.edgeCount, nextGraph.edges.length);
 
   const reactGraph = await buildProductionGraph({ rootDir: await buildMiniReactProject() });

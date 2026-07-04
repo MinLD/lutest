@@ -1937,3 +1937,74 @@ Tests/checks run:
 
 Next phase:
 - R5.4.3 — Call edges.
+
+## R5.4.3 — Production call edges
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/production/production-edge-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Extraction strategy:
+- Call usage extraction uses the TypeScript AST, not regex.
+- It reads `CallExpression` nodes and records identifier calls such as `useProducts()` / `getProducts()` / `formatMoney()`.
+- Conservative member calls such as `service.getProducts()` can map only when namespace import context points to a target file and matching symbol.
+
+Source/target node convention:
+- Call edge source is the classified `page` or `component` symbol whose `loc` contains the call expression line.
+- Call edge target is a classified `hook`, `api-client-method`, `utility`, or callable `component` symbol.
+- Edge id is deterministic: `call:<sourceSymbolId>-><targetSymbolId>`.
+
+Local/imported call mapping supported:
+- Same-file calls map by classified symbol name.
+- Named imports map by imported/local name to target file classified symbols.
+- Default imports map to matching or single callable symbol in target file.
+- Namespace imports have conservative support for `Namespace.member()`.
+- Global fallback is used only when exactly one callable symbol has the called name.
+
+Skipped call patterns:
+- Unknown calls are skipped.
+- Built-ins such as `console.log`, `setTimeout`, `Promise.all`, and array iterator methods are skipped.
+- Direct network clients such as `fetch`, `axios`, `ky`, and `ofetch` are skipped for call edges; R5.4.4 will own HTTP edges.
+- JSX render usage remains render-only and does not create call edges.
+
+Dedupe behavior:
+- Call edges share the same deterministic edge map as import/render edges.
+- Multiple `getProducts()` calls from the same source symbol to the same target symbol produce one call edge.
+
+Self-check coverage:
+- Page calls imported `useProducts()` and creates page -> hook call edge.
+- `ProductCard` calls same-file `formatMoney()` and creates component -> utility call edge.
+- `ProductList` calls imported `getProducts()` twice and creates one component -> api-client-method call edge.
+- Same-file `Parent` calls `helper()` and creates component -> utility call edge.
+- `missingFunction()`, built-ins, and direct `fetch()` do not create bad call edges.
+- JSX `<ProductCard />` still creates render edge and no call edge.
+- R5.4.1 import edges and R5.4.2 render edges still exist.
+- `ProductionGraphResponse` validates and `summary.edgeCount === graph.edges.length`.
+
+Graph service guard:
+- `apps/worker-node/src/modules/graph/graph.service.ts` unchanged.
+- `/api/graph` still uses legacy `GraphResponse` path.
+
+What remains:
+- No HTTP edges.
+- No external-endpoint nodes.
+- No production graph HTTP endpoint.
+- No UI graph migration.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.4.4 — HTTP edges + external-endpoint nodes.

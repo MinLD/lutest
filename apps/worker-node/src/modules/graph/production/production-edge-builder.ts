@@ -1,4 +1,4 @@
-﻿import fs from "node:fs/promises";
+import fs from "node:fs/promises";
 import ts from "typescript";
 import type { ProductionGraphEdge, ProductionGraphNode } from "@lutest/contracts";
 import { extractTsJsImports } from "../import-resolver/extract-ts-js-imports";
@@ -244,6 +244,74 @@ const resolveRenderTarget = (input: {
   return uniqueGlobalComponent(input.files, input.tagName);
 };
 
+
+type CallUsage = {
+  callName: string;
+  line: number;
+};
+
+const ignoredCallees = new Set([
+  "console.log",
+  "console.warn",
+  "console.error",
+  "setTimeout",
+  "setInterval",
+  "clearTimeout",
+  "clearInterval",
+  "Promise.all",
+  "Promise.race",
+  "Promise.resolve",
+  "Promise.reject",
+  "fetch",
+  "axios",
+  "ky",
+  "ofetch",
+]);
+
+const ignoredMemberNames = new Set(["map", "filter", "reduce", "forEach", "find", "some", "every"]);
+
+const callExpressionName = (expression: ts.Expression): string | null => {
+  if (ts.isIdentifier(expression)) return expression.text;
+  if (ts.isPropertyAccessExpression(expression)) {
+    const left = expression.expression.getText();
+    const right = expression.name.text;
+    if (ignoredMemberNames.has(right)) return null;
+    return `${left}.${right}`;
+  }
+  return null;
+};
+
+const isIgnoredCallName = (callName: string): boolean =>
+  ignoredCallees.has(callName) || callName.startsWith("React.");
+
+const extractCallUsages = (input: {
+  sourceFilePath: string;
+  content: string;
+}): CallUsage[] => {
+  const sourceFile = ts.createSourceFile(
+    input.sourceFilePath,
+    input.content,
+    ts.ScriptTarget.Latest,
+    true,
+    input.sourceFilePath.endsWith(".tsx") || input.sourceFilePath.endsWith(".jsx")
+      ? ts.ScriptKind.TSX
+      : ts.ScriptKind.TS,
+  );
+  const usages: CallUsage[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const callName = callExpressionName(node.expression);
+      if (callName && !isIgnoredCallName(callName)) {
+        usages.push({ callName, ...locFor(sourceFile, node) });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return usages;
+};
 const buildFileRenderEdges = async (input: {
   file: ScannedProductionSourceFile;
   files: ScannedProductionSourceFile[];
@@ -282,6 +350,106 @@ const buildFileRenderEdges = async (input: {
   return edges;
 };
 
+
+const callableSymbolsByFile = (
+  files: ScannedProductionSourceFile[],
+): Map<string, ClassifiedSourceSymbol[]> => {
+  const byFile = new Map<string, ClassifiedSourceSymbol[]>();
+  for (const file of files) {
+    byFile.set(
+      file.relativePath,
+      file.symbols.filter((symbol) =>
+        symbol.kind === "component" ||
+        symbol.kind === "hook" ||
+        symbol.kind === "api-client-method" ||
+        symbol.kind === "utility",
+      ),
+    );
+  }
+  return byFile;
+};
+
+const uniqueGlobalCallable = (
+  files: ScannedProductionSourceFile[],
+  name: string,
+): ClassifiedSourceSymbol | null => {
+  const matches = files
+    .flatMap((file) => file.symbols)
+    .filter((symbol) =>
+      (symbol.kind === "component" || symbol.kind === "hook" || symbol.kind === "api-client-method" || symbol.kind === "utility") &&
+      symbol.name === name,
+    );
+  return matches.length === 1 ? matches[0] : null;
+};
+
+const resolveCallTarget = (input: {
+  callName: string;
+  file: ScannedProductionSourceFile;
+  files: ScannedProductionSourceFile[];
+  bindings: ImportBinding[];
+  callablesByFile: Map<string, ClassifiedSourceSymbol[]>;
+}): ClassifiedSourceSymbol | null => {
+  const localCallables = input.callablesByFile.get(input.file.relativePath) ?? [];
+  const local = localCallables.find((symbol) => symbol.name === input.callName);
+  if (local) return local;
+
+  const [namespace, member] = input.callName.split(".");
+  if (namespace && member) {
+    const binding = input.bindings.find((item) => item.namespace && item.localName === namespace);
+    const callables = binding ? input.callablesByFile.get(binding.targetFilePath) ?? [] : [];
+    return callables.find((symbol) => symbol.name === member) ?? null;
+  }
+
+  const binding = input.bindings.find((item) => item.localName === input.callName);
+  if (binding) {
+    const callables = input.callablesByFile.get(binding.targetFilePath) ?? [];
+    return (
+      callables.find((symbol) => symbol.name === (binding.importedName ?? input.callName)) ??
+      callables.find((symbol) => symbol.name === input.callName) ??
+      (callables.length === 1 ? callables[0] : null)
+    );
+  }
+
+  return uniqueGlobalCallable(input.files, input.callName);
+};
+
+const buildFileCallEdges = async (input: {
+  file: ScannedProductionSourceFile;
+  files: ScannedProductionSourceFile[];
+  projectRoot: string;
+  tsconfig: TsconfigPathSettings;
+  content: string;
+  callablesByFile: Map<string, ClassifiedSourceSymbol[]>;
+}): Promise<ProductionGraphEdge[]> => {
+  const usages = extractCallUsages({ sourceFilePath: input.file.relativePath, content: input.content });
+  if (usages.length === 0) return [];
+  const bindings = await buildImportBindings(input);
+  const edges: ProductionGraphEdge[] = [];
+
+  for (const usage of usages) {
+    const source = renderSourceForLine(input.file.symbols, usage.line);
+    if (!source) continue;
+    const target = resolveCallTarget({
+      callName: usage.callName,
+      file: input.file,
+      files: input.files,
+      bindings,
+      callablesByFile: input.callablesByFile,
+    });
+    if (!target || target.id === source.id) continue;
+
+    edges.push({
+      id: `call:${source.id}->${target.id}`,
+      kind: "call",
+      source: source.id,
+      target: target.id,
+      confidence: "high",
+      reason: `${source.name} calls ${usage.callName}()`,
+    });
+  }
+
+  return edges;
+};
 export const buildProductionEdges = async (input: {
   scan: ProductionProjectScanResult;
   nodes: ProductionGraphNode[];
@@ -289,6 +457,7 @@ export const buildProductionEdges = async (input: {
   const targetFileNodeIds = fileNodeIds(input.nodes);
   const tsconfig = await readTsconfigPathSettings(input.scan.rootDir);
   const componentsByFile = componentSymbolsByFile(input.scan.files);
+  const callablesByFile = callableSymbolsByFile(input.scan.files);
   const contents = new Map<string, string>();
   const edges = new Map<string, ProductionGraphEdge>();
 
@@ -313,7 +482,15 @@ export const buildProductionEdges = async (input: {
       content,
       componentsByFile,
     });
-    for (const edge of [...importEdges, ...renderEdges]) edges.set(edge.id, edge);
+    const callEdges = await buildFileCallEdges({
+      file,
+      files: input.scan.files,
+      projectRoot: input.scan.rootDir,
+      tsconfig,
+      content,
+      callablesByFile,
+    });
+    for (const edge of [...importEdges, ...renderEdges, ...callEdges]) edges.set(edge.id, edge);
   }
 
   return Array.from(edges.values()).sort((left, right) =>
