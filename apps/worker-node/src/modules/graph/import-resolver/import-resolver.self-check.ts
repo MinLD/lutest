@@ -85,6 +85,26 @@ const main = async (): Promise<void> => {
   assert.equal((await resolve("./globals.css")).reason, "target-not-found");
   assert.equal((await resolve("./missing")).reason, "target-not-found");
 
+  const implicitBaseRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-import-implicit-base-"));
+  await writeFile(path.join(implicitBaseRoot, "src", "App.tsx"), "import Dashboard from '@/components/Dashboard';");
+  await writeFile(path.join(implicitBaseRoot, "src", "components", "Dashboard.tsx"), "export default function Dashboard() { return null; }");
+  await writeFile(path.join(implicitBaseRoot, "tsconfig.json"), JSON.stringify({
+    compilerOptions: {
+      paths: {
+        "@/*": ["src/*"],
+      },
+    },
+  }));
+  const implicitBaseSettings = await readTsconfigPathSettings(implicitBaseRoot);
+  assert.equal(implicitBaseSettings.baseUrl, implicitBaseRoot.replaceAll("\\", "/"));
+  const implicitBaseResolved = await resolveImportTarget({
+    projectRoot: implicitBaseRoot,
+    sourceFilePath: "src/App.tsx",
+    specifier: "@/components/Dashboard",
+    tsconfig: implicitBaseSettings,
+  });
+  assert.equal(implicitBaseResolved.targetFilePath, "src/components/Dashboard.tsx");
+
   const malformedRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-import-bad-config-"));
   await writeFile(path.join(malformedRoot, "tsconfig.json"), "{ bad json");
   await writeFile(path.join(malformedRoot, "src", "App.tsx"), "import './Button';");

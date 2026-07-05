@@ -40,10 +40,6 @@ export const readTsconfigPathSettings = async (
       return { configPath: normalizePath(configPath), baseUrl: null, paths: [], diagnostics: [] };
     }
 
-    const baseUrl =
-      typeof raw.compilerOptions.baseUrl === "string"
-        ? normalizePath(path.resolve(projectRoot, raw.compilerOptions.baseUrl))
-        : null;
     const paths: TsconfigPathSettings["paths"] = [];
 
     if (isRecord(raw.compilerOptions.paths)) {
@@ -55,6 +51,13 @@ export const readTsconfigPathSettings = async (
         });
       }
     }
+
+    const baseUrl =
+      typeof raw.compilerOptions.baseUrl === "string"
+        ? normalizePath(path.resolve(projectRoot, raw.compilerOptions.baseUrl))
+        : paths.length > 0
+          ? normalizePath(projectRoot)
+          : null;
 
     return { configPath: normalizePath(configPath), baseUrl, paths, diagnostics: [] };
   } catch (error) {

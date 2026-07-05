@@ -46,6 +46,12 @@ type AuditResult = {
 const IGNORED_DIRS = new Set(["node_modules", ".next", "dist", "build", ".lutest", "coverage"]);
 const SUPPORTED_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const REQUIRED_ROOT = "D:/Projects/lutest/apps/ui";
+const EXPECTED_ALIAS_IMPORT_EDGES = [
+  "file:src/app/page.tsx->file:src/components/dashboard-shell.tsx",
+  "file:src/components/dashboard-shell.tsx->file:src/lib/production-graph-adapter.ts",
+  "file:src/components/dashboard-shell.tsx->file:src/lib/use-dashboard-data.ts",
+];
+const FALSE_POSITIVE_UTILITY_NAMES = ["metadata.title", "metadata.description"];
 
 const normalizePath = (value: string): string => value.replaceAll("\\", "/");
 const posixRelative = (rootDir: string, filePath: string): string => normalizePath(path.relative(rootDir, filePath));
@@ -395,6 +401,7 @@ const actualInventory = (graph: ProductionGraphResponse) => {
     hooks: nodesByKind("hook"),
     apiClientMethods: nodesByKind("api-client-method"),
     externalEndpoints: nodesByKind("external-endpoint"),
+    utilities: nodesByKind("utility"),
     imports: graph.edges.filter((edge) => edge.kind === "import"),
     renders: graph.edges.filter((edge) => edge.kind === "render"),
     calls: graph.edges.filter((edge) => edge.kind === "call"),
@@ -443,8 +450,16 @@ const compareAudit = (expected: ExpectedInventory, actual: ReturnType<typeof act
     missingExternalEndpoints: expected.endpointCandidates
       .filter((item) => !actual.externalEndpoints.some((node) => node.name === item.name || node.http?.path === item.endpoint))
       .map(formatExpectedItem),
-    unexpectedExternalEndpoints: actual.externalEndpoints.map((node) => node.name),
+    unexpectedExternalEndpoints: actual.externalEndpoints
+      .filter((node) => !expected.endpointCandidates.some((item) => item.endpoint === node.http?.path || item.name === node.name))
+      .map((node) => node.name),
     missingHttpEdges: expected.httpEdges.filter(() => actual.http.length === 0),
+    falsePositiveUtilityNodes: actual.utilities
+      .filter((node) => FALSE_POSITIVE_UTILITY_NAMES.includes(node.name))
+      .map((node) => `${node.name} | ${node.filePath ?? "<no-file>"}`),
+    missingAliasImportEdges: EXPECTED_ALIAS_IMPORT_EDGES.filter((expectedEdge) =>
+      !actual.imports.some((edge) => `${edge.source}->${edge.target}` === expectedEdge),
+    ),
   };
 };
 
@@ -471,6 +486,8 @@ const verdictFor = (mismatches: ReturnType<typeof compareAudit>, validationOk: b
     mismatches.unexpectedComponents,
     mismatches.missingHooks,
     mismatches.unexpectedHooks,
+    mismatches.falsePositiveUtilityNodes,
+    mismatches.missingAliasImportEdges,
   ].some((items) => items.length > 0);
   if (hardFailures) return "FAIL";
   const knownLimitations =
@@ -536,6 +553,8 @@ const printReport = (result: AuditResult) => {
 
   console.log("\n## Edges\n");
   console.log("### Import edges\n");
+  console.log(`Expected alias imports:\n${list(EXPECTED_ALIAS_IMPORT_EDGES)}`);
+  console.log(`Missing alias imports:\n${list(mismatches.missingAliasImportEdges)}`);
   console.log(`Expected important: ${expected.importantImports.length}\n${list(expected.importantImports)}`);
   console.log(`Actual: ${actual.imports.length}`);
   console.log("Missing:\n- not exhaustively audited in R5.6.3");
@@ -558,6 +577,8 @@ const printReport = (result: AuditResult) => {
 
   console.log("\n## Ambiguous / needs human review\n");
   console.log(list(expected.ambiguous));
+  console.log("\n## False positive utility nodes\n");
+  console.log(list(mismatches.falsePositiveUtilityNodes));
   console.log("\n## Final verdict\n");
   console.log(verdict);
 };

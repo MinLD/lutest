@@ -2402,3 +2402,157 @@ Tests/checks run:
 
 Next phase:
 - R5.6.4 — API client object-method and indirect HTTP detection
+
+## R5.6.4 — API client object-method and indirect HTTP detection
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Root cause:
+- TS/JS extractor did not emit exported object literal methods as raw symbols with object context, so `lutestApi.getStatus`-style methods were invisible to production classification.
+- Request helper calls such as `requestJson(withProjectPath("/api/project", projectPath))` were not recognized as HTTP targets because the first argument was an indirect static wrapper call, not a direct string literal.
+
+Object method patterns supported:
+- Exported object literal method shorthand: `export const api = { getUsers() { ... } }`.
+- Exported object literal arrow/function properties: `export const api = { createUser: () => ... }`.
+- Qualified symbol names are preserved, e.g. `lutestApi.getGraph`.
+- Raw IDs remain deterministic with file path, qualified name, and loc range.
+- Standalone duplicate object method symbols are avoided for exported object literal methods.
+
+Helper request patterns supported:
+- `requestJson("/api/...")`.
+- `requestProductionGraph("/api/...")`.
+- `apiRequest("/api/...")`.
+- `request("/api/...")`.
+- `this.request("/api/...")` / member `.request("/api/...")`.
+- Static wrapper first argument, e.g. `requestJson(withProjectPath("/api/project", projectPath))`.
+- `method: "POST"` in second argument is inferred; otherwise static helper calls default to `GET`.
+- Direct `fetch("/api/...")` remains supported.
+
+apps/ui before:
+- API client methods: 0
+- External endpoints: 0
+- HTTP edges: 0
+- Audit verdict: `PASS_WITH_KNOWN_LIMITATIONS`
+
+apps/ui after:
+- API client methods: 6
+- External endpoints: 6
+- HTTP edges: 6
+- Total edges: 38
+- Audit verdict: `PASS`
+
+Endpoint nodes added:
+- `GET /api/status`
+- `GET /api/project`
+- `GET /api/graph`
+- `GET /api/graph/production`
+- `GET /api/report/latest`
+- `POST /api/actions/scan`
+
+HTTP edges added:
+- `lutestApi.getStatus -> GET /api/status`
+- `lutestApi.getProject -> GET /api/project`
+- `lutestApi.getGraph -> GET /api/graph`
+- `lutestApi.getProductionGraph -> GET /api/graph/production`
+- `lutestApi.getLatestReport -> GET /api/report/latest`
+- `lutestApi.runScan -> POST /api/actions/scan`
+
+Remaining limitations:
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred; HTTP detection was the main R5.6.4 target.
+- Audit still marks import/render/call edge sections as not exhaustively audited in R5.6.3/R5.6.4 scope.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/adapters/framework-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Not changed:
+- Path policy unchanged in R5.6.4.
+- `/api/graph` legacy response unchanged.
+- `/api/graph/production` response shape unchanged.
+- UI layout unchanged.
+- No Vue/PHP extractor work.
+
+Next phase:
+- R5.7 — Production graph UI hardening / visual grouping
+
+## R5.6.5 — Production graph cleanup: object-property false positives and alias import audit
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts`
+- `apps/worker-node/src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts`
+- `apps/worker-node/src/modules/graph/import-resolver/tsconfig-paths.ts`
+- `apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts`
+- `apps/ui/.lutest/audits/production-graph-accuracy-apps-ui.json`
+- `docs/plan/production-refactor-progress.md`
+
+Metadata false positive fix:
+- Exported object literal extraction now emits only function-like members: shorthand methods, function properties, and arrow-function properties.
+- Plain object value properties are skipped.
+- `metadata.title` and `metadata.description` are no longer emitted as utility nodes.
+- Self-check covers exported metadata string props and nested config value props as non-symbols.
+
+Alias import edge result:
+- Resolver now treats `paths` without explicit `baseUrl` as rooted at project root.
+- This matches Next/TS usage in `apps/ui/tsconfig.json`, where `@/*` maps to `./src/*` without `baseUrl`.
+- Alias import edges are now present:
+  - `file:src/app/page.tsx -> file:src/components/dashboard-shell.tsx`
+  - `file:src/components/dashboard-shell.tsx -> file:src/lib/production-graph-adapter.ts`
+  - `file:src/components/dashboard-shell.tsx -> file:src/lib/use-dashboard-data.ts`
+- Import resolver self-check covers `@/*` resolution without explicit `baseUrl`.
+
+apps/ui after:
+- False positive metadata nodes: 0
+- Missing alias import edges: 0
+- Import edges: 7
+- API client methods: 6
+- External endpoints: 6
+- HTTP edges: 6
+- Audit verdict: `PASS`
+
+Not changed:
+- `/api/graph` legacy response unchanged.
+- `/api/graph/production` response shape unchanged.
+- Path policy unchanged.
+- UI layout unchanged.
+- No Vue/PHP extractor work.
+
+Known limitations:
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred.
+- Audit still treats import/render/call sections as partially audited except required alias import edges.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.7 — Production graph UI hardening / visual grouping

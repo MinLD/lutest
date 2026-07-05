@@ -826,9 +826,223 @@
         "reason": "React hook naming convention"
       }
     ],
-    "apiClientMethods": [],
-    "externalEndpoints": [],
+    "apiClientMethods": [
+      {
+        "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+        "kind": "api-client-method",
+        "name": "lutestApi.getStatus",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 92,
+          "endLine": 94
+        },
+        "confidence": "high",
+        "reason": "Direct network call inside function"
+      },
+      {
+        "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+        "kind": "api-client-method",
+        "name": "lutestApi.getProject",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 96,
+          "endLine": 100
+        },
+        "confidence": "high",
+        "reason": "Direct network call inside function"
+      },
+      {
+        "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106",
+        "kind": "api-client-method",
+        "name": "lutestApi.getGraph",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 102,
+          "endLine": 106
+        },
+        "confidence": "high",
+        "reason": "Direct network call inside function"
+      },
+      {
+        "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+        "kind": "api-client-method",
+        "name": "lutestApi.getProductionGraph",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 108,
+          "endLine": 112
+        },
+        "confidence": "high",
+        "reason": "Direct network call inside function"
+      },
+      {
+        "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+        "kind": "api-client-method",
+        "name": "lutestApi.getLatestReport",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 114,
+          "endLine": 118
+        },
+        "confidence": "high",
+        "reason": "Direct network call inside function"
+      },
+      {
+        "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+        "kind": "api-client-method",
+        "name": "lutestApi.runScan",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 120,
+          "endLine": 125
+        },
+        "confidence": "high",
+        "reason": "Direct network call inside function"
+      }
+    ],
+    "externalEndpoints": [
+      {
+        "id": "external-endpoint:GET:/api/graph",
+        "kind": "external-endpoint",
+        "name": "GET /api/graph",
+        "http": {
+          "method": "GET",
+          "path": "/api/graph"
+        },
+        "confidence": "high",
+        "reason": "Direct network target detected from source symbol"
+      },
+      {
+        "id": "external-endpoint:GET:/api/graph/production",
+        "kind": "external-endpoint",
+        "name": "GET /api/graph/production",
+        "http": {
+          "method": "GET",
+          "path": "/api/graph/production"
+        },
+        "confidence": "high",
+        "reason": "Direct network target detected from source symbol"
+      },
+      {
+        "id": "external-endpoint:GET:/api/project",
+        "kind": "external-endpoint",
+        "name": "GET /api/project",
+        "http": {
+          "method": "GET",
+          "path": "/api/project"
+        },
+        "confidence": "high",
+        "reason": "Direct network target detected from source symbol"
+      },
+      {
+        "id": "external-endpoint:GET:/api/report/latest",
+        "kind": "external-endpoint",
+        "name": "GET /api/report/latest",
+        "http": {
+          "method": "GET",
+          "path": "/api/report/latest"
+        },
+        "confidence": "high",
+        "reason": "Direct network target detected from source symbol"
+      },
+      {
+        "id": "external-endpoint:GET:/api/status",
+        "kind": "external-endpoint",
+        "name": "GET /api/status",
+        "http": {
+          "method": "GET",
+          "path": "/api/status"
+        },
+        "confidence": "high",
+        "reason": "Direct network target detected from source symbol"
+      },
+      {
+        "id": "external-endpoint:POST:/api/actions/scan",
+        "kind": "external-endpoint",
+        "name": "POST /api/actions/scan",
+        "http": {
+          "method": "POST",
+          "path": "/api/actions/scan"
+        },
+        "confidence": "high",
+        "reason": "Direct network target detected from source symbol"
+      }
+    ],
+    "utilities": [
+      {
+        "id": "utility:raw:class:src/lib/api-client.ts#ApiClientError@14-23",
+        "kind": "utility",
+        "name": "ApiClientError",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 14,
+          "endLine": 23
+        },
+        "confidence": "low",
+        "reason": "Exported symbol without framework-specific role"
+      },
+      {
+        "id": "utility:raw:function:src/lib/api-client.ts#isPathNotAllowedError@78-80",
+        "kind": "utility",
+        "name": "isPathNotAllowedError",
+        "filePath": "src/lib/api-client.ts",
+        "loc": {
+          "startLine": 78,
+          "endLine": 80
+        },
+        "confidence": "low",
+        "reason": "Exported symbol without framework-specific role"
+      },
+      {
+        "id": "utility:raw:function:src/lib/production-graph-adapter.ts#labelProductionGraphNode@56-58",
+        "kind": "utility",
+        "name": "labelProductionGraphNode",
+        "filePath": "src/lib/production-graph-adapter.ts",
+        "loc": {
+          "startLine": 56,
+          "endLine": 58
+        },
+        "confidence": "low",
+        "reason": "Exported symbol without framework-specific role"
+      },
+      {
+        "id": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToUiGraph@60-92",
+        "kind": "utility",
+        "name": "adaptProductionGraphToUiGraph",
+        "filePath": "src/lib/production-graph-adapter.ts",
+        "loc": {
+          "startLine": 60,
+          "endLine": 92
+        },
+        "confidence": "low",
+        "reason": "Exported symbol without framework-specific role"
+      }
+    ],
     "imports": [
+      {
+        "id": "import:file:src/app/page.tsx->file:src/components/dashboard-shell.tsx",
+        "kind": "import",
+        "source": "file:src/app/page.tsx",
+        "target": "file:src/components/dashboard-shell.tsx",
+        "confidence": "high",
+        "reason": "static-import @/components/dashboard-shell resolved by paths-match"
+      },
+      {
+        "id": "import:file:src/components/dashboard-shell.tsx->file:src/lib/production-graph-adapter.ts",
+        "kind": "import",
+        "source": "file:src/components/dashboard-shell.tsx",
+        "target": "file:src/lib/production-graph-adapter.ts",
+        "confidence": "high",
+        "reason": "type-import @/lib/production-graph-adapter resolved by paths-match"
+      },
+      {
+        "id": "import:file:src/components/dashboard-shell.tsx->file:src/lib/use-dashboard-data.ts",
+        "kind": "import",
+        "source": "file:src/components/dashboard-shell.tsx",
+        "target": "file:src/lib/use-dashboard-data.ts",
+        "confidence": "high",
+        "reason": "static-import @/lib/use-dashboard-data resolved by paths-match"
+      },
       {
         "id": "import:file:src/lib/dashboard-data-request.self-check.ts->file:src/lib/api-client.ts",
         "kind": "import",
@@ -1090,16 +1304,65 @@
         "reason": "DashboardShell calls useDashboardData()"
       }
     ],
-    "http": [],
+    "http": [
+      {
+        "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106->external-endpoint:GET:/api/graph",
+        "kind": "http",
+        "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106",
+        "target": "external-endpoint:GET:/api/graph",
+        "confidence": "high",
+        "reason": "Source symbol contains direct network call to endpoint"
+      },
+      {
+        "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118->external-endpoint:GET:/api/report/latest",
+        "kind": "http",
+        "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+        "target": "external-endpoint:GET:/api/report/latest",
+        "confidence": "high",
+        "reason": "Source symbol contains direct network call to endpoint"
+      },
+      {
+        "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112->external-endpoint:GET:/api/graph/production",
+        "kind": "http",
+        "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+        "target": "external-endpoint:GET:/api/graph/production",
+        "confidence": "high",
+        "reason": "Source symbol contains direct network call to endpoint"
+      },
+      {
+        "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100->external-endpoint:GET:/api/project",
+        "kind": "http",
+        "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+        "target": "external-endpoint:GET:/api/project",
+        "confidence": "high",
+        "reason": "Source symbol contains direct network call to endpoint"
+      },
+      {
+        "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94->external-endpoint:GET:/api/status",
+        "kind": "http",
+        "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+        "target": "external-endpoint:GET:/api/status",
+        "confidence": "high",
+        "reason": "Source symbol contains direct network call to endpoint"
+      },
+      {
+        "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125->external-endpoint:POST:/api/actions/scan",
+        "kind": "http",
+        "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+        "target": "external-endpoint:POST:/api/actions/scan",
+        "confidence": "high",
+        "reason": "Source symbol contains direct network call to endpoint"
+      }
+    ],
     "summary": {
       "fileCount": 9,
       "pageCount": 1,
       "componentCount": 18,
       "hookCount": 1,
       "apiRouteCount": 0,
-      "apiClientMethodCount": 0,
-      "externalEndpointCount": 0,
-      "edgeCount": 32
+      "apiClientMethodCount": 6,
+      "externalEndpointCount": 6,
+      "edgeCount": 41
     }
   },
   "mismatches": {
@@ -1112,36 +1375,14 @@
     "unexpectedComponents": [],
     "missingHooks": [],
     "unexpectedHooks": [],
-    "missingApiClientMethods": [
-      "lutestApi.getStatus | src/lib/api-client.ts:92-94 | exported object literal method/property with API request call",
-      "lutestApi.getProject | src/lib/api-client.ts:96-100 | exported object literal method/property with API request call",
-      "lutestApi.getGraph | src/lib/api-client.ts:102-106 | exported object literal method/property with API request call",
-      "lutestApi.getProductionGraph | src/lib/api-client.ts:108-112 | exported object literal method/property with API request call",
-      "lutestApi.getLatestReport | src/lib/api-client.ts:114-118 | exported object literal method/property with API request call",
-      "lutestApi.runScan | src/lib/api-client.ts:120-125 | exported object literal method/property with API request call"
-    ],
+    "missingApiClientMethods": [],
     "unexpectedApiClientMethods": [],
-    "missingExternalEndpoints": [
-      "/api/status | src/lib/api-client.ts:92-94 | API client candidate lutestApi.getStatus references endpoint string",
-      "/api/project | src/lib/api-client.ts:96-100 | API client candidate lutestApi.getProject references endpoint string",
-      "/api/graph | src/lib/api-client.ts:102-106 | API client candidate lutestApi.getGraph references endpoint string",
-      "/api/graph/production | src/lib/api-client.ts:108-112 | API client candidate lutestApi.getProductionGraph references endpoint string",
-      "/api/report/latest | src/lib/api-client.ts:114-118 | API client candidate lutestApi.getLatestReport references endpoint string",
-      "/api/actions/scan | src/lib/api-client.ts:120-125 | API client candidate lutestApi.runScan references endpoint string"
-    ],
+    "missingExternalEndpoints": [],
     "unexpectedExternalEndpoints": [],
-    "missingHttpEdges": [
-      "lutestApi.getGraph->/api/graph",
-      "lutestApi.getLatestReport->/api/report/latest",
-      "lutestApi.getProductionGraph->/api/graph/production",
-      "lutestApi.getProject->/api/project",
-      "lutestApi.getStatus->/api/status",
-      "lutestApi.runScan->/api/actions/scan"
-    ]
+    "missingHttpEdges": [],
+    "falsePositiveUtilityNodes": [],
+    "missingAliasImportEdges": []
   },
-  "rootCauses": [
-    "API client methods likely missed because production extractor does not emit exported object literal methods as source symbols or adapter only classifies symbols with direct network targets on emitted symbols.",
-    "External endpoints/HTTP edges likely missed because worker API paths are behind requestJson/requestProductionGraph indirection instead of direct fetch/axios calls inside classified api-client-method symbols."
-  ],
-  "verdict": "PASS_WITH_KNOWN_LIMITATIONS"
+  "rootCauses": [],
+  "verdict": "PASS"
 }

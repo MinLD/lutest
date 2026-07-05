@@ -19,6 +19,13 @@ const CLIENT_METHODS = new Set([
   "request",
 ]);
 
+const REQUEST_HELPERS = new Set([
+  "apiRequest",
+  "request",
+  "requestJson",
+  "requestProductionGraph",
+]);
+
 const normalizePath = (value: string): string => value.replaceAll("\\", "/");
 
 const isPascalCase = (name: string): boolean => /^[A-Z][A-Za-z0-9]*$/.test(name);
@@ -79,10 +86,44 @@ const containsJsx = (node: ts.Node): boolean => {
   return found;
 };
 
-const getCallTarget = (node: ts.CallExpression): string | null => {
-  const first = node.arguments[0];
-  return first && ts.isStringLiteralLike(first) ? first.text : null;
+const staticHttpString = (node: ts.Expression | undefined): string | null => {
+  if (!node) return null;
+  if (ts.isStringLiteralLike(node)) return node.text;
+  if (ts.isCallExpression(node)) return staticHttpString(node.arguments[0]);
+  return null;
 };
+
+const getCallTarget = (node: ts.CallExpression): string | null =>
+  staticHttpString(node.arguments[0]);
+
+const getRequestInitMethod = (node: ts.CallExpression): string | undefined => {
+  const init = node.arguments[1];
+  if (!init || !ts.isObjectLiteralExpression(init)) return undefined;
+  const methodProperty = init.properties.find((property) =>
+    ts.isPropertyAssignment(property) &&
+    ((ts.isIdentifier(property.name) && property.name.text === "method") ||
+      (ts.isStringLiteralLike(property.name) && property.name.text === "method")),
+  );
+  if (!methodProperty || !ts.isPropertyAssignment(methodProperty)) return undefined;
+  return ts.isStringLiteralLike(methodProperty.initializer)
+    ? methodProperty.initializer.text.toUpperCase()
+    : undefined;
+};
+
+const isStaticHttpTarget = (target: string): boolean =>
+  target.startsWith("/api") || target.startsWith("http://") || target.startsWith("https://");
+
+const networkTarget = (input: {
+  client: string;
+  method?: string;
+  target: string;
+  line: number;
+}): DirectNetworkTarget => ({
+  client: input.client,
+  ...(input.method ? { method: input.method } : {}),
+  target: input.target,
+  line: input.line,
+});
 
 const getNetworkTarget = (
   node: ts.CallExpression,
@@ -93,10 +134,14 @@ const getNetworkTarget = (
   const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
   const line = position.line + 1;
   const expression = node.expression;
+  const methodOverride = getRequestInitMethod(node);
 
   if (ts.isIdentifier(expression)) {
-    if (expression.text === "fetch") return { client: "fetch", target, line };
-    if (expression.text === "ofetch") return { client: "ofetch", target, line };
+    if (expression.text === "fetch") return networkTarget({ client: "fetch", method: methodOverride, target, line });
+    if (expression.text === "ofetch") return networkTarget({ client: "ofetch", target, line });
+    if (REQUEST_HELPERS.has(expression.text) && isStaticHttpTarget(target)) {
+      return networkTarget({ client: expression.text, method: methodOverride ?? "GET", target, line });
+    }
     return null;
   }
 
@@ -104,14 +149,18 @@ const getNetworkTarget = (
   const root = expression.expression.getText(sourceFile);
   const method = expression.name.text;
 
+  if (method === "request" && isStaticHttpTarget(target)) {
+    return networkTarget({ client: `${root}.request`, method: methodOverride ?? "GET", target, line });
+  }
+
   if (root === "axios" && CLIENT_METHODS.has(method)) {
-    return { client: "axios", method: method.toUpperCase(), target, line };
+    return networkTarget({ client: "axios", method: method.toUpperCase(), target, line });
   }
   if (root === "ky" && CLIENT_METHODS.has(method)) {
-    return { client: "ky", method: method.toUpperCase(), target, line };
+    return networkTarget({ client: "ky", method: method.toUpperCase(), target, line });
   }
   if (root === "ofetch" && CLIENT_METHODS.has(method)) {
-    return { client: "ofetch", method: method.toUpperCase(), target, line };
+    return networkTarget({ client: "ofetch", method: method.toUpperCase(), target, line });
   }
 
   return null;
@@ -151,6 +200,33 @@ const getVariableStatement = (node: ts.VariableDeclaration): ts.VariableStatemen
   const declarationList = node.parent;
   const statement = declarationList.parent;
   return ts.isVariableStatement(statement) ? statement : null;
+};
+
+const propertyName = (node: ts.PropertyName): string | null => {
+  if (ts.isIdentifier(node) || ts.isStringLiteralLike(node) || ts.isNumericLiteral(node)) return node.text;
+  return null;
+};
+
+const objectMethodBody = (property: ts.MethodDeclaration | ts.PropertyAssignment): ts.Node | undefined => {
+  if (ts.isMethodDeclaration(property)) return property.body;
+  const initializer = property.initializer;
+  if (ts.isArrowFunction(initializer) || ts.isFunctionExpression(initializer)) return initializer.body;
+  return undefined;
+};
+
+const objectMethodRawKind = (property: ts.MethodDeclaration | ts.PropertyAssignment): RawSymbolKind => {
+  if (ts.isMethodDeclaration(property)) return "method";
+  if (ts.isArrowFunction(property.initializer)) return "arrow-function";
+  if (ts.isFunctionExpression(property.initializer)) return "function-expression";
+  return "method";
+};
+
+const isObjectFunctionMember = (
+  property: ts.ObjectLiteralElementLike,
+): property is ts.MethodDeclaration | ts.PropertyAssignment => {
+  if (ts.isMethodDeclaration(property)) return true;
+  return ts.isPropertyAssignment(property) &&
+    (ts.isArrowFunction(property.initializer) || ts.isFunctionExpression(property.initializer));
 };
 
 const toRawSymbol = (input: {
@@ -200,6 +276,32 @@ export const extractRawSymbolsFromParsedSource = (
   const filePath = normalizePath(parsed.filePath);
 
   const visit = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isObjectLiteralExpression(node.initializer)) {
+      const statement = getVariableStatement(node);
+      const exported = statement ? hasExportModifier(statement) : false;
+      if (exported) {
+        for (const property of node.initializer.properties) {
+          if (!isObjectFunctionMember(property)) continue;
+          const name = propertyName(property.name);
+          if (!name) continue;
+          const qualifiedName = `${node.name.text}.${name}`;
+          symbols.push(
+            toRawSymbol({
+              filePath,
+              name: qualifiedName,
+              rawKind: objectMethodRawKind(property),
+              node: property,
+              body: objectMethodBody(property),
+              exported,
+              defaultExport: false,
+              parsed,
+            }),
+          );
+        }
+        return;
+      }
+    }
+
     if (ts.isFunctionDeclaration(node) && node.name) {
       symbols.push(
         toRawSymbol({
@@ -244,7 +346,7 @@ export const extractRawSymbolsFromParsedSource = (
       );
     }
 
-    if (ts.isMethodDeclaration(node) && ts.isIdentifier(node.name)) {
+    if (ts.isMethodDeclaration(node) && ts.isIdentifier(node.name) && !ts.isObjectLiteralExpression(node.parent)) {
       symbols.push(
         toRawSymbol({
           filePath,
