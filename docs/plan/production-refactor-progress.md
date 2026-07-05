@@ -2808,3 +2808,50 @@ Tests/checks run:
 Next phase:
 - R5.8 — Object member call edges / dependency chain completion
 
+
+## R5.7.4 — Graph page viewport polish and metric clarity
+
+Status: completed.
+
+Files changed:
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/src/components/production-graph-canvas.tsx`
+- `docs/plan/production-refactor-progress.md`
+
+Metric card cleanup:
+- Graph metric cards now use smaller padding and typography.
+- `Graph health` now shows `60 edges` style value with `3 issues` metadata instead of ambiguous `60 / 3`.
+- UI symbols and API flow cards keep clear sub-metrics for pages/components/hooks and clients/endpoints.
+
+Canvas viewport improvement:
+- Production canvas card padding reduced.
+- Canvas header compacted to `Production canvas` plus `nodes · edges` line.
+- React Flow area now uses `min-height: 43.75rem` on desktop target area.
+- Inspector stays fixed-width at `20rem`, leaving canvas as dominant area.
+- Graph page no longer passes latest report into canvas; full report remains in Reports page.
+
+Graph page title cleanup:
+- Removed repeated Graph page `PageTitle` below sticky topbar.
+- Topbar remains source of active page title/subtitle.
+- Graph content now starts with compact metrics and canvas workspace.
+
+Known limitations:
+- Visual acceptance was not browser-screenshot verified in this phase.
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred to R5.8.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.8 — Object member call edges / dependency chain completion
+

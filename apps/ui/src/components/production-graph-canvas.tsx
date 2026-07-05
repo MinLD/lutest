@@ -9,10 +9,7 @@ import {
   type EdgeMouseHandler,
   type NodeMouseHandler,
 } from "@xyflow/react";
-import type {
-  LatestReportResponse,
-  ProductionGraphEdgeKind,
-} from "@lutest/contracts";
+import type { ProductionGraphEdgeKind } from "@lutest/contracts";
 import {
   adaptProductionGraphToFlowModel,
   filterProductionFlowEdges,
@@ -41,10 +38,8 @@ const edgeKinds: ProductionGraphEdgeKind[] = [
 
 export function ProductionGraphCanvas({
   graph,
-  latestReport,
 }: {
   graph: ProductionFlowModel | null;
-  latestReport: LatestReportResponse | null;
 }) {
   const [visibleEdges, setVisibleEdges] = useState(defaultVisibleEdges);
   const [layoutNodes, setLayoutNodes] = useState<ProductionFlowNode[]>([]);
@@ -126,18 +121,14 @@ export function ProductionGraphCanvas({
   }
 
   return (
-    <section className="rounded-[1.35rem] bg-white p-4 shadow-[0_1px_0_#dbe7f5,0_18px_50px_rgba(36,63,103,0.06)] sm:p-6">
-      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <section className="rounded-[1.35rem] bg-white p-3 shadow-[0_1px_0_#dbe7f5,0_18px_50px_rgba(36,63,103,0.06)] sm:p-4">
+      <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#2563eb]">
             Production canvas
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-[-0.04em] text-[#111827]">
-            Symbol graph
-          </h2>
           <p className="mt-1 text-sm text-[#667085]">
-            {graph.summary.nodeCount} nodes / {graph.summary.edgeCount} edges.
-            ELK layered layout, left to right.
+            {graph.summary.nodeCount} nodes · {graph.summary.edgeCount} edges
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -166,8 +157,8 @@ export function ProductionGraphCanvas({
       {layoutError ? (
         <CanvasState title="Layout failed" body={layoutError} />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
-          <div className="min-h-[40.625rem] overflow-hidden rounded-2xl border border-[#dbe7f5] bg-[#fbfdff]">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="min-h-[43.75rem] overflow-hidden rounded-2xl border border-[#dbe7f5] bg-[#fbfdff]">
             {isLayouting ? (
               <CanvasState
                 title="Laying out graph"

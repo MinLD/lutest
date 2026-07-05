@@ -322,11 +322,11 @@ function MetricCard({
   meta: string;
 }) {
   return (
-    <article className="rounded-[1.1rem] bg-white p-5 shadow-[0_1px_0_#dbe7f5,0_12px_28px_rgba(36,63,103,0.045)]">
-      <p className="text-3xl font-semibold tracking-[-0.06em] text-[#111827]">
+    <article className="rounded-[1.1rem] bg-white p-4 shadow-[0_1px_0_#dbe7f5,0_10px_22px_rgba(36,63,103,0.04)]">
+      <p className="text-2xl font-semibold tracking-[-0.05em] text-[#111827]">
         {value}
       </p>
-      <h3 className="mt-3 text-base font-semibold tracking-[-0.03em] text-[#111827]">
+      <h3 className="mt-2 text-sm font-semibold tracking-[-0.03em] text-[#111827]">
         {title}
       </h3>
       <p className="mt-1 text-xs text-[#667085]">{meta}</p>
@@ -454,9 +454,9 @@ function ProductionSummaryCards({
         meta={`${summary?.apiClientMethodCount ?? 0} clients / ${summary?.externalEndpointCount ?? 0} endpoints`}
       />
       <MetricCard
-        title="Edges / issues"
-        value={`${summary?.edgeCount ?? 0} / ${countIssues(latestReport)}`}
-        meta={`${summary?.apiRouteCount ?? 0} API routes / report issues`}
+        title="Graph health"
+        value={`${summary?.edgeCount ?? 0} edges`}
+        meta={`${countIssues(latestReport)} issues`}
       />
     </div>
   );
@@ -476,12 +476,7 @@ function GraphPage({
   legacyGraph: GraphResponse | null;
 }) {
   return (
-    <div className="grid gap-5 sm:gap-6">
-      <PageTitle
-        icon={GitBranch}
-        title="Production graph"
-        subtitle="Symbol-level canvas from /api/graph/production."
-      />
+    <div className="grid gap-4 sm:gap-5">
       {SHOW_LEGACY_GRAPH ? (
         <div className="flex w-fit rounded-xl border border-[#dbe7f5] bg-white p-1 text-xs font-bold text-[#667085]">
           {(["production", "legacy"] as const).map((mode) => (
@@ -501,7 +496,7 @@ function GraphPage({
       ) : (
         <>
           <ProductionSummaryCards graph={graph} latestReport={latestReport} />
-          <ProductionGraphCanvas graph={graph} latestReport={latestReport} />
+          <ProductionGraphCanvas graph={graph} />
         </>
       )}
     </div>
