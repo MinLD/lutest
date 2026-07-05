@@ -1,0 +1,1376 @@
+{
+  "nodes": [
+    {
+      "id": "file:src/app.ts",
+      "type": "file",
+      "label": "app.ts",
+      "filePath": "src/app.ts"
+    },
+    {
+      "id": "file:src/main.ts",
+      "type": "file",
+      "label": "main.ts",
+      "filePath": "src/main.ts"
+    },
+    {
+      "id": "file:src/modules/config/config.service.ts",
+      "type": "file",
+      "label": "config.service.ts",
+      "filePath": "src/modules/config/config.service.ts"
+    },
+    {
+      "id": "file:src/modules/project/project.controller.ts",
+      "type": "file",
+      "label": "project.controller.ts",
+      "filePath": "src/modules/project/project.controller.ts"
+    },
+    {
+      "id": "file:src/modules/project/project.mapper.ts",
+      "type": "file",
+      "label": "project.mapper.ts",
+      "filePath": "src/modules/project/project.mapper.ts"
+    },
+    {
+      "id": "file:src/modules/project/project.repository.ts",
+      "type": "file",
+      "label": "project.repository.ts",
+      "filePath": "src/modules/project/project.repository.ts"
+    },
+    {
+      "id": "file:src/modules/project/project.routes.ts",
+      "type": "api",
+      "label": "project.routes.ts",
+      "filePath": "src/modules/project/project.routes.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "custom-client",
+            "target": "/",
+            "method": "GET",
+            "line": 6,
+            "column": 1,
+            "callee": "projectRoutes.get"
+          }
+        ]
+      }
+    },
+    {
+      "id": "file:src/modules/project/project.service.ts",
+      "type": "file",
+      "label": "project.service.ts",
+      "filePath": "src/modules/project/project.service.ts"
+    },
+    {
+      "id": "file:src/modules/rule/rule.engine.ts",
+      "type": "file",
+      "label": "rule.engine.ts",
+      "filePath": "src/modules/rule/rule.engine.ts"
+    },
+    {
+      "id": "file:src/modules/rule/rule.types.ts",
+      "type": "file",
+      "label": "rule.types.ts",
+      "filePath": "src/modules/rule/rule.types.ts"
+    },
+    {
+      "id": "file:src/modules/scan/scan.controller.ts",
+      "type": "file",
+      "label": "scan.controller.ts",
+      "filePath": "src/modules/scan/scan.controller.ts"
+    },
+    {
+      "id": "file:src/modules/scan/scan.mapper.ts",
+      "type": "file",
+      "label": "scan.mapper.ts",
+      "filePath": "src/modules/scan/scan.mapper.ts"
+    },
+    {
+      "id": "file:src/modules/scan/scan.repository.ts",
+      "type": "file",
+      "label": "scan.repository.ts",
+      "filePath": "src/modules/scan/scan.repository.ts"
+    },
+    {
+      "id": "file:src/modules/scan/scan.routes.ts",
+      "type": "api",
+      "label": "scan.routes.ts",
+      "filePath": "src/modules/scan/scan.routes.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "custom-client",
+            "target": "/",
+            "method": "POST",
+            "line": 6,
+            "column": 1,
+            "callee": "scanRoutes.post"
+          }
+        ]
+      }
+    },
+    {
+      "id": "file:src/modules/scan/scan.service.ts",
+      "type": "file",
+      "label": "scan.service.ts",
+      "filePath": "src/modules/scan/scan.service.ts"
+    },
+    {
+      "id": "file:src/modules/report/report-integrity.self-check.ts",
+      "type": "file",
+      "label": "report-integrity.self-check.ts",
+      "filePath": "src/modules/report/report-integrity.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/report/report.controller.ts",
+      "type": "file",
+      "label": "report.controller.ts",
+      "filePath": "src/modules/report/report.controller.ts"
+    },
+    {
+      "id": "file:src/modules/report/report.repository.ts",
+      "type": "file",
+      "label": "report.repository.ts",
+      "filePath": "src/modules/report/report.repository.ts"
+    },
+    {
+      "id": "file:src/modules/report/report.routes.ts",
+      "type": "api",
+      "label": "report.routes.ts",
+      "filePath": "src/modules/report/report.routes.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "custom-client",
+            "target": "/latest",
+            "method": "GET",
+            "line": 6,
+            "column": 1,
+            "callee": "reportRoutes.get"
+          }
+        ]
+      }
+    },
+    {
+      "id": "file:src/modules/report/report.service.self-check.ts",
+      "type": "file",
+      "label": "report.service.self-check.ts",
+      "filePath": "src/modules/report/report.service.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/report/report.service.ts",
+      "type": "file",
+      "label": "report.service.ts",
+      "filePath": "src/modules/report/report.service.ts"
+    },
+    {
+      "id": "file:src/modules/graph/graph.controller.ts",
+      "type": "file",
+      "label": "graph.controller.ts",
+      "filePath": "src/modules/graph/graph.controller.ts"
+    },
+    {
+      "id": "file:src/modules/graph/graph.mapper.ts",
+      "type": "file",
+      "label": "graph.mapper.ts",
+      "filePath": "src/modules/graph/graph.mapper.ts"
+    },
+    {
+      "id": "file:src/modules/graph/graph.repository.ts",
+      "type": "file",
+      "label": "graph.repository.ts",
+      "filePath": "src/modules/graph/graph.repository.ts"
+    },
+    {
+      "id": "file:src/modules/graph/graph.routes.ts",
+      "type": "api",
+      "label": "graph.routes.ts",
+      "filePath": "src/modules/graph/graph.routes.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "custom-client",
+            "target": "/production",
+            "method": "GET",
+            "line": 6,
+            "column": 1,
+            "callee": "graphRoutes.get"
+          },
+          {
+            "kind": "custom-client",
+            "target": "/",
+            "method": "GET",
+            "line": 7,
+            "column": 1,
+            "callee": "graphRoutes.get"
+          }
+        ]
+      }
+    },
+    {
+      "id": "file:src/modules/graph/graph.service.ts",
+      "type": "file",
+      "label": "graph.service.ts",
+      "filePath": "src/modules/graph/graph.service.ts"
+    },
+    {
+      "id": "file:src/modules/graph/symbol-detector.self-check.ts",
+      "type": "file",
+      "label": "symbol-detector.self-check.ts",
+      "filePath": "src/modules/graph/symbol-detector.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/symbol-detector.ts",
+      "type": "file",
+      "label": "symbol-detector.ts",
+      "filePath": "src/modules/graph/symbol-detector.ts"
+    },
+    {
+      "id": "file:src/modules/status/status.controller.ts",
+      "type": "file",
+      "label": "status.controller.ts",
+      "filePath": "src/modules/status/status.controller.ts"
+    },
+    {
+      "id": "file:src/modules/status/status.routes.ts",
+      "type": "api",
+      "label": "status.routes.ts",
+      "filePath": "src/modules/status/status.routes.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "custom-client",
+            "target": "/",
+            "method": "GET",
+            "line": 5,
+            "column": 1,
+            "callee": "statusRoutes.get"
+          }
+        ]
+      }
+    },
+    {
+      "id": "file:src/shared/errors/http-error.ts",
+      "type": "file",
+      "label": "http-error.ts",
+      "filePath": "src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "file:src/shared/services/file-system.service.ts",
+      "type": "file",
+      "label": "file-system.service.ts",
+      "filePath": "src/shared/services/file-system.service.ts"
+    },
+    {
+      "id": "file:src/shared/services/path-policy.http-self-check.ts",
+      "type": "file",
+      "label": "path-policy.http-self-check.ts",
+      "filePath": "src/shared/services/path-policy.http-self-check.ts"
+    },
+    {
+      "id": "file:src/shared/services/path-policy.service.self-check.ts",
+      "type": "file",
+      "label": "path-policy.service.self-check.ts",
+      "filePath": "src/shared/services/path-policy.service.self-check.ts"
+    },
+    {
+      "id": "file:src/shared/services/path-policy.service.ts",
+      "type": "file",
+      "label": "path-policy.service.ts",
+      "filePath": "src/shared/services/path-policy.service.ts"
+    },
+    {
+      "id": "file:src/shared/services/path.service.self-check.ts",
+      "type": "file",
+      "label": "path.service.self-check.ts",
+      "filePath": "src/shared/services/path.service.self-check.ts"
+    },
+    {
+      "id": "file:src/shared/services/path.service.ts",
+      "type": "file",
+      "label": "path.service.ts",
+      "filePath": "src/shared/services/path.service.ts"
+    },
+    {
+      "id": "file:src/shared/services/storage.service.ts",
+      "type": "file",
+      "label": "storage.service.ts",
+      "filePath": "src/shared/services/storage.service.ts"
+    },
+    {
+      "id": "file:src/shared/http/respond.ts",
+      "type": "file",
+      "label": "respond.ts",
+      "filePath": "src/shared/http/respond.ts"
+    },
+    {
+      "id": "file:src/shared/http/validated-project-path.ts",
+      "type": "file",
+      "label": "validated-project-path.ts",
+      "filePath": "src/shared/http/validated-project-path.ts"
+    },
+    {
+      "id": "file:src/shared/http/validation.ts",
+      "type": "file",
+      "label": "validation.ts",
+      "filePath": "src/shared/http/validation.ts"
+    },
+    {
+      "id": "file:src/shared/middleware/error-handler.ts",
+      "type": "file",
+      "label": "error-handler.ts",
+      "filePath": "src/shared/middleware/error-handler.ts"
+    },
+    {
+      "id": "file:src/shared/middleware/not-found.ts",
+      "type": "file",
+      "label": "not-found.ts",
+      "filePath": "src/shared/middleware/not-found.ts"
+    },
+    {
+      "id": "file:src/modules/rule/rules/large-file.rule.ts",
+      "type": "file",
+      "label": "large-file.rule.ts",
+      "filePath": "src/modules/rule/rules/large-file.rule.ts"
+    },
+    {
+      "id": "file:src/modules/rule/rules/no-console.rule.ts",
+      "type": "file",
+      "label": "no-console.rule.ts",
+      "filePath": "src/modules/rule/rules/no-console.rule.ts"
+    },
+    {
+      "id": "file:src/modules/rule/rules/todo-comment.rule.ts",
+      "type": "file",
+      "label": "todo-comment.rule.ts",
+      "filePath": "src/modules/rule/rules/todo-comment.rule.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "type": "file",
+      "label": "classify-extracted-source-file.ts",
+      "filePath": "src/modules/graph/adapters/classify-extracted-source-file.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/classify-parsed-source-file.ts",
+      "type": "file",
+      "label": "classify-parsed-source-file.ts",
+      "filePath": "src/modules/graph/adapters/classify-parsed-source-file.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "type": "file",
+      "label": "framework-adapter-registry.ts",
+      "filePath": "src/modules/graph/adapters/framework-adapter-registry.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/framework-adapter.self-check.ts",
+      "type": "file",
+      "label": "framework-adapter.self-check.ts",
+      "filePath": "src/modules/graph/adapters/framework-adapter.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/framework-adapter.ts",
+      "type": "file",
+      "label": "framework-adapter.ts",
+      "filePath": "src/modules/graph/adapters/framework-adapter.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/legacy-framework-adapter.ts",
+      "type": "file",
+      "label": "legacy-framework-adapter.ts",
+      "filePath": "src/modules/graph/adapters/legacy-framework-adapter.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/next-js-adapter.ts",
+      "type": "file",
+      "label": "next-js-adapter.ts",
+      "filePath": "src/modules/graph/adapters/next-js-adapter.ts"
+    },
+    {
+      "id": "file:src/modules/graph/adapters/react.adapter.ts",
+      "type": "file",
+      "label": "react.adapter.ts",
+      "filePath": "src/modules/graph/adapters/react.adapter.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/build-http-edges.ts",
+      "type": "file",
+      "label": "build-http-edges.ts",
+      "filePath": "src/modules/graph/production/build-http-edges.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-edge-builder.ts",
+      "type": "file",
+      "label": "production-edge-builder.ts",
+      "filePath": "src/modules/graph/production/production-edge-builder.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-graph-accuracy.audit.ts",
+      "type": "file",
+      "label": "production-graph-accuracy.audit.ts",
+      "filePath": "src/modules/graph/production/production-graph-accuracy.audit.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-graph-builder.ts",
+      "type": "file",
+      "label": "production-graph-builder.ts",
+      "filePath": "src/modules/graph/production/production-graph-builder.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-graph.http-self-check.ts",
+      "type": "file",
+      "label": "production-graph.http-self-check.ts",
+      "filePath": "src/modules/graph/production/production-graph.http-self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-graph.self-check.ts",
+      "type": "file",
+      "label": "production-graph.self-check.ts",
+      "filePath": "src/modules/graph/production/production-graph.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-node-builder.ts",
+      "type": "file",
+      "label": "production-node-builder.ts",
+      "filePath": "src/modules/graph/production/production-node-builder.ts"
+    },
+    {
+      "id": "file:src/modules/graph/production/production-project-scanner.ts",
+      "type": "file",
+      "label": "production-project-scanner.ts",
+      "filePath": "src/modules/graph/production/production-project-scanner.ts"
+    },
+    {
+      "id": "file:src/modules/graph/import-resolver/extract-ts-js-imports.ts",
+      "type": "file",
+      "label": "extract-ts-js-imports.ts",
+      "filePath": "src/modules/graph/import-resolver/extract-ts-js-imports.ts"
+    },
+    {
+      "id": "file:src/modules/graph/import-resolver/import-resolver.self-check.ts",
+      "type": "file",
+      "label": "import-resolver.self-check.ts",
+      "filePath": "src/modules/graph/import-resolver/import-resolver.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/import-resolver/import-resolver.types.ts",
+      "type": "file",
+      "label": "import-resolver.types.ts",
+      "filePath": "src/modules/graph/import-resolver/import-resolver.types.ts"
+    },
+    {
+      "id": "file:src/modules/graph/import-resolver/resolve-import-target.ts",
+      "type": "file",
+      "label": "resolve-import-target.ts",
+      "filePath": "src/modules/graph/import-resolver/resolve-import-target.ts"
+    },
+    {
+      "id": "file:src/modules/graph/import-resolver/tsconfig-paths.ts",
+      "type": "file",
+      "label": "tsconfig-paths.ts",
+      "filePath": "src/modules/graph/import-resolver/tsconfig-paths.ts"
+    },
+    {
+      "id": "file:src/modules/graph/ast/ast-symbol.self-check.ts",
+      "type": "file",
+      "label": "ast-symbol.self-check.ts",
+      "filePath": "src/modules/graph/ast/ast-symbol.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/ast/ast.types.ts",
+      "type": "file",
+      "label": "ast.types.ts",
+      "filePath": "src/modules/graph/ast/ast.types.ts"
+    },
+    {
+      "id": "file:src/modules/graph/ast/extract-symbols.ts",
+      "type": "file",
+      "label": "extract-symbols.ts",
+      "filePath": "src/modules/graph/ast/extract-symbols.ts"
+    },
+    {
+      "id": "file:src/modules/graph/ast/parse-source-file.ts",
+      "type": "file",
+      "label": "parse-source-file.ts",
+      "filePath": "src/modules/graph/ast/parse-source-file.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/source-extractor-registry.ts",
+      "type": "file",
+      "label": "source-extractor-registry.ts",
+      "filePath": "src/modules/graph/source-extractors/source-extractor-registry.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "file",
+      "label": "source-extractor.types.ts",
+      "filePath": "src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts",
+      "type": "file",
+      "label": "api-client-object-method.self-check.ts",
+      "filePath": "src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts",
+      "type": "file",
+      "label": "extract-ts-js-symbols.ts",
+      "filePath": "src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts",
+      "type": "file",
+      "label": "parse-ts-js-source-file.ts",
+      "filePath": "src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts",
+      "type": "file",
+      "label": "ts-js-source-extractor.self-check.ts",
+      "filePath": "src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts",
+      "type": "file",
+      "label": "ts-js-source-extractor.ts",
+      "filePath": "src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts"
+    },
+    {
+      "id": "file:src/modules/graph/source-extractors/ts-js/ts-js.types.ts",
+      "type": "file",
+      "label": "ts-js.types.ts",
+      "filePath": "src/modules/graph/source-extractors/ts-js/ts-js.types.ts"
+    }
+  ],
+  "edges": [
+    {
+      "id": "import:file:src/app.ts->file:src/modules/status/status.routes.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/modules/status/status.routes.ts"
+    },
+    {
+      "id": "import:file:src/app.ts->file:src/modules/project/project.routes.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/modules/project/project.routes.ts"
+    },
+    {
+      "id": "import:file:src/app.ts->file:src/modules/graph/graph.routes.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/modules/graph/graph.routes.ts"
+    },
+    {
+      "id": "import:file:src/app.ts->file:src/modules/report/report.routes.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/modules/report/report.routes.ts"
+    },
+    {
+      "id": "import:file:src/app.ts->file:src/shared/middleware/not-found.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/shared/middleware/not-found.ts"
+    },
+    {
+      "id": "import:file:src/app.ts->file:src/shared/middleware/error-handler.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/shared/middleware/error-handler.ts"
+    },
+    {
+      "id": "import:file:src/app.ts->file:src/modules/scan/scan.routes.ts",
+      "type": "import",
+      "source": "file:src/app.ts",
+      "target": "file:src/modules/scan/scan.routes.ts"
+    },
+    {
+      "id": "import:file:src/main.ts->file:src/app.ts",
+      "type": "import",
+      "source": "file:src/main.ts",
+      "target": "file:src/app.ts"
+    },
+    {
+      "id": "import:file:src/main.ts->file:src/modules/config/config.service.ts",
+      "type": "import",
+      "source": "file:src/main.ts",
+      "target": "file:src/modules/config/config.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.controller.ts->file:src/modules/project/project.service.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.controller.ts",
+      "target": "file:src/modules/project/project.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.controller.ts->file:src/shared/http/validated-project-path.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.controller.ts",
+      "target": "file:src/shared/http/validated-project-path.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.mapper.ts->file:src/modules/project/project.repository.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.mapper.ts",
+      "target": "file:src/modules/project/project.repository.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.mapper.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.mapper.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.routes.ts->file:src/modules/project/project.controller.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.routes.ts",
+      "target": "file:src/modules/project/project.controller.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.service.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.service.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.service.ts->file:src/modules/project/project.mapper.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.service.ts",
+      "target": "file:src/modules/project/project.mapper.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.service.ts->file:src/modules/project/project.repository.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.service.ts",
+      "target": "file:src/modules/project/project.repository.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.service.ts->file:src/shared/services/file-system.service.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.service.ts",
+      "target": "file:src/shared/services/file-system.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/project/project.service.ts->file:src/modules/project/project.mapper.ts",
+      "type": "import",
+      "source": "file:src/modules/project/project.service.ts",
+      "target": "file:src/modules/project/project.mapper.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rule.engine.ts->file:src/modules/rule/rule.types.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rule.engine.ts",
+      "target": "file:src/modules/rule/rule.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rule.engine.ts->file:src/modules/rule/rules/no-console.rule.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rule.engine.ts",
+      "target": "file:src/modules/rule/rules/no-console.rule.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rule.engine.ts->file:src/modules/rule/rules/todo-comment.rule.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rule.engine.ts",
+      "target": "file:src/modules/rule/rules/todo-comment.rule.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rule.engine.ts->file:src/modules/rule/rules/large-file.rule.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rule.engine.ts",
+      "target": "file:src/modules/rule/rules/large-file.rule.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.controller.ts->file:src/modules/scan/scan.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.controller.ts",
+      "target": "file:src/modules/scan/scan.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.controller.ts->file:src/shared/http/respond.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.controller.ts",
+      "target": "file:src/shared/http/respond.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.controller.ts->file:src/shared/services/path-policy.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.controller.ts",
+      "target": "file:src/shared/services/path-policy.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.repository.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.repository.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.repository.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.repository.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.repository.ts->file:src/shared/services/storage.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.repository.ts",
+      "target": "file:src/shared/services/storage.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.routes.ts->file:src/modules/scan/scan.controller.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.routes.ts",
+      "target": "file:src/modules/scan/scan.controller.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.service.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.service.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.service.ts->file:src/modules/project/project.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.service.ts",
+      "target": "file:src/modules/project/project.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.service.ts->file:src/modules/scan/scan.mapper.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.service.ts",
+      "target": "file:src/modules/scan/scan.mapper.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.service.ts->file:src/modules/scan/scan.repository.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.service.ts",
+      "target": "file:src/modules/scan/scan.repository.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.service.ts->file:src/modules/graph/graph.service.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.service.ts",
+      "target": "file:src/modules/graph/graph.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/scan/scan.service.ts->file:src/modules/rule/rule.engine.ts",
+      "type": "import",
+      "source": "file:src/modules/scan/scan.service.ts",
+      "target": "file:src/modules/rule/rule.engine.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report-integrity.self-check.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report-integrity.self-check.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report-integrity.self-check.ts->file:src/modules/report/report.service.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report-integrity.self-check.ts",
+      "target": "file:src/modules/report/report.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.controller.ts->file:src/modules/report/report.service.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.controller.ts",
+      "target": "file:src/modules/report/report.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.controller.ts->file:src/shared/http/validated-project-path.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.controller.ts",
+      "target": "file:src/shared/http/validated-project-path.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.repository.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.repository.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.repository.ts->file:src/shared/services/storage.service.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.repository.ts",
+      "target": "file:src/shared/services/storage.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.routes.ts->file:src/modules/report/report.controller.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.routes.ts",
+      "target": "file:src/modules/report/report.controller.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.service.self-check.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.service.self-check.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.service.self-check.ts->file:src/modules/report/report.service.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.service.self-check.ts",
+      "target": "file:src/modules/report/report.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.service.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.service.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/modules/report/report.service.ts->file:src/modules/report/report.repository.ts",
+      "type": "import",
+      "source": "file:src/modules/report/report.service.ts",
+      "target": "file:src/modules/report/report.repository.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.controller.ts->file:src/modules/graph/graph.service.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.controller.ts",
+      "target": "file:src/modules/graph/graph.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.controller.ts->file:src/modules/graph/production/production-graph-builder.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.controller.ts",
+      "target": "file:src/modules/graph/production/production-graph-builder.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.controller.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.controller.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.controller.ts->file:src/shared/http/validated-project-path.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.controller.ts",
+      "target": "file:src/shared/http/validated-project-path.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.controller.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.controller.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.repository.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.repository.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.repository.ts->file:src/shared/services/storage.service.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.repository.ts",
+      "target": "file:src/shared/services/storage.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.routes.ts->file:src/modules/graph/graph.controller.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.routes.ts",
+      "target": "file:src/modules/graph/graph.controller.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.service.ts->file:src/shared/services/file-system.service.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.service.ts",
+      "target": "file:src/shared/services/file-system.service.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.service.ts->file:src/modules/graph/graph.repository.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.service.ts",
+      "target": "file:src/modules/graph/graph.repository.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.service.ts->file:src/modules/graph/symbol-detector.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.service.ts",
+      "target": "file:src/modules/graph/symbol-detector.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.service.ts->file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.service.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter-registry.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/graph.service.ts->file:src/modules/graph/adapters/legacy-framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/graph.service.ts",
+      "target": "file:src/modules/graph/adapters/legacy-framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/symbol-detector.self-check.ts->file:src/modules/graph/symbol-detector.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/symbol-detector.self-check.ts",
+      "target": "file:src/modules/graph/symbol-detector.ts"
+    },
+    {
+      "id": "import:file:src/modules/status/status.routes.ts->file:src/modules/status/status.controller.ts",
+      "type": "import",
+      "source": "file:src/modules/status/status.routes.ts",
+      "target": "file:src/modules/status/status.controller.ts"
+    },
+    {
+      "id": "import:file:src/shared/services/path-policy.http-self-check.ts->file:src/app.ts",
+      "type": "import",
+      "source": "file:src/shared/services/path-policy.http-self-check.ts",
+      "target": "file:src/app.ts"
+    },
+    {
+      "id": "import:file:src/shared/services/path-policy.service.self-check.ts->file:src/shared/services/path-policy.service.ts",
+      "type": "import",
+      "source": "file:src/shared/services/path-policy.service.self-check.ts",
+      "target": "file:src/shared/services/path-policy.service.ts"
+    },
+    {
+      "id": "import:file:src/shared/services/path.service.self-check.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/shared/services/path.service.self-check.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/shared/services/path.service.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/shared/services/path.service.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/shared/services/path.service.ts->file:src/shared/services/path-policy.service.ts",
+      "type": "import",
+      "source": "file:src/shared/services/path.service.ts",
+      "target": "file:src/shared/services/path-policy.service.ts"
+    },
+    {
+      "id": "import:file:src/shared/services/storage.service.ts->file:src/shared/services/path.service.ts",
+      "type": "import",
+      "source": "file:src/shared/services/storage.service.ts",
+      "target": "file:src/shared/services/path.service.ts"
+    },
+    {
+      "id": "import:file:src/shared/http/validated-project-path.ts->file:src/shared/http/respond.ts",
+      "type": "import",
+      "source": "file:src/shared/http/validated-project-path.ts",
+      "target": "file:src/shared/http/respond.ts"
+    },
+    {
+      "id": "import:file:src/shared/http/validated-project-path.ts->file:src/shared/services/path-policy.service.ts",
+      "type": "import",
+      "source": "file:src/shared/http/validated-project-path.ts",
+      "target": "file:src/shared/services/path-policy.service.ts"
+    },
+    {
+      "id": "import:file:src/shared/http/validation.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/shared/http/validation.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/shared/middleware/error-handler.ts->file:src/shared/errors/http-error.ts",
+      "type": "import",
+      "source": "file:src/shared/middleware/error-handler.ts",
+      "target": "file:src/shared/errors/http-error.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rules/large-file.rule.ts->file:src/modules/rule/rule.types.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rules/large-file.rule.ts",
+      "target": "file:src/modules/rule/rule.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rules/no-console.rule.ts->file:src/modules/rule/rule.types.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rules/no-console.rule.ts",
+      "target": "file:src/modules/rule/rule.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/rule/rules/todo-comment.rule.ts->file:src/modules/rule/rule.types.ts",
+      "type": "import",
+      "source": "file:src/modules/rule/rules/todo-comment.rule.ts",
+      "target": "file:src/modules/rule/rule.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/classify-extracted-source-file.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/classify-extracted-source-file.ts->file:src/modules/graph/source-extractors/source-extractor-registry.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor-registry.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/classify-extracted-source-file.ts->file:src/modules/graph/adapters/framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter-registry.ts->file:src/modules/project/project.mapper.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "target": "file:src/modules/project/project.mapper.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter-registry.ts->file:src/modules/graph/adapters/framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter-registry.ts->file:src/modules/graph/adapters/legacy-framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "target": "file:src/modules/graph/adapters/legacy-framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter-registry.ts->file:src/modules/graph/adapters/next-js-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "target": "file:src/modules/graph/adapters/next-js-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter-registry.ts->file:src/modules/graph/adapters/react.adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "target": "file:src/modules/graph/adapters/react.adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter.self-check.ts->file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter.self-check.ts",
+      "target": "file:src/modules/graph/adapters/classify-extracted-source-file.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter.self-check.ts->file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter.self-check.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter.self-check.ts->file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter.self-check.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter-registry.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter.self-check.ts->file:src/modules/graph/adapters/next-js-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter.self-check.ts",
+      "target": "file:src/modules/graph/adapters/next-js-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter.self-check.ts->file:src/modules/graph/adapters/react.adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter.self-check.ts",
+      "target": "file:src/modules/graph/adapters/react.adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/framework-adapter.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/framework-adapter.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/legacy-framework-adapter.ts->file:src/modules/graph/symbol-detector.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/legacy-framework-adapter.ts",
+      "target": "file:src/modules/graph/symbol-detector.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/next-js-adapter.ts->file:src/modules/graph/adapters/framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/next-js-adapter.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/next-js-adapter.ts->file:src/modules/graph/adapters/legacy-framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/next-js-adapter.ts",
+      "target": "file:src/modules/graph/adapters/legacy-framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/react.adapter.ts->file:src/modules/graph/adapters/framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/react.adapter.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/adapters/react.adapter.ts->file:src/modules/graph/adapters/legacy-framework-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/adapters/react.adapter.ts",
+      "target": "file:src/modules/graph/adapters/legacy-framework-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/build-http-edges.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/build-http-edges.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/build-http-edges.ts->file:src/modules/graph/production/production-project-scanner.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/build-http-edges.ts",
+      "target": "file:src/modules/graph/production/production-project-scanner.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-edge-builder.ts->file:src/modules/graph/import-resolver/extract-ts-js-imports.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-edge-builder.ts",
+      "target": "file:src/modules/graph/import-resolver/extract-ts-js-imports.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-edge-builder.ts->file:src/modules/graph/import-resolver/resolve-import-target.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-edge-builder.ts",
+      "target": "file:src/modules/graph/import-resolver/resolve-import-target.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-edge-builder.ts->file:src/modules/graph/import-resolver/tsconfig-paths.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-edge-builder.ts",
+      "target": "file:src/modules/graph/import-resolver/tsconfig-paths.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-edge-builder.ts->file:src/modules/graph/import-resolver/import-resolver.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-edge-builder.ts",
+      "target": "file:src/modules/graph/import-resolver/import-resolver.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-edge-builder.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-edge-builder.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-edge-builder.ts->file:src/modules/graph/production/production-project-scanner.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-edge-builder.ts",
+      "target": "file:src/modules/graph/production/production-project-scanner.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph-accuracy.audit.ts->file:src/modules/graph/production/production-graph-builder.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph-accuracy.audit.ts",
+      "target": "file:src/modules/graph/production/production-graph-builder.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph-builder.ts->file:src/modules/graph/production/build-http-edges.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph-builder.ts",
+      "target": "file:src/modules/graph/production/build-http-edges.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph-builder.ts->file:src/modules/graph/production/production-edge-builder.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph-builder.ts",
+      "target": "file:src/modules/graph/production/production-edge-builder.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph-builder.ts->file:src/modules/graph/production/production-node-builder.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph-builder.ts",
+      "target": "file:src/modules/graph/production/production-node-builder.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph-builder.ts->file:src/modules/graph/production/production-project-scanner.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph-builder.ts",
+      "target": "file:src/modules/graph/production/production-project-scanner.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph.http-self-check.ts->file:src/app.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph.http-self-check.ts",
+      "target": "file:src/app.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-graph.self-check.ts->file:src/modules/graph/production/production-graph-builder.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-graph.self-check.ts",
+      "target": "file:src/modules/graph/production/production-graph-builder.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-node-builder.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-node-builder.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-node-builder.ts->file:src/modules/graph/production/production-project-scanner.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-node-builder.ts",
+      "target": "file:src/modules/graph/production/production-project-scanner.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-project-scanner.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-project-scanner.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-project-scanner.ts->file:src/modules/graph/source-extractors/source-extractor-registry.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-project-scanner.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor-registry.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-project-scanner.ts->file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-project-scanner.ts",
+      "target": "file:src/modules/graph/adapters/classify-extracted-source-file.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/production/production-project-scanner.ts->file:src/modules/graph/adapters/framework-adapter-registry.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/production/production-project-scanner.ts",
+      "target": "file:src/modules/graph/adapters/framework-adapter-registry.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/extract-ts-js-imports.ts->file:src/modules/graph/import-resolver/import-resolver.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/extract-ts-js-imports.ts",
+      "target": "file:src/modules/graph/import-resolver/import-resolver.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/import-resolver.self-check.ts->file:src/modules/graph/import-resolver/extract-ts-js-imports.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/import-resolver.self-check.ts",
+      "target": "file:src/modules/graph/import-resolver/extract-ts-js-imports.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/import-resolver.self-check.ts->file:src/modules/graph/import-resolver/resolve-import-target.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/import-resolver.self-check.ts",
+      "target": "file:src/modules/graph/import-resolver/resolve-import-target.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/import-resolver.self-check.ts->file:src/modules/graph/import-resolver/tsconfig-paths.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/import-resolver.self-check.ts",
+      "target": "file:src/modules/graph/import-resolver/tsconfig-paths.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/resolve-import-target.ts->file:src/modules/graph/import-resolver/import-resolver.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/resolve-import-target.ts",
+      "target": "file:src/modules/graph/import-resolver/import-resolver.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/resolve-import-target.ts->file:src/modules/graph/import-resolver/tsconfig-paths.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/resolve-import-target.ts",
+      "target": "file:src/modules/graph/import-resolver/tsconfig-paths.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/import-resolver/tsconfig-paths.ts->file:src/modules/graph/import-resolver/import-resolver.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/import-resolver/tsconfig-paths.ts",
+      "target": "file:src/modules/graph/import-resolver/import-resolver.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/ast/ast-symbol.self-check.ts->file:src/modules/graph/adapters/next-js-adapter.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/ast/ast-symbol.self-check.ts",
+      "target": "file:src/modules/graph/adapters/next-js-adapter.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/ast/ast-symbol.self-check.ts->file:src/modules/graph/adapters/classify-extracted-source-file.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/ast/ast-symbol.self-check.ts",
+      "target": "file:src/modules/graph/adapters/classify-extracted-source-file.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/ast/ast-symbol.self-check.ts->file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/ast/ast-symbol.self-check.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/source-extractor-registry.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/source-extractor-registry.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/source-extractor-registry.ts->file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/source-extractor-registry.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts->file:src/modules/graph/production/production-graph-builder.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts",
+      "target": "file:src/modules/graph/production/production-graph-builder.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts->file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts->file:src/modules/graph/source-extractors/source-extractor-registry.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor-registry.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts->file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/parse-ts-js-source-file.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts->file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.self-check.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts->file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/ts-js-source-extractor.ts",
+      "target": "file:src/modules/graph/source-extractors/ts-js/extract-ts-js-symbols.ts"
+    },
+    {
+      "id": "import:file:src/modules/graph/source-extractors/ts-js/ts-js.types.ts->file:src/modules/graph/source-extractors/source-extractor.types.ts",
+      "type": "import",
+      "source": "file:src/modules/graph/source-extractors/ts-js/ts-js.types.ts",
+      "target": "file:src/modules/graph/source-extractors/source-extractor.types.ts"
+    }
+  ],
+  "summary": {
+    "pageCount": 0,
+    "componentCount": 0,
+    "apiCount": 5,
+    "fileCount": 79
+  }
+}

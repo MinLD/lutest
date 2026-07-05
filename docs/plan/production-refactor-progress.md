@@ -2556,3 +2556,255 @@ Tests/checks run:
 
 Next phase:
 - R5.7 — Production graph UI hardening / visual grouping
+
+## R5.7 — Interactive production graph canvas
+
+Status: completed.
+
+Files changed:
+- `apps/ui/package.json`
+- `package-lock.json`
+- `apps/ui/src/app/globals.css`
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/src/components/production-graph-canvas.tsx`
+- `apps/ui/src/components/production-graph-node.tsx`
+- `apps/ui/src/components/production-graph-detail-panel.tsx`
+- `apps/ui/src/lib/production-graph-adapter.ts`
+- `apps/ui/src/lib/production-graph-layout.ts`
+- `apps/ui/src/lib/production-graph-adapter.self-check.ts`
+- `apps/ui/.lutest/audits/production-graph-accuracy-apps-ui.json`
+- `docs/plan/production-refactor-progress.md`
+
+Graph rendering library:
+- Added `@xyflow/react` for interactive pan/zoom graph canvas.
+- Added `elkjs` for layered graph layout.
+- React Flow stylesheet imported through `apps/ui/src/app/globals.css`.
+
+Layout strategy:
+- ELK layered layout, direction `RIGHT`.
+- Nodes are pre-sorted by kind: page, component, hook, api-client-method, external-endpoint, api-route, utility, file.
+- Canvas height fixed at `32rem` to avoid horizontal page overflow.
+
+Node/edge mapping:
+- `ProductionGraphResponse` now maps to `ProductionFlowModel` with `nodes`, `edges`, `nodeMap`, `summary`, `nodesByKind`, and `edgesByKind`.
+- React Flow node data includes label, kind, filePath, loc, route, http, confidence, and reason.
+- React Flow edge data includes source, target, kind, label, confidence, and reason.
+- Raw production graph is not mutated.
+
+Filters:
+- Edge filters added for import/render/call/http.
+- Default visible: render, call, HTTP.
+- Import edges are hidden by default but data remains available.
+
+Detail panel:
+- Node detail shows name, kind, filePath, loc, route/http, confidence, reason, incoming count, and outgoing count.
+- Edge detail shows kind, source label, target label, confidence, and reason.
+
+Legacy mode preserved:
+- Legacy graph mode still renders old list panel from `GraphResponse`.
+- Production mode renders the new canvas from `ProductionGraphResponse`.
+- Fetch separation from R5.6 remains unchanged: legacy mode uses `/api/graph`, production mode uses `/api/graph/production`.
+
+Encoding cleanup:
+- Replaced dashboard mojibake glyphs with safe ASCII text/icons.
+
+apps/ui audit after R5.7:
+- Files: 13
+- Pages: 1
+- Components: 23
+- Hooks: 1
+- API client methods: 6
+- External endpoints: 6
+- HTTP edges: 6
+- Total edges: 54
+- Audit verdict: `PASS`
+
+Known limitations:
+- ELK uses kind pre-sort plus layered direction; hard fixed layer constraints are not implemented yet.
+- Import/render/call audit remains partial except required alias imports.
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred to R5.8.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.8 — Object member call edges / dependency chain completion
+
+## R5.7.1 — Production graph UI data mapping and layout cleanup
+
+Status: completed.
+
+Files changed:
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/src/components/production-graph-canvas.tsx`
+- `apps/ui/src/components/production-graph-detail-panel.tsx`
+- `apps/ui/src/lib/production-graph-adapter.ts`
+- `apps/ui/src/lib/production-graph-adapter.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Header count fix:
+- Production mode header now prefers `productionGraph.summary.fileCount`, then `project.sourceFileCount`, then `0`.
+- Legacy mode keeps using `project.sourceFileCount`.
+
+Summary cards mapping:
+- Production summary cards now show source files, UI symbols, API flow, and edges/issues.
+- API flow includes `apiClientMethodCount` and `externalEndpointCount` instead of relying on `apiRouteCount` only.
+- Adapter UI summary now preserves `fileCount`, `hookCount`, `apiClientMethodCount`, `externalEndpointCount`, and `edgeCount`.
+
+Canvas layout change:
+- Production canvas now owns main dashboard width instead of sharing with large report panel.
+- React Flow card uses a larger `min-height: 38.75rem` canvas and a compact side inspector.
+- Edge toggles stay in the graph card header and keep import hidden by default.
+
+Inspector/report cleanup:
+- Inspector now shows graph overview when nothing is selected: nodes, edges, visible edge kinds, and click hint.
+- Node/edge reason text is clamped to keep panel compact.
+- Latest report is compact inside production graph side panel with scanId, issue count, and top 3 issues.
+- Legacy mode still renders the old latest report side panel.
+
+Known limitations:
+- Visual sanity was checked through build/typecheck only; no browser screenshot captured in this phase.
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred to R5.8.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.8 — Object member call edges / dependency chain completion
+
+
+## R5.7.2 — Dashboard route architecture and production-first UI cleanup
+
+Status: completed.
+
+Files changed:
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/src/components/production-graph-canvas.tsx`
+- `apps/ui/src/lib/dashboard-navigation.ts`
+- `apps/ui/src/lib/dashboard-navigation.self-check.ts`
+- `apps/ui/src/lib/use-dashboard-data.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Sidebar/page architecture:
+- Dashboard now uses state-based page navigation with pages: Endpoint, Graph, Reports, Scans, Settings.
+- Sidebar and mobile sidebar switch the active page and show clear active state.
+- Lucide icons are used for sidebar items, headings, scan action, worker/network, settings, and security placeholders.
+- `dashboard-navigation.ts` owns nav item definitions and default page.
+
+Production-first behavior:
+- Default dashboard page is Graph.
+- Default graph mode is production.
+- Graph page shows production summary cards and React Flow production canvas by default.
+- Production canvas desktop min height is now `40.625rem`.
+- Endpoint page no longer renders graph canvas.
+- Reports page no longer shares space with graph canvas.
+- Scans page owns run-scan state and scan shortcut.
+- Settings page is read-only placeholder for project, worker, appearance, and security.
+
+Legacy hidden/deprecation plan:
+- Main topbar no longer shows the legacy/production toggle.
+- Legacy graph UI is hidden unless `NEXT_PUBLIC_LUTEST_SHOW_LEGACY_GRAPH=true`.
+- Legacy `/api/graph` API client method remains for debug compatibility.
+- `useDashboardData` prevents legacy graph loading when debug legacy UI is not enabled.
+- Legacy backend endpoint is not deleted in this phase.
+- Deprecation plan: keep legacy graph as debug-only until production graph covers R5.8+ call chain gaps and later UI migration is complete.
+
+Components extracted:
+- Navigation config extracted to `apps/ui/src/lib/dashboard-navigation.ts`.
+- Dashboard shell internally split into page components, metric/status primitives, sidebars, and topbar.
+
+Known limitations:
+- Data loading is still centralized through `useDashboardData`; page-specific fetch splitting is deferred.
+- No browser screenshot captured in this phase.
+- Settings controls are read-only placeholders because worker config APIs do not exist yet.
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred to R5.8.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.8 — Object member call edges / dependency chain completion
+
+
+## R5.7.3 — Sticky top header and app chrome cleanup
+
+Status: completed.
+
+Files changed:
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/src/lib/dashboard-navigation.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Fixed topbar behavior:
+- Topbar is now fixed at the viewport top with `left: 0` on mobile and `md:left-[18rem]` on desktop.
+- Topbar uses `h-20`, white translucent background, bottom border, and backdrop blur.
+- Main content starts below the fixed header with `pt-24` so content is not covered.
+- Sidebar remains fixed at the left.
+
+Page title mapping:
+- Topbar left side now shows active section icon, title, and subtitle from dashboard navigation config.
+- Endpoint: API endpoint configuration.
+- Graph: Production symbol graph.
+- Reports: Scan issues and latest report.
+- Scans: Run checks and future browser scans.
+- Settings: Manage preferences.
+
+Removed/compacted hero:
+- Removed the giant repeated hero title from the app chrome.
+- Topbar now uses compact 9Router-style page header instead of page-wide hero copy.
+- Mobile topbar owns the menu button because sidebar is hidden on mobile.
+
+Layout before/after:
+- Before: top area consumed large vertical space and scrolled away with content.
+- After: app chrome stays fixed, actions stay reachable, and page content scrolls underneath with more usable graph space.
+- Right-side actions are compact: Donate, theme, language, app grid, Run scan.
+
+Known limitations:
+- Visual acceptance was not browser-screenshot verified in this phase.
+- Language/theme/donate/app grid remain UI placeholders.
+- Object member call edges from `useDashboardData` to `lutestApi.*` remain deferred to R5.8.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R5.8 — Object member call edges / dependency chain completion
+

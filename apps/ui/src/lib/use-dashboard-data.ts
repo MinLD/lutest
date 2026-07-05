@@ -10,18 +10,20 @@ import type {
 } from "@lutest/contracts";
 import { isPathNotAllowedError, lutestApi } from "./api-client";
 import {
-  adaptProductionGraphToUiGraph,
-  type UiGraphModel,
+  adaptProductionGraphToFlowModel,
+  type ProductionFlowModel,
 } from "./production-graph-adapter";
 
 export type GraphMode = "legacy" | "production";
+export const SHOW_LEGACY_GRAPH =
+  process.env.NEXT_PUBLIC_LUTEST_SHOW_LEGACY_GRAPH === "true";
 
 export type DashboardData = {
   status: StatusResponse | null;
   project: ProjectSummary | null;
   graph: GraphResponse | null;
   productionGraph: ProductionGraphResponse | null;
-  productionGraphView: UiGraphModel | null;
+  productionGraphView: ProductionFlowModel | null;
   latestReport: LatestReportResponse | null;
   lastScan: ScanResponse | null;
 };
@@ -39,17 +41,17 @@ const emptyDashboardData: DashboardData = {
 const DEFAULT_PROJECT_PATH = process.env.NEXT_PUBLIC_LUTEST_PROJECT_PATH;
 const PATH_NOT_ALLOWED_MESSAGE = "Selected path is outside worker allowed root";
 export const DEFAULT_GRAPH_MODE: GraphMode =
-  process.env.NEXT_PUBLIC_LUTEST_GRAPH_MODE === "production"
-    ? "production"
-    : "legacy";
+  SHOW_LEGACY_GRAPH && process.env.NEXT_PUBLIC_LUTEST_GRAPH_MODE === "legacy"
+    ? "legacy"
+    : "production";
 
 async function loadGraph(projectPath: string | undefined, graphMode: GraphMode) {
-  if (graphMode === "production") {
+  if (graphMode === "production" || !SHOW_LEGACY_GRAPH) {
     const productionGraph = await lutestApi.getProductionGraph(projectPath);
     return {
       graph: null,
       productionGraph,
-      productionGraphView: adaptProductionGraphToUiGraph(productionGraph),
+      productionGraphView: adaptProductionGraphToFlowModel(productionGraph),
     };
   }
 
@@ -145,3 +147,5 @@ export function useDashboardData(
     runScan,
   };
 }
+
+

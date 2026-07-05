@@ -19,12 +19,6 @@
       "filePath": "src/app/page.tsx"
     },
     {
-      "id": "file:src/components/dashboard-shell.tsx",
-      "type": "component",
-      "label": "dashboard-shell.tsx",
-      "filePath": "src/components/dashboard-shell.tsx"
-    },
-    {
       "id": "file:src/lib/api-client.ts",
       "type": "file",
       "label": "api-client.ts",
@@ -38,9 +32,21 @@
     },
     {
       "id": "file:src/lib/production-graph-adapter.self-check.ts",
-      "type": "file",
+      "type": "api",
       "label": "production-graph-adapter.self-check.ts",
-      "filePath": "src/lib/production-graph-adapter.self-check.ts"
+      "filePath": "src/lib/production-graph-adapter.self-check.ts",
+      "data": {
+        "apiCalls": [
+          {
+            "kind": "custom-client",
+            "target": "external:GET:/api/graph",
+            "method": "GET",
+            "line": 103,
+            "column": 16,
+            "callee": "flowGraph.nodeMap.get"
+          }
+        ]
+      }
     },
     {
       "id": "file:src/lib/production-graph-adapter.ts",
@@ -49,10 +55,40 @@
       "filePath": "src/lib/production-graph-adapter.ts"
     },
     {
+      "id": "file:src/lib/production-graph-layout.ts",
+      "type": "file",
+      "label": "production-graph-layout.ts",
+      "filePath": "src/lib/production-graph-layout.ts"
+    },
+    {
       "id": "file:src/lib/use-dashboard-data.ts",
       "type": "file",
       "label": "use-dashboard-data.ts",
       "filePath": "src/lib/use-dashboard-data.ts"
+    },
+    {
+      "id": "file:src/components/dashboard-shell.tsx",
+      "type": "component",
+      "label": "dashboard-shell.tsx",
+      "filePath": "src/components/dashboard-shell.tsx"
+    },
+    {
+      "id": "file:src/components/production-graph-canvas.tsx",
+      "type": "component",
+      "label": "production-graph-canvas.tsx",
+      "filePath": "src/components/production-graph-canvas.tsx"
+    },
+    {
+      "id": "file:src/components/production-graph-detail-panel.tsx",
+      "type": "component",
+      "label": "production-graph-detail-panel.tsx",
+      "filePath": "src/components/production-graph-detail-panel.tsx"
+    },
+    {
+      "id": "file:src/components/production-graph-node.tsx",
+      "type": "component",
+      "label": "production-graph-node.tsx",
+      "filePath": "src/components/production-graph-node.tsx"
     }
   ],
   "edges": [
@@ -69,6 +105,18 @@
       "target": "file:src/lib/production-graph-adapter.ts"
     },
     {
+      "id": "import:file:src/lib/production-graph-adapter.self-check.ts->file:src/lib/production-graph-layout.ts",
+      "type": "import",
+      "source": "file:src/lib/production-graph-adapter.self-check.ts",
+      "target": "file:src/lib/production-graph-layout.ts"
+    },
+    {
+      "id": "import:file:src/lib/production-graph-layout.ts->file:src/lib/production-graph-adapter.ts",
+      "type": "import",
+      "source": "file:src/lib/production-graph-layout.ts",
+      "target": "file:src/lib/production-graph-adapter.ts"
+    },
+    {
       "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
       "type": "import",
       "source": "file:src/lib/use-dashboard-data.ts",
@@ -79,12 +127,30 @@
       "type": "import",
       "source": "file:src/lib/use-dashboard-data.ts",
       "target": "file:src/lib/production-graph-adapter.ts"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/components/production-graph-canvas.tsx",
+      "type": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/components/production-graph-canvas.tsx"
+    },
+    {
+      "id": "import:file:src/components/production-graph-canvas.tsx->file:src/components/production-graph-detail-panel.tsx",
+      "type": "import",
+      "source": "file:src/components/production-graph-canvas.tsx",
+      "target": "file:src/components/production-graph-detail-panel.tsx"
+    },
+    {
+      "id": "import:file:src/components/production-graph-canvas.tsx->file:src/components/production-graph-node.tsx",
+      "type": "import",
+      "source": "file:src/components/production-graph-canvas.tsx",
+      "target": "file:src/components/production-graph-node.tsx"
     }
   ],
   "summary": {
     "pageCount": 1,
-    "componentCount": 1,
-    "apiCount": 0,
-    "fileCount": 9
+    "componentCount": 4,
+    "apiCount": 1,
+    "fileCount": 13
   }
 }
