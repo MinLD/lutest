@@ -2924,3 +2924,60 @@ Tests/checks run:
 
 Next phase:
 - R6.0 — Playwright scan engine foundation
+
+## R6.0 — Playwright scan engine foundation
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-route-discovery.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Route discovery strategy:
+- Runtime scan accepts explicit `routes` first.
+- If routes are omitted, it builds the production graph for `projectRoot` and reads page nodes with `route.path`.
+- Routes are normalized, deduped, and sorted.
+- If no production routes exist, it falls back to `["/"]` and records fallback reason.
+
+Browser scan behavior:
+- Uses Playwright Chromium with configurable `headless`, `viewport`, and `timeoutMs`.
+- Opens each route at `baseUrl + route`.
+- Captures console warnings/errors, page errors, request failures, responses with status `>= 400`, route status, duration, and screenshot.
+- Browser context/page/browser close in `finally` paths.
+- Runtime code does not install browsers automatically; use `npx playwright install chromium` if Chromium is missing.
+
+Captured artifacts:
+- Screenshots are written under `<projectRoot>/.lutest/runtime-scans/<scanId>/screenshots/<safe-route>.png`.
+- Runtime scan JSON is written to `<projectRoot>/.lutest/runtime-scans/<scanId>/runtime-scan.json`.
+- Artifact paths are checked to stay inside the selected project root.
+
+Self-check behavior:
+- Starts a local HTTP server, no internet dependency.
+- Serves `/` with `console.warn`, `console.error`, and a missing `/missing.js` request.
+- Runs a Playwright scan against the local server.
+- Asserts route result, screenshot artifact, JSON artifact, console capture, failed response capture, and summary counts.
+
+Known limitations:
+- No `/api/actions/scan` integration in R6.0; runtime scan is internal service + self-check only.
+- Latest report schema does not include runtime scan yet.
+- DOM Geometry, overlap checks, and contrast checks are deferred to R6.1+.
+- Auth/password/settings behavior unchanged.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS`.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R6.1 — DOM Geometry extraction and viewport scan
+
