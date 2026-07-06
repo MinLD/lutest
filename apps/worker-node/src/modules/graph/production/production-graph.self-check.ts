@@ -84,10 +84,12 @@ const buildMiniNextProject = async (): Promise<string> => {
   await writeFile(path.join(root, "components", "ProductCard.tsx"), "export function formatMoney(value: number) { return String(value); } export function ProductCard() { return <article>{formatMoney(100)}</article>; }");
   await writeFile(path.join(root, "components", "ProductList.tsx"), `import { ProductCard } from "./ProductCard"; import { getProducts } from "../lib/api"; export function ProductList() { getProducts(); getProducts(); return <section><ProductCard /></section>; }`);
   await writeFile(path.join(root, "components", "index.ts"), "export { ProductCard } from './ProductCard'; export { ProductList } from './ProductList';");
-  await writeFile(path.join(root, "components", "SameFile.tsx"), "export function helper() { return 1; } export function Parent() { helper(); return <Child />; } export function Child() { return <span />; }");
+  await writeFile(path.join(root, "components", "SameFile.tsx"), "export function helper() { return 1; } export const sameFileApi = { getLocal() { return fetch('/api/local'); } }; export function Parent() { helper(); sameFileApi.getLocal(); return <Child />; } export function Child() { return <span />; }");
   await writeFile(path.join(root, "globals.css"), ":root {}");
   await writeFile(path.join(root, "lib", "api.ts"), `export async function getProducts() { fetch("/api/products"); return fetch("/api/products"); } export async function createOrder() { return axios.post("/api/orders"); } export async function getProductsKy() { return ky.get("/api/products"); }`);
+  await writeFile(path.join(root, "lib", "object-api.ts"), `export const api = { getUsers() { return fetch("/api/users"); }, getOrders() { return fetch("/api/orders"); } };`);
   await writeFile(path.join(root, "hooks", "useProducts.ts"), "export function useProducts() { return []; }");
+  await writeFile(path.join(root, "hooks", "useMemberCalls.ts"), `import { api, api as client } from "../lib/object-api"; export function useMemberCalls() { const response = { json() { return {}; } }; const methodName = "getUsers"; api.getUsers(); api.getUsers(); client.getOrders(); console.log("ignored"); response.json(); api[methodName](); unknownApi.getUsers(); return []; }`);
   await writeFile(path.join(root, "next-env.d.ts"), "/// <reference types='next' />");
   await writeFile(path.join(root, "components", "ProductCard.test.tsx"), "export function ProductCardTest() { return <div />; }");
   return root;
@@ -139,11 +141,15 @@ const main = async (): Promise<void> => {
   const productList = symbolNode(nextGraph, "component", "components/ProductList.tsx", "ProductList");
   const sameFileParent = symbolNode(nextGraph, "component", "components/SameFile.tsx", "Parent");
   const sameFileHelper = symbolNode(nextGraph, "utility", "components/SameFile.tsx", "helper");
+  const sameFileApiGetLocal = symbolNode(nextGraph, "api-client-method", "components/SameFile.tsx", "sameFileApi.getLocal");
   const sameFileChild = symbolNode(nextGraph, "component", "components/SameFile.tsx", "Child");
   const useProducts = symbolNode(nextGraph, "hook", "hooks/useProducts.ts", "useProducts");
+  const useMemberCalls = symbolNode(nextGraph, "hook", "hooks/useMemberCalls.ts", "useMemberCalls");
   const getProducts = symbolNode(nextGraph, "api-client-method", "lib/api.ts", "getProducts");
   const createOrder = symbolNode(nextGraph, "api-client-method", "lib/api.ts", "createOrder");
   const getProductsKy = symbolNode(nextGraph, "api-client-method", "lib/api.ts", "getProductsKy");
+  const getUsers = symbolNode(nextGraph, "api-client-method", "lib/object-api.ts", "api.getUsers");
+  const getOrders = symbolNode(nextGraph, "api-client-method", "lib/object-api.ts", "api.getOrders");
 
   assert(hasEdge(nextGraph, "render", homePage.id, productCard.id));
   assert(hasEdge(nextGraph, "render", homePage.id, productList.id));
@@ -156,9 +162,16 @@ const main = async (): Promise<void> => {
   assert(hasEdge(nextGraph, "call", productCard.id, formatMoney.id));
   assert(hasEdge(nextGraph, "call", productList.id, getProducts.id));
   assert(hasEdge(nextGraph, "call", sameFileParent.id, sameFileHelper.id));
+  assert(hasEdge(nextGraph, "call", sameFileParent.id, sameFileApiGetLocal.id));
+  assert(hasEdge(nextGraph, "call", useMemberCalls.id, getUsers.id));
+  assert(hasEdge(nextGraph, "call", useMemberCalls.id, getOrders.id));
   assert.equal(nextGraph.edges.filter((edge) => edge.kind === "call" && edge.source === productList.id && edge.target === getProducts.id).length, 1);
+  assert.equal(nextGraph.edges.filter((edge) => edge.kind === "call" && edge.source === useMemberCalls.id && edge.target === getUsers.id).length, 1);
   assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.source === homePage.id && edge.target === productCard.id), false);
   assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.target.includes("missingFunction")), false);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.target.includes("console.log")), false);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.target.includes("response.json")), false);
+  assert.equal(nextGraph.edges.some((edge) => edge.kind === "call" && edge.target.includes("unknownApi.getUsers")), false);
   const productsEndpoint = endpointNode(nextGraph, "GET", "/api/products");
   const ordersEndpoint = endpointNode(nextGraph, "POST", "/api/orders");
   assert(hasEdge(nextGraph, "http", getProducts.id, productsEndpoint.id));

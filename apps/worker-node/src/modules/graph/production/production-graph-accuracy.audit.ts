@@ -51,6 +51,14 @@ const EXPECTED_ALIAS_IMPORT_EDGES = [
   "file:src/components/dashboard-shell.tsx->file:src/lib/production-graph-adapter.ts",
   "file:src/components/dashboard-shell.tsx->file:src/lib/use-dashboard-data.ts",
 ];
+const EXPECTED_OBJECT_MEMBER_CALL_EDGES = [
+  "useDashboardData->lutestApi.getStatus",
+  "useDashboardData->lutestApi.getProject",
+  "useDashboardData->lutestApi.getGraph",
+  "useDashboardData->lutestApi.getProductionGraph",
+  "useDashboardData->lutestApi.getLatestReport",
+  "useDashboardData->lutestApi.runScan",
+];
 const FALSE_POSITIVE_UTILITY_NAMES = ["metadata.title", "metadata.description"];
 
 const normalizePath = (value: string): string => value.replaceAll("\\", "/");
@@ -394,6 +402,7 @@ const dedupeItems = <T>(items: T[], keyOf: (item: T) => string): T[] => {
 
 const actualInventory = (graph: ProductionGraphResponse) => {
   const nodesByKind = (kind: string) => graph.nodes.filter((node) => node.kind === kind);
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node]));
   return {
     files: nodesByKind("file"),
     pages: nodesByKind("page"),
@@ -405,6 +414,11 @@ const actualInventory = (graph: ProductionGraphResponse) => {
     imports: graph.edges.filter((edge) => edge.kind === "import"),
     renders: graph.edges.filter((edge) => edge.kind === "render"),
     calls: graph.edges.filter((edge) => edge.kind === "call"),
+    objectMemberCalls: graph.edges
+      .filter((edge) => edge.kind === "call")
+      .map((edge) => `${nodeById.get(edge.source)?.name ?? edge.source}->${nodeById.get(edge.target)?.name ?? edge.target}`)
+      .filter((edge) => edge.startsWith("useDashboardData->lutestApi."))
+      .sort(),
     http: graph.edges.filter((edge) => edge.kind === "http"),
     summary: graph.summary,
   };
@@ -460,6 +474,9 @@ const compareAudit = (expected: ExpectedInventory, actual: ReturnType<typeof act
     missingAliasImportEdges: EXPECTED_ALIAS_IMPORT_EDGES.filter((expectedEdge) =>
       !actual.imports.some((edge) => `${edge.source}->${edge.target}` === expectedEdge),
     ),
+    missingObjectMemberCallEdges: EXPECTED_OBJECT_MEMBER_CALL_EDGES.filter((expectedEdge) =>
+      !actual.objectMemberCalls.includes(expectedEdge),
+    ),
   };
 };
 
@@ -488,6 +505,7 @@ const verdictFor = (mismatches: ReturnType<typeof compareAudit>, validationOk: b
     mismatches.unexpectedHooks,
     mismatches.falsePositiveUtilityNodes,
     mismatches.missingAliasImportEdges,
+    mismatches.missingObjectMemberCallEdges,
   ].some((items) => items.length > 0);
   if (hardFailures) return "FAIL";
   const knownLimitations =
@@ -569,6 +587,10 @@ const printReport = (result: AuditResult) => {
   console.log(`Actual: ${actual.calls.length}`);
   console.log("Missing:\n- not exhaustively audited in R5.6.3");
   console.log("Unexpected:\n- not exhaustively audited in R5.6.3");
+  console.log("\n### Object member call edges\n");
+  console.log(`Expected: ${EXPECTED_OBJECT_MEMBER_CALL_EDGES.length}\n${list(EXPECTED_OBJECT_MEMBER_CALL_EDGES)}`);
+  console.log(`Actual: ${actual.objectMemberCalls.length}\n${list(actual.objectMemberCalls)}`);
+  console.log(`Missing:\n${list(mismatches.missingObjectMemberCallEdges)}`);
   console.log("\n### HTTP edges\n");
   console.log(`Expected: ${expected.httpEdges.length}\n${list(expected.httpEdges)}`);
   console.log(`Actual: ${actual.http.length}`);

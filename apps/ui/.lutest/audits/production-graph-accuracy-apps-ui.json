@@ -1772,7 +1772,87 @@
         "target": "utility:raw:function:src/lib/production-graph-layout.ts#layoutProductionGraph@18-62",
         "confidence": "high",
         "reason": "ProductionGraphCanvas calls layoutProductionGraph()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106",
+        "confidence": "high",
+        "reason": "useDashboardData calls lutestApi.getGraph() via loadGraph()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+        "confidence": "high",
+        "reason": "useDashboardData calls lutestApi.getLatestReport()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+        "confidence": "high",
+        "reason": "useDashboardData calls lutestApi.getProductionGraph() via loadGraph()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+        "confidence": "high",
+        "reason": "useDashboardData calls lutestApi.getProject()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+        "confidence": "high",
+        "reason": "useDashboardData calls lutestApi.getStatus()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+        "confidence": "high",
+        "reason": "useDashboardData calls lutestApi.runScan()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->utility:raw:function:src/lib/api-client.ts#isPathNotAllowedError@78-80",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "utility:raw:function:src/lib/api-client.ts#isPathNotAllowedError@78-80",
+        "confidence": "high",
+        "reason": "useDashboardData calls isPathNotAllowedError()"
+      },
+      {
+        "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149->utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+        "kind": "call",
+        "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@70-149",
+        "target": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+        "confidence": "high",
+        "reason": "useDashboardData calls adaptProductionGraphToFlowModel() via loadGraph()"
+      },
+      {
+        "id": "call:utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187->utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToUiGraph@104-142",
+        "kind": "call",
+        "source": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+        "target": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToUiGraph@104-142",
+        "confidence": "high",
+        "reason": "adaptProductionGraphToFlowModel calls adaptProductionGraphToUiGraph()"
       }
+    ],
+    "objectMemberCalls": [
+      "useDashboardData->lutestApi.getGraph",
+      "useDashboardData->lutestApi.getLatestReport",
+      "useDashboardData->lutestApi.getProductionGraph",
+      "useDashboardData->lutestApi.getProject",
+      "useDashboardData->lutestApi.getStatus",
+      "useDashboardData->lutestApi.runScan"
     ],
     "http": [
       {
@@ -1832,7 +1912,7 @@
       "apiRouteCount": 0,
       "apiClientMethodCount": 6,
       "externalEndpointCount": 6,
-      "edgeCount": 59
+      "edgeCount": 68
     }
   },
   "mismatches": {
@@ -1851,7 +1931,8 @@
     "unexpectedExternalEndpoints": [],
     "missingHttpEdges": [],
     "falsePositiveUtilityNodes": [],
-    "missingAliasImportEdges": []
+    "missingAliasImportEdges": [],
+    "missingObjectMemberCallEdges": []
   },
   "rootCauses": [],
   "verdict": "PASS"

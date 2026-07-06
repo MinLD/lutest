@@ -195,6 +195,34 @@ const renderSourceForLine = (
   return candidates[0] ?? null;
 };
 
+const callSourceForLine = (
+  symbols: ClassifiedSourceSymbol[],
+  line: number,
+): ClassifiedSourceSymbol | null => {
+  const sourceRank = (symbol: ClassifiedSourceSymbol): number => {
+    if (symbol.kind === "page") return 0;
+    if (symbol.kind === "component") return 1;
+    if (symbol.kind === "hook") return 2;
+    if (symbol.kind === "utility") return 3;
+    return 4;
+  };
+  const candidates = symbols
+    .filter((symbol) =>
+      (symbol.kind === "page" ||
+        symbol.kind === "component" ||
+        symbol.kind === "hook" ||
+        symbol.kind === "api-client-method" ||
+        symbol.kind === "utility") &&
+      symbol.loc.startLine <= line &&
+      symbol.loc.endLine >= line,
+    )
+    .sort((left, right) =>
+      (left.loc.endLine - left.loc.startLine) - (right.loc.endLine - right.loc.startLine) ||
+      sourceRank(left) - sourceRank(right),
+    );
+  return candidates[0] ?? null;
+};
+
 const componentSymbolsByFile = (
   files: ScannedProductionSourceFile[],
 ): Map<string, ClassifiedSourceSymbol[]> => {
@@ -312,6 +340,48 @@ const extractCallUsages = (input: {
   visit(sourceFile);
   return usages;
 };
+
+const extractLocalFunctionCallUsages = (input: {
+  sourceFilePath: string;
+  content: string;
+}): Map<string, CallUsage[]> => {
+  const sourceFile = ts.createSourceFile(
+    input.sourceFilePath,
+    input.content,
+    ts.ScriptTarget.Latest,
+    true,
+    input.sourceFilePath.endsWith(".tsx") || input.sourceFilePath.endsWith(".jsx")
+      ? ts.ScriptKind.TSX
+      : ts.ScriptKind.TS,
+  );
+  const usagesByFunction = new Map<string, CallUsage[]>();
+
+  const collectCalls = (body: ts.Node): CallUsage[] => {
+    const usages: CallUsage[] = [];
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node)) {
+        const callName = callExpressionName(node.expression);
+        if (callName && !isIgnoredCallName(callName)) {
+          usages.push({ callName, ...locFor(sourceFile, node) });
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(body);
+    return usages;
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name && node.body) {
+      usagesByFunction.set(node.name.text, collectCalls(node.body));
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return usagesByFunction;
+};
 const buildFileRenderEdges = async (input: {
   file: ScannedProductionSourceFile;
   files: ScannedProductionSourceFile[];
@@ -395,9 +465,18 @@ const resolveCallTarget = (input: {
 
   const [namespace, member] = input.callName.split(".");
   if (namespace && member) {
-    const binding = input.bindings.find((item) => item.namespace && item.localName === namespace);
-    const callables = binding ? input.callablesByFile.get(binding.targetFilePath) ?? [] : [];
-    return callables.find((symbol) => symbol.name === member) ?? null;
+    const binding = input.bindings.find((item) => item.localName === namespace);
+    if (!binding) return null;
+
+    const callables = input.callablesByFile.get(binding.targetFilePath) ?? [];
+    if (binding.namespace) {
+      return callables.find((symbol) => symbol.name === member) ?? null;
+    }
+
+    const importedObjectName = binding.importedName ?? binding.localName;
+    const targetName = `${importedObjectName}.${member}`;
+    const matches = callables.filter((symbol) => symbol.name === targetName);
+    return matches.length === 1 ? matches[0] : null;
   }
 
   const binding = input.bindings.find((item) => item.localName === input.callName);
@@ -423,12 +502,11 @@ const buildFileCallEdges = async (input: {
 }): Promise<ProductionGraphEdge[]> => {
   const usages = extractCallUsages({ sourceFilePath: input.file.relativePath, content: input.content });
   if (usages.length === 0) return [];
+  const localFunctionUsages = extractLocalFunctionCallUsages({ sourceFilePath: input.file.relativePath, content: input.content });
   const bindings = await buildImportBindings(input);
   const edges: ProductionGraphEdge[] = [];
 
-  for (const usage of usages) {
-    const source = renderSourceForLine(input.file.symbols, usage.line);
-    if (!source) continue;
+  const pushResolvedEdge = (source: ClassifiedSourceSymbol, usage: CallUsage, via?: string): void => {
     const target = resolveCallTarget({
       callName: usage.callName,
       file: input.file,
@@ -436,7 +514,7 @@ const buildFileCallEdges = async (input: {
       bindings,
       callablesByFile: input.callablesByFile,
     });
-    if (!target || target.id === source.id) continue;
+    if (!target || target.id === source.id) return;
 
     edges.push({
       id: `call:${source.id}->${target.id}`,
@@ -444,8 +522,22 @@ const buildFileCallEdges = async (input: {
       source: source.id,
       target: target.id,
       confidence: "high",
-      reason: `${source.name} calls ${usage.callName}()`,
+      reason: via
+        ? `${source.name} calls ${usage.callName}() via ${via}()`
+        : `${source.name} calls ${usage.callName}()`,
     });
+  };
+
+  for (const usage of usages) {
+    const source = callSourceForLine(input.file.symbols, usage.line);
+    if (!source) continue;
+    pushResolvedEdge(source, usage);
+
+    if (!usage.callName.includes(".")) {
+      for (const helperUsage of localFunctionUsages.get(usage.callName) ?? []) {
+        pushResolvedEdge(source, helperUsage, usage.callName);
+      }
+    }
   }
 
   return edges;

@@ -2855,3 +2855,72 @@ Tests/checks run:
 Next phase:
 - R5.8 — Object member call edges / dependency chain completion
 
+
+## R5.8 — Object member call edges / dependency chain completion
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/production/production-edge-builder.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.self-check.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts`
+- `apps/ui/.lutest/audits/production-graph-accuracy-apps-ui.json`
+- `docs/plan/production-refactor-progress.md`
+
+Object member call patterns supported:
+- Same-file exact object member calls: `api.getUsers()` resolves only when `api.getUsers` classified symbol exists in the same file.
+- Named imported object calls: `import { api } from "./api"; api.getUsers()` resolves to `api.getUsers` in imported file.
+- Named import alias calls: `import { api as client } from "./api"; client.getUsers()` resolves to `api.getUsers` in imported file.
+- Local helper expansion: classified source calling a same-file helper can inherit exact object member calls inside that helper, used for `useDashboardData -> loadGraph -> lutestApi.getGraph/getProductionGraph`.
+
+Import binding resolution behavior:
+- Namespace imports keep existing behavior.
+- Named object imports now match `localName.property` to imported target symbol `${importedName}.property`.
+- Ambiguous/missing bindings do not create call edges.
+- Dynamic element access like `api[methodName]()` does not create edges.
+
+apps/ui before:
+- Total edges: 60 from prior R5.7.4 baseline.
+- Object member call edges: 4 from pre-fix audit during R5.8.
+- Missing: `useDashboardData->lutestApi.getGraph`, `useDashboardData->lutestApi.getProductionGraph`.
+
+apps/ui after:
+- Total edges: 68.
+- Call edges: 12.
+- Object member call edges: 6.
+- Added/confirmed:
+  - `useDashboardData->lutestApi.getStatus`
+  - `useDashboardData->lutestApi.getProject`
+  - `useDashboardData->lutestApi.getGraph`
+  - `useDashboardData->lutestApi.getProductionGraph`
+  - `useDashboardData->lutestApi.getLatestReport`
+  - `useDashboardData->lutestApi.runScan`
+- Audit verdict: `PASS`.
+
+False-positive guards:
+- `console.log()` ignored.
+- `response.json()` has no edge unless exact target symbol exists and binding is clear.
+- Dynamic `api[methodName]()` ignored.
+- `unknownApi.getUsers()` ignored because no import/same-file binding resolves.
+- Repeated calls dedupe by `kind + source + target` edge id.
+
+Known limitations:
+- Helper expansion is one-level and same-file only.
+- No external library call edges are created.
+- Object member call resolution remains intentionally conservative.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/import-resolver/import-resolver.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/source-extractors/ts-js/api-client-object-method.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed with `PASS` and explicit object member call edge confirmation.
+- npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
+
+Next phase:
+- R6.0 — Playwright scan engine foundation
