@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import type {
-  GraphResponse,
   LatestReportResponse,
   ProjectSummary,
   StatusResponse,
@@ -27,12 +26,7 @@ import {
 } from "lucide-react";
 import { ProductionGraphCanvas } from "./production-graph-canvas";
 import type { ProductionFlowModel } from "@/lib/production-graph-adapter";
-import {
-  DEFAULT_GRAPH_MODE,
-  SHOW_LEGACY_GRAPH,
-  type GraphMode,
-  useDashboardData,
-} from "@/lib/use-dashboard-data";
+import { useDashboardData } from "@/lib/use-dashboard-data";
 import {
   dashboardNavItems,
   DEFAULT_DASHBOARD_PAGE,
@@ -465,40 +459,14 @@ function ProductionSummaryCards({
 function GraphPage({
   graph,
   latestReport,
-  graphMode,
-  onGraphModeChange,
-  legacyGraph,
 }: {
   graph: ProductionFlowModel | null;
   latestReport: LatestReportResponse | null;
-  graphMode: GraphMode;
-  onGraphModeChange: (mode: GraphMode) => void;
-  legacyGraph: GraphResponse | null;
 }) {
   return (
     <div className="grid gap-4 sm:gap-5">
-      {SHOW_LEGACY_GRAPH ? (
-        <div className="flex w-fit rounded-xl border border-[#dbe7f5] bg-white p-1 text-xs font-bold text-[#667085]">
-          {(["production", "legacy"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => onGraphModeChange(mode)}
-              className={`rounded-lg px-3 py-1.5 transition ${graphMode === mode ? "bg-[#2563eb] text-white" : "hover:bg-[#f2f6fb]"}`}
-            >
-              {mode}
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {graphMode === "legacy" && SHOW_LEGACY_GRAPH ? (
-        <LegacyGraphPanel graph={legacyGraph} />
-      ) : (
-        <>
-          <ProductionSummaryCards graph={graph} latestReport={latestReport} />
-          <ProductionGraphCanvas graph={graph} />
-        </>
-      )}
+      <ProductionSummaryCards graph={graph} latestReport={latestReport} />
+      <ProductionGraphCanvas graph={graph} />
     </div>
   );
 }
@@ -705,66 +673,12 @@ function SettingCard({
   );
 }
 
-function LegacyGraphPanel({ graph }: { graph: GraphResponse | null }) {
-  const pages =
-    graph?.nodes.filter((node) => node.type === "page").slice(0, 6) ?? [];
-  const components =
-    graph?.nodes.filter((node) => node.type === "component").slice(0, 6) ?? [];
-  const apis =
-    graph?.nodes.filter((node) => node.type === "api").slice(0, 6) ?? [];
-  return (
-    <section className="rounded-[1.35rem] bg-white p-4 shadow-[0_1px_0_#dbe7f5,0_18px_50px_rgba(36,63,103,0.06)] sm:p-7">
-      <PageTitle
-        icon={GitBranch}
-        title="Legacy route graph"
-        subtitle={`${graph?.nodes.length ?? 0} nodes / ${graph?.edges.length ?? 0} edges`}
-      />
-      <div className="grid gap-4 md:grid-cols-3">
-        <LegacyColumn title="Pages" rows={pages.map((node) => node.filePath)} />
-        <LegacyColumn
-          title="Components"
-          rows={components.map((node) => node.label)}
-        />
-        <LegacyColumn title="APIs" rows={apis.map((node) => node.filePath)} />
-      </div>
-    </section>
-  );
-}
-
-function LegacyColumn({ title, rows }: { title: string; rows: string[] }) {
-  return (
-    <div className="min-w-0 rounded-2xl bg-[#fbfdff] p-4 shadow-sm">
-      <p className="mb-3 text-sm font-bold text-[#2563eb]">{title}</p>
-      <div className="space-y-2">
-        {rows.length > 0 ? (
-          rows.map((row) => (
-            <div
-              key={row}
-              className="truncate rounded-xl bg-white px-3 py-2 font-mono text-xs text-[#283548]"
-            >
-              {row}
-            </div>
-          ))
-        ) : (
-          <div className="rounded-xl bg-white px-3 py-2 text-sm text-[#667085]">
-            No data
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function DashboardShell() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState<DashboardPage>(
     DEFAULT_DASHBOARD_PAGE,
   );
-  const [graphMode, setGraphMode] = useState<GraphMode>(DEFAULT_GRAPH_MODE);
-  const { data, isLoading, isScanning, error, runScan } = useDashboardData(
-    undefined,
-    graphMode,
-  );
+  const { data, isLoading, isScanning, error, runScan } = useDashboardData();
   const page = useMemo(() => {
     switch (activePage) {
       case "endpoint":
@@ -798,13 +712,10 @@ export function DashboardShell() {
           <GraphPage
             graph={data.productionGraphView}
             latestReport={data.latestReport}
-            graphMode={graphMode}
-            onGraphModeChange={setGraphMode}
-            legacyGraph={data.graph}
           />
         );
     }
-  }, [activePage, data, graphMode, isScanning, runScan]);
+  }, [activePage, data, isScanning, runScan]);
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#fbfdff] text-[#111827]">
@@ -832,3 +743,4 @@ export function DashboardShell() {
     </div>
   );
 }
+

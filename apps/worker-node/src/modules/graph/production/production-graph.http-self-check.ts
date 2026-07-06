@@ -79,6 +79,16 @@ const main = async (): Promise<void> => {
     assert(graph.edges.some((edge) => edge.kind === "call"), "call edge exists");
     assert(graph.edges.some((edge) => edge.kind === "http"), "http edge exists");
     assert.equal(graph.summary.edgeCount, graph.edges.length);
+    const latestProductionGraphPath = path.join(allowedRoot, ".lutest", "graph", "latest-production-graph.json");
+    const latestGraph = JSON.parse(await fs.readFile(latestProductionGraphPath, "utf-8")) as unknown;
+    const latestValidation = validateProductionGraphResponse(latestGraph);
+    assert(latestValidation.ok, latestValidation.ok ? "valid" : latestValidation.message);
+    assert.deepEqual(latestGraph, productionNoPath.body, "latest production graph artifact matches response body");
+    assert.equal(
+      await fs.access(path.join(allowedRoot, ".lutest", "graph", "latest-production-graph.meta.json")).then(() => true),
+      true,
+      "latest production graph metadata exists",
+    );
 
     const productionAllowed = await requestJson(baseUrl, `/api/graph/production?path=${encodeURIComponent(allowedRoot)}`);
     assert.equal(productionAllowed.status, 200, "production graph allowed path status");

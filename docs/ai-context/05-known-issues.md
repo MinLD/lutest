@@ -1,4 +1,4 @@
-# Known Issues And Limitations
+﻿# Known Issues And Limitations
 
 ## Runtime Scan
 
@@ -10,12 +10,14 @@
 
 ## Graph
 
-- Legacy graph remains intentionally. Do not confuse it with production graph.
+- Legacy backend `/api/graph` remains intentionally as compatibility/debug.
+- Production UI should not call legacy `/api/graph` in normal flow.
+- Production graph persists latest artifact only; timestamped production graph snapshots are not added yet.
 - Production graph has known staged scope; future phases may improve dependency chains and runtime connections.
 
 ## Environment
 
-- PowerShell `npx.ps1` may print `Test-Path : Access is denied` while command exits `0`. Treat as known local environment noise unless exit code fails.
+- PowerShell `npm.ps1` / `npx.ps1` may print `Test-Path : Access is denied` while command exits `0`. Treat as known local environment noise unless exit code fails.
 - Generated `.lutest` artifacts may change during verification. Do not commit unless intentionally part of task.
 
 ## Path Policy

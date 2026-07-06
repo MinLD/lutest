@@ -1,4 +1,4 @@
-# Lutest AI Handoff
+﻿# Lutest AI Handoff
 
 Repo-local context entrypoint for AI/code sessions.
 
@@ -18,15 +18,17 @@ Repo-local context entrypoint for AI/code sessions.
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R6.0.1 — Runtime scan safety and result correctness.
+- Latest completed phase recorded here: R5.9 — MVP legacy cleanup and production cutover.
 - Next recommended phase: R6.1 — DOM Geometry extraction and viewport scan.
-- Working tree may contain uncommitted R6.0.1 runtime scan changes; check `git status` before starting.
+- Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
+- Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
+- Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate
 
-When the user asks a question such as "có nên không?", "được không?", "nên làm gì?", "test thử xem hiểu không?", or "đánh giá giúp", answer only. Do not edit files.
+When the user asks a question such as "co nen khong?", "duoc khong?", "nen lam gi?", "test thu xem hieu khong?", or "danh gia giup", answer only. Do not edit files.
 
-Only modify code after an explicit implementation command such as "bắt đầu phase", "hãy sửa", "implement", "apply changes", or "code đi".
+Only modify code after an explicit implementation command such as "bat dau phase", "hay sua", "implement", "apply changes", or "code di".
 
 If ambiguous, ask for confirmation.
 

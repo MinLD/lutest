@@ -38,7 +38,10 @@ same(validateProjectPathQuery({}), {
 
 same(validateProjectPathQuery({ path: "D:\\Projects\\lutest" }), {
   ok: true,
-  value: { path: "D:\\Projects\\lutest" },
+  value: {
+    path: "D:\\Projects\\lutest",
+    projectPath: "D:\\Projects\\lutest",
+  },
 }, "path query valid");
 
 assert(!validateProjectPathQuery({ path: "" }).ok, "empty path query invalid");

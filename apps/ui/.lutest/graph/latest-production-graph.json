@@ -1,0 +1,1167 @@
+{
+  "mode": "symbol-level",
+  "nodes": [
+    {
+      "id": "file:next.config.ts",
+      "kind": "file",
+      "name": "next.config.ts",
+      "filePath": "next.config.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "file:src/app/layout.tsx",
+      "kind": "file",
+      "name": "layout.tsx",
+      "filePath": "src/app/layout.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/app/layout.tsx#RootLayout@20-36",
+      "kind": "component",
+      "name": "RootLayout",
+      "filePath": "src/app/layout.tsx",
+      "loc": {
+        "startLine": 20,
+        "endLine": 36
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/app/page.tsx",
+      "kind": "file",
+      "name": "page.tsx",
+      "filePath": "src/app/page.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "page:raw:function:src/app/page.tsx#Home@3-5",
+      "kind": "page",
+      "name": "Home",
+      "filePath": "src/app/page.tsx",
+      "loc": {
+        "startLine": 3,
+        "endLine": 5
+      },
+      "route": {
+        "path": "/",
+        "kind": "page"
+      },
+      "confidence": "high",
+      "reason": "Next page file component export"
+    },
+    {
+      "id": "file:src/components/dashboard-shell.tsx",
+      "kind": "file",
+      "name": "dashboard-shell.tsx",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "kind": "component",
+      "name": "Sidebar",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 64,
+        "endLine": 102
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "kind": "component",
+      "name": "MobileSidebar",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 104,
+        "endLine": 156
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "kind": "component",
+      "name": "Brand",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 158,
+        "endLine": 174
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@176-259",
+      "kind": "component",
+      "name": "Topbar",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 176,
+        "endLine": 259
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@261-283",
+      "kind": "component",
+      "name": "DashboardNotice",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 261,
+        "endLine": 283
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "kind": "component",
+      "name": "PageTitle",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 285,
+        "endLine": 307
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "kind": "component",
+      "name": "MetricCard",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 309,
+        "endLine": 329
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "kind": "component",
+      "name": "StatusRow",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 331,
+        "endLine": 353
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "kind": "component",
+      "name": "EndpointPage",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 355,
+        "endLine": 416
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "kind": "component",
+      "name": "ProductionSummaryCards",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 418,
+        "endLine": 457
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "kind": "component",
+      "name": "GraphPage",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 459,
+        "endLine": 472
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "kind": "component",
+      "name": "ReportsPage",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 474,
+        "endLine": 531
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "kind": "component",
+      "name": "ScansPage",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 533,
+        "endLine": 589
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "kind": "component",
+      "name": "SettingsPage",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 591,
+        "endLine": 646
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "kind": "component",
+      "name": "SettingCard",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 648,
+        "endLine": 674
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "kind": "component",
+      "name": "DashboardShell",
+      "filePath": "src/components/dashboard-shell.tsx",
+      "loc": {
+        "startLine": 676,
+        "endLine": 745
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/components/production-graph-canvas.tsx",
+      "kind": "file",
+      "name": "production-graph-canvas.tsx",
+      "filePath": "src/components/production-graph-canvas.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "kind": "component",
+      "name": "ProductionGraphCanvas",
+      "filePath": "src/components/production-graph-canvas.tsx",
+      "loc": {
+        "startLine": 39,
+        "endLine": 205
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/production-graph-canvas.tsx#CanvasState@207-216",
+      "kind": "component",
+      "name": "CanvasState",
+      "filePath": "src/components/production-graph-canvas.tsx",
+      "loc": {
+        "startLine": 207,
+        "endLine": 216
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/components/production-graph-detail-panel.tsx",
+      "kind": "file",
+      "name": "production-graph-detail-panel.tsx",
+      "filePath": "src/components/production-graph-detail-panel.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61",
+      "kind": "component",
+      "name": "ProductionGraphDetailPanel",
+      "filePath": "src/components/production-graph-detail-panel.tsx",
+      "loc": {
+        "startLine": 4,
+        "endLine": 61
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/production-graph-detail-panel.tsx#DetailShell@63-71",
+      "kind": "component",
+      "name": "DetailShell",
+      "filePath": "src/components/production-graph-detail-panel.tsx",
+      "loc": {
+        "startLine": 63,
+        "endLine": 71
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/production-graph-detail-panel.tsx#DetailRow@73-81",
+      "kind": "component",
+      "name": "DetailRow",
+      "filePath": "src/components/production-graph-detail-panel.tsx",
+      "loc": {
+        "startLine": 73,
+        "endLine": 81
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/components/production-graph-node.tsx",
+      "kind": "file",
+      "name": "production-graph-node.tsx",
+      "filePath": "src/components/production-graph-node.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/components/production-graph-node.tsx#ProductionGraphNode@15-40",
+      "kind": "component",
+      "name": "ProductionGraphNode",
+      "filePath": "src/components/production-graph-node.tsx",
+      "loc": {
+        "startLine": 15,
+        "endLine": 40
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/lib/api-client.ts",
+      "kind": "file",
+      "name": "api-client.ts",
+      "filePath": "src/lib/api-client.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "utility:raw:class:src/lib/api-client.ts#ApiClientError@14-23",
+      "kind": "utility",
+      "name": "ApiClientError",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 14,
+        "endLine": 23
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:function:src/lib/api-client.ts#isPathNotAllowedError@78-80",
+      "kind": "utility",
+      "name": "isPathNotAllowedError",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 78,
+        "endLine": 80
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+      "kind": "api-client-method",
+      "name": "lutestApi.getStatus",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 92,
+        "endLine": 94
+      },
+      "confidence": "high",
+      "reason": "Direct network call inside function"
+    },
+    {
+      "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+      "kind": "api-client-method",
+      "name": "lutestApi.getProject",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 96,
+        "endLine": 100
+      },
+      "confidence": "high",
+      "reason": "Direct network call inside function"
+    },
+    {
+      "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106",
+      "kind": "api-client-method",
+      "name": "lutestApi.getGraph",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 102,
+        "endLine": 106
+      },
+      "confidence": "high",
+      "reason": "Direct network call inside function"
+    },
+    {
+      "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+      "kind": "api-client-method",
+      "name": "lutestApi.getProductionGraph",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 108,
+        "endLine": 112
+      },
+      "confidence": "high",
+      "reason": "Direct network call inside function"
+    },
+    {
+      "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+      "kind": "api-client-method",
+      "name": "lutestApi.getLatestReport",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 114,
+        "endLine": 118
+      },
+      "confidence": "high",
+      "reason": "Direct network call inside function"
+    },
+    {
+      "id": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+      "kind": "api-client-method",
+      "name": "lutestApi.runScan",
+      "filePath": "src/lib/api-client.ts",
+      "loc": {
+        "startLine": 120,
+        "endLine": 125
+      },
+      "confidence": "high",
+      "reason": "Direct network call inside function"
+    },
+    {
+      "id": "file:src/lib/dashboard-data-request.self-check.ts",
+      "kind": "file",
+      "name": "dashboard-data-request.self-check.ts",
+      "filePath": "src/lib/dashboard-data-request.self-check.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "file:src/lib/dashboard-navigation.self-check.ts",
+      "kind": "file",
+      "name": "dashboard-navigation.self-check.ts",
+      "filePath": "src/lib/dashboard-navigation.self-check.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "file:src/lib/dashboard-navigation.ts",
+      "kind": "file",
+      "name": "dashboard-navigation.ts",
+      "filePath": "src/lib/dashboard-navigation.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "file:src/lib/production-graph-adapter.self-check.ts",
+      "kind": "file",
+      "name": "production-graph-adapter.self-check.ts",
+      "filePath": "src/lib/production-graph-adapter.self-check.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "file:src/lib/production-graph-adapter.ts",
+      "kind": "file",
+      "name": "production-graph-adapter.ts",
+      "filePath": "src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "utility:raw:function:src/lib/production-graph-adapter.ts#labelProductionGraphNode@100-102",
+      "kind": "utility",
+      "name": "labelProductionGraphNode",
+      "filePath": "src/lib/production-graph-adapter.ts",
+      "loc": {
+        "startLine": 100,
+        "endLine": 102
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToUiGraph@104-142",
+      "kind": "utility",
+      "name": "adaptProductionGraphToUiGraph",
+      "filePath": "src/lib/production-graph-adapter.ts",
+      "loc": {
+        "startLine": 104,
+        "endLine": 142
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+      "kind": "utility",
+      "name": "adaptProductionGraphToFlowModel",
+      "filePath": "src/lib/production-graph-adapter.ts",
+      "loc": {
+        "startLine": 144,
+        "endLine": 187
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:function:src/lib/production-graph-adapter.ts#filterProductionFlowEdges@189-194",
+      "kind": "utility",
+      "name": "filterProductionFlowEdges",
+      "filePath": "src/lib/production-graph-adapter.ts",
+      "loc": {
+        "startLine": 189,
+        "endLine": 194
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "file:src/lib/production-graph-layout.ts",
+      "kind": "file",
+      "name": "production-graph-layout.ts",
+      "filePath": "src/lib/production-graph-layout.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "utility:raw:function:src/lib/production-graph-layout.ts#layoutProductionGraph@18-62",
+      "kind": "utility",
+      "name": "layoutProductionGraph",
+      "filePath": "src/lib/production-graph-layout.ts",
+      "loc": {
+        "startLine": 18,
+        "endLine": 62
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "file:src/lib/use-dashboard-data.ts",
+      "kind": "file",
+      "name": "use-dashboard-data.ts",
+      "filePath": "src/lib/use-dashboard-data.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "kind": "hook",
+      "name": "useDashboardData",
+      "filePath": "src/lib/use-dashboard-data.ts",
+      "loc": {
+        "startLine": 50,
+        "endLine": 128
+      },
+      "confidence": "high",
+      "reason": "React hook naming convention"
+    },
+    {
+      "id": "external-endpoint:GET:/api/graph",
+      "kind": "external-endpoint",
+      "name": "GET /api/graph",
+      "http": {
+        "method": "GET",
+        "path": "/api/graph"
+      },
+      "confidence": "high",
+      "reason": "Direct network target detected from source symbol"
+    },
+    {
+      "id": "external-endpoint:GET:/api/graph/production",
+      "kind": "external-endpoint",
+      "name": "GET /api/graph/production",
+      "http": {
+        "method": "GET",
+        "path": "/api/graph/production"
+      },
+      "confidence": "high",
+      "reason": "Direct network target detected from source symbol"
+    },
+    {
+      "id": "external-endpoint:GET:/api/project",
+      "kind": "external-endpoint",
+      "name": "GET /api/project",
+      "http": {
+        "method": "GET",
+        "path": "/api/project"
+      },
+      "confidence": "high",
+      "reason": "Direct network target detected from source symbol"
+    },
+    {
+      "id": "external-endpoint:GET:/api/report/latest",
+      "kind": "external-endpoint",
+      "name": "GET /api/report/latest",
+      "http": {
+        "method": "GET",
+        "path": "/api/report/latest"
+      },
+      "confidence": "high",
+      "reason": "Direct network target detected from source symbol"
+    },
+    {
+      "id": "external-endpoint:GET:/api/status",
+      "kind": "external-endpoint",
+      "name": "GET /api/status",
+      "http": {
+        "method": "GET",
+        "path": "/api/status"
+      },
+      "confidence": "high",
+      "reason": "Direct network target detected from source symbol"
+    },
+    {
+      "id": "external-endpoint:POST:/api/actions/scan",
+      "kind": "external-endpoint",
+      "name": "POST /api/actions/scan",
+      "http": {
+        "method": "POST",
+        "path": "/api/actions/scan"
+      },
+      "confidence": "high",
+      "reason": "Direct network target detected from source symbol"
+    }
+  ],
+  "edges": [
+    {
+      "id": "call:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "kind": "call",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "confidence": "high",
+      "reason": "DashboardShell calls useDashboardData()"
+    },
+    {
+      "id": "call:component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205->utility:raw:function:src/lib/production-graph-adapter.ts#filterProductionFlowEdges@189-194",
+      "kind": "call",
+      "source": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "target": "utility:raw:function:src/lib/production-graph-adapter.ts#filterProductionFlowEdges@189-194",
+      "confidence": "high",
+      "reason": "ProductionGraphCanvas calls filterProductionFlowEdges()"
+    },
+    {
+      "id": "call:component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205->utility:raw:function:src/lib/production-graph-layout.ts#layoutProductionGraph@18-62",
+      "kind": "call",
+      "source": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "target": "utility:raw:function:src/lib/production-graph-layout.ts#layoutProductionGraph@18-62",
+      "confidence": "high",
+      "reason": "ProductionGraphCanvas calls layoutProductionGraph()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+      "confidence": "high",
+      "reason": "useDashboardData calls lutestApi.getLatestReport()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+      "confidence": "high",
+      "reason": "useDashboardData calls lutestApi.getProductionGraph() via loadGraph()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+      "confidence": "high",
+      "reason": "useDashboardData calls lutestApi.getProject()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+      "confidence": "high",
+      "reason": "useDashboardData calls lutestApi.getStatus()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+      "confidence": "high",
+      "reason": "useDashboardData calls lutestApi.runScan()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->utility:raw:function:src/lib/api-client.ts#isPathNotAllowedError@78-80",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "utility:raw:function:src/lib/api-client.ts#isPathNotAllowedError@78-80",
+      "confidence": "high",
+      "reason": "useDashboardData calls isPathNotAllowedError()"
+    },
+    {
+      "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+      "kind": "call",
+      "source": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "target": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+      "confidence": "high",
+      "reason": "useDashboardData calls adaptProductionGraphToFlowModel() via loadGraph()"
+    },
+    {
+      "id": "call:utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187->utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToUiGraph@104-142",
+      "kind": "call",
+      "source": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToFlowModel@144-187",
+      "target": "utility:raw:function:src/lib/production-graph-adapter.ts#adaptProductionGraphToUiGraph@104-142",
+      "confidence": "high",
+      "reason": "adaptProductionGraphToFlowModel calls adaptProductionGraphToUiGraph()"
+    },
+    {
+      "id": "import:file:src/app/page.tsx->file:src/components/dashboard-shell.tsx",
+      "kind": "import",
+      "source": "file:src/app/page.tsx",
+      "target": "file:src/components/dashboard-shell.tsx",
+      "confidence": "high",
+      "reason": "static-import @/components/dashboard-shell resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/components/production-graph-canvas.tsx",
+      "kind": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/components/production-graph-canvas.tsx",
+      "confidence": "high",
+      "reason": "static-import ./production-graph-canvas resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/lib/dashboard-navigation.ts",
+      "kind": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/lib/dashboard-navigation.ts",
+      "confidence": "high",
+      "reason": "static-import @/lib/dashboard-navigation resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "type-import @/lib/production-graph-adapter resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/lib/use-dashboard-data.ts",
+      "kind": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/lib/use-dashboard-data.ts",
+      "confidence": "high",
+      "reason": "static-import @/lib/use-dashboard-data resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/production-graph-canvas.tsx->file:src/components/production-graph-detail-panel.tsx",
+      "kind": "import",
+      "source": "file:src/components/production-graph-canvas.tsx",
+      "target": "file:src/components/production-graph-detail-panel.tsx",
+      "confidence": "high",
+      "reason": "static-import ./production-graph-detail-panel resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/components/production-graph-canvas.tsx->file:src/components/production-graph-node.tsx",
+      "kind": "import",
+      "source": "file:src/components/production-graph-canvas.tsx",
+      "target": "file:src/components/production-graph-node.tsx",
+      "confidence": "high",
+      "reason": "static-import ./production-graph-node resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/components/production-graph-canvas.tsx->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/components/production-graph-canvas.tsx",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "static-import @/lib/production-graph-adapter resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/production-graph-canvas.tsx->file:src/lib/production-graph-layout.ts",
+      "kind": "import",
+      "source": "file:src/components/production-graph-canvas.tsx",
+      "target": "file:src/lib/production-graph-layout.ts",
+      "confidence": "high",
+      "reason": "static-import @/lib/production-graph-layout resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/production-graph-detail-panel.tsx->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/components/production-graph-detail-panel.tsx",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "type-import @/lib/production-graph-adapter resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/components/production-graph-node.tsx->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/components/production-graph-node.tsx",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "type-import @/lib/production-graph-adapter resolved by paths-match"
+    },
+    {
+      "id": "import:file:src/lib/dashboard-data-request.self-check.ts->file:src/lib/api-client.ts",
+      "kind": "import",
+      "source": "file:src/lib/dashboard-data-request.self-check.ts",
+      "target": "file:src/lib/api-client.ts",
+      "confidence": "high",
+      "reason": "static-import ./api-client resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/lib/dashboard-navigation.self-check.ts->file:src/lib/dashboard-navigation.ts",
+      "kind": "import",
+      "source": "file:src/lib/dashboard-navigation.self-check.ts",
+      "target": "file:src/lib/dashboard-navigation.ts",
+      "confidence": "high",
+      "reason": "static-import ./dashboard-navigation resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/lib/production-graph-adapter.self-check.ts->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/lib/production-graph-adapter.self-check.ts",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "static-import ./production-graph-adapter resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/lib/production-graph-adapter.self-check.ts->file:src/lib/production-graph-layout.ts",
+      "kind": "import",
+      "source": "file:src/lib/production-graph-adapter.self-check.ts",
+      "target": "file:src/lib/production-graph-layout.ts",
+      "confidence": "high",
+      "reason": "static-import ./production-graph-layout resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/lib/production-graph-layout.ts->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/lib/production-graph-layout.ts",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "type-import ./production-graph-adapter resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
+      "kind": "import",
+      "source": "file:src/lib/use-dashboard-data.ts",
+      "target": "file:src/lib/api-client.ts",
+      "confidence": "high",
+      "reason": "static-import ./api-client resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/production-graph-adapter.ts",
+      "kind": "import",
+      "source": "file:src/lib/use-dashboard-data.ts",
+      "target": "file:src/lib/production-graph-adapter.ts",
+      "confidence": "high",
+      "reason": "static-import ./production-graph-adapter resolved by relative-match"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@261-283",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@261-283",
+      "confidence": "high",
+      "reason": "DashboardShell renders <DashboardNotice>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "confidence": "high",
+      "reason": "DashboardShell renders <EndpointPage>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "confidence": "high",
+      "reason": "DashboardShell renders <GraphPage>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "confidence": "high",
+      "reason": "DashboardShell renders <MobileSidebar>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "confidence": "high",
+      "reason": "DashboardShell renders <ReportsPage>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "confidence": "high",
+      "reason": "DashboardShell renders <ScansPage>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "confidence": "high",
+      "reason": "DashboardShell renders <SettingsPage>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "confidence": "high",
+      "reason": "DashboardShell renders <Sidebar>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#Topbar@176-259",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@176-259",
+      "confidence": "high",
+      "reason": "DashboardShell renders <Topbar>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "confidence": "high",
+      "reason": "EndpointPage renders <PageTitle>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "confidence": "high",
+      "reason": "EndpointPage renders <StatusRow>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472->component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "confidence": "high",
+      "reason": "GraphPage renders <ProductionSummaryCards>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472->component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "target": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "confidence": "high",
+      "reason": "GraphPage renders <ProductionGraphCanvas>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156->component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "confidence": "high",
+      "reason": "MobileSidebar renders <Brand>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457->component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "confidence": "high",
+      "reason": "ProductionSummaryCards renders <MetricCard>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531->component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "confidence": "high",
+      "reason": "ReportsPage renders <MetricCard>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "confidence": "high",
+      "reason": "ReportsPage renders <PageTitle>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "confidence": "high",
+      "reason": "ScansPage renders <PageTitle>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "confidence": "high",
+      "reason": "ScansPage renders <StatusRow>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "confidence": "high",
+      "reason": "SettingCard renders <StatusRow>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "confidence": "high",
+      "reason": "SettingsPage renders <PageTitle>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646->component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "confidence": "high",
+      "reason": "SettingsPage renders <SettingCard>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102->component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "confidence": "high",
+      "reason": "Sidebar renders <Brand>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205->component:raw:function:src/components/production-graph-canvas.tsx#CanvasState@207-216",
+      "kind": "render",
+      "source": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "target": "component:raw:function:src/components/production-graph-canvas.tsx#CanvasState@207-216",
+      "confidence": "high",
+      "reason": "ProductionGraphCanvas renders <CanvasState>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205->component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61",
+      "kind": "render",
+      "source": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "target": "component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61",
+      "confidence": "high",
+      "reason": "ProductionGraphCanvas renders <ProductionGraphDetailPanel>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61->component:raw:function:src/components/production-graph-detail-panel.tsx#DetailRow@73-81",
+      "kind": "render",
+      "source": "component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61",
+      "target": "component:raw:function:src/components/production-graph-detail-panel.tsx#DetailRow@73-81",
+      "confidence": "high",
+      "reason": "ProductionGraphDetailPanel renders <DetailRow>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61->component:raw:function:src/components/production-graph-detail-panel.tsx#DetailShell@63-71",
+      "kind": "render",
+      "source": "component:raw:function:src/components/production-graph-detail-panel.tsx#ProductionGraphDetailPanel@4-61",
+      "target": "component:raw:function:src/components/production-graph-detail-panel.tsx#DetailShell@63-71",
+      "confidence": "high",
+      "reason": "ProductionGraphDetailPanel renders <DetailShell>"
+    },
+    {
+      "id": "render:page:raw:function:src/app/page.tsx#Home@3-5->component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "kind": "render",
+      "source": "page:raw:function:src/app/page.tsx#Home@3-5",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "confidence": "high",
+      "reason": "Home renders <DashboardShell>"
+    },
+    {
+      "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106->external-endpoint:GET:/api/graph",
+      "kind": "http",
+      "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getGraph@102-106",
+      "target": "external-endpoint:GET:/api/graph",
+      "confidence": "high",
+      "reason": "Source symbol contains direct network call to endpoint"
+    },
+    {
+      "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118->external-endpoint:GET:/api/report/latest",
+      "kind": "http",
+      "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
+      "target": "external-endpoint:GET:/api/report/latest",
+      "confidence": "high",
+      "reason": "Source symbol contains direct network call to endpoint"
+    },
+    {
+      "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112->external-endpoint:GET:/api/graph/production",
+      "kind": "http",
+      "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProductionGraph@108-112",
+      "target": "external-endpoint:GET:/api/graph/production",
+      "confidence": "high",
+      "reason": "Source symbol contains direct network call to endpoint"
+    },
+    {
+      "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100->external-endpoint:GET:/api/project",
+      "kind": "http",
+      "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getProject@96-100",
+      "target": "external-endpoint:GET:/api/project",
+      "confidence": "high",
+      "reason": "Source symbol contains direct network call to endpoint"
+    },
+    {
+      "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94->external-endpoint:GET:/api/status",
+      "kind": "http",
+      "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getStatus@92-94",
+      "target": "external-endpoint:GET:/api/status",
+      "confidence": "high",
+      "reason": "Source symbol contains direct network call to endpoint"
+    },
+    {
+      "id": "http:api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125->external-endpoint:POST:/api/actions/scan",
+      "kind": "http",
+      "source": "api-client-method:raw:method:src/lib/api-client.ts#lutestApi.runScan@120-125",
+      "target": "external-endpoint:POST:/api/actions/scan",
+      "confidence": "high",
+      "reason": "Source symbol contains direct network call to endpoint"
+    }
+  ],
+  "summary": {
+    "fileCount": 15,
+    "pageCount": 1,
+    "componentCount": 23,
+    "hookCount": 1,
+    "apiRouteCount": 0,
+    "apiClientMethodCount": 6,
+    "externalEndpointCount": 6,
+    "edgeCount": 63
+  }
+}

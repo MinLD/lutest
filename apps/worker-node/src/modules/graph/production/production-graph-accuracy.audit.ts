@@ -54,7 +54,6 @@ const EXPECTED_ALIAS_IMPORT_EDGES = [
 const EXPECTED_OBJECT_MEMBER_CALL_EDGES = [
   "useDashboardData->lutestApi.getStatus",
   "useDashboardData->lutestApi.getProject",
-  "useDashboardData->lutestApi.getGraph",
   "useDashboardData->lutestApi.getProductionGraph",
   "useDashboardData->lutestApi.getLatestReport",
   "useDashboardData->lutestApi.runScan",

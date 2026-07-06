@@ -1,7 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type {
-  GraphResponse,
   LatestReportResponse,
   ProductionGraphResponse,
   ProjectSummary,
@@ -14,14 +13,9 @@ import {
   type ProductionFlowModel,
 } from "./production-graph-adapter";
 
-export type GraphMode = "legacy" | "production";
-export const SHOW_LEGACY_GRAPH =
-  process.env.NEXT_PUBLIC_LUTEST_SHOW_LEGACY_GRAPH === "true";
-
 export type DashboardData = {
   status: StatusResponse | null;
   project: ProjectSummary | null;
-  graph: GraphResponse | null;
   productionGraph: ProductionGraphResponse | null;
   productionGraphView: ProductionFlowModel | null;
   latestReport: LatestReportResponse | null;
@@ -31,7 +25,6 @@ export type DashboardData = {
 const emptyDashboardData: DashboardData = {
   status: null,
   project: null,
-  graph: null,
   productionGraph: null,
   productionGraphView: null,
   latestReport: null,
@@ -40,25 +33,12 @@ const emptyDashboardData: DashboardData = {
 
 const DEFAULT_PROJECT_PATH = process.env.NEXT_PUBLIC_LUTEST_PROJECT_PATH;
 const PATH_NOT_ALLOWED_MESSAGE = "Selected path is outside worker allowed root";
-export const DEFAULT_GRAPH_MODE: GraphMode =
-  SHOW_LEGACY_GRAPH && process.env.NEXT_PUBLIC_LUTEST_GRAPH_MODE === "legacy"
-    ? "legacy"
-    : "production";
 
-async function loadGraph(projectPath: string | undefined, graphMode: GraphMode) {
-  if (graphMode === "production" || !SHOW_LEGACY_GRAPH) {
-    const productionGraph = await lutestApi.getProductionGraph(projectPath);
-    return {
-      graph: null,
-      productionGraph,
-      productionGraphView: adaptProductionGraphToFlowModel(productionGraph),
-    };
-  }
-
+async function loadGraph(projectPath: string | undefined) {
+  const productionGraph = await lutestApi.getProductionGraph(projectPath);
   return {
-    graph: await lutestApi.getGraph(projectPath),
-    productionGraph: null,
-    productionGraphView: null,
+    productionGraph,
+    productionGraphView: adaptProductionGraphToFlowModel(productionGraph),
   };
 }
 
@@ -69,7 +49,6 @@ function errorMessage(cause: unknown) {
 
 export function useDashboardData(
   projectPath = DEFAULT_PROJECT_PATH,
-  graphMode: GraphMode = DEFAULT_GRAPH_MODE,
 ) {
   const [data, setData] = useState<DashboardData>(emptyDashboardData);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,7 +65,7 @@ export function useDashboardData(
       const project = await lutestApi.getProject(projectPath);
       const selectedProjectPath = projectPath ?? undefined;
       const [graphData, latestReport] = await Promise.all([
-        loadGraph(selectedProjectPath, graphMode),
+        loadGraph(selectedProjectPath),
         lutestApi.getLatestReport(selectedProjectPath),
       ]);
 
@@ -102,7 +81,7 @@ export function useDashboardData(
     } finally {
       setIsLoading(false);
     }
-  }, [graphMode, projectPath]);
+  }, [projectPath]);
 
   const runScan = useCallback(async () => {
     setIsScanning(true);
@@ -111,7 +90,7 @@ export function useDashboardData(
       const scan = await lutestApi.runScan({ projectPath });
       const selectedProjectPath = projectPath ?? undefined;
       const [graphData, latestReport] = await Promise.all([
-        loadGraph(selectedProjectPath, graphMode),
+        loadGraph(selectedProjectPath),
         lutestApi.getLatestReport(selectedProjectPath),
       ]);
 
@@ -132,7 +111,7 @@ export function useDashboardData(
     } finally {
       setIsScanning(false);
     }
-  }, [graphMode, projectPath]);
+  }, [projectPath]);
 
   useEffect(() => {
     void load();

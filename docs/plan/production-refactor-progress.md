@@ -3111,3 +3111,152 @@ Tests/checks run:
 
 Next phase:
 - R6.1 — DOM Geometry extraction and viewport scan
+
+## R5.8.1 — Production graph persistence and selected-root parity
+
+Status: completed.
+
+Audit before:
+- Legacy graph artifact path: `<projectRoot>/.lutest/graph/latest-graph.json`, from `pathService.resolveProjectPaths(...).latestGraphPath` and `graphRepository.saveLatest()`.
+- Production graph artifact before this phase: none found in production graph endpoint; `getProductionGraph` built, validated, and returned only the response.
+- `getValidatedProjectPath(req, res, validateGraphQuery)` behavior: explicit `?path=` / `?projectPath=` is validated by path policy and returns real selected root; no explicit query path returns configured allowed root from `LUTEST_PROJECT_PATH` / `PROJECT_PATH` / `process.cwd()`.
+- `/api/graph/production` with no query path and `LUTEST_PROJECT_PATH` set already received selected env root from the helper, but it did not persist a production graph artifact.
+
+Files changed:
+- `apps/worker-node/src/modules/graph/graph.controller.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-artifacts.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/07-session-handoff.md`
+
+What changed:
+- Production graph endpoint now resolves project paths through `pathService.resolveProjectPaths`, matching legacy/project selected-root behavior.
+- Production graph endpoint builds from `paths.targetProjectRoot`.
+- Production graph response is still validated with `validateProductionGraphResponse` before return.
+- Production graph endpoint now writes latest production graph artifacts under the validated selected project root.
+- Artifact write is fatal if it fails, because persistence is expected behavior for this phase.
+- HTTP response body remains raw `ProductionGraphResponse` and is unchanged.
+
+Artifact behavior:
+- Raw graph: `<projectRoot>/.lutest/graph/latest-production-graph.json`
+- Metadata: `<projectRoot>/.lutest/graph/latest-production-graph.meta.json`
+- Raw graph artifact is the exact `ProductionGraphResponse` and validates with `validateProductionGraphResponse`.
+- Metadata contains `generatedAt`, `rootDir`, `mode`, and `graphPath`.
+
+Self-check coverage added:
+- `/api/graph/production` no-query request writes `latest-production-graph.json` under selected `LUTEST_PROJECT_PATH` root.
+- Latest production graph artifact validates with `validateProductionGraphResponse`.
+- Artifact content matches the HTTP response body.
+- Metadata file exists.
+- Existing outside-root rejection and legacy `/api/graph` checks remain covered.
+
+What was not changed:
+- No `ProductionGraphResponse` shape change.
+- No `/api/graph/production` response body change.
+- No `/api/graph` legacy behavior change.
+- No legacy graph removal.
+- No DOM Geometry.
+- No `/api/actions/scan` change.
+- No `ScanRequest` / `ScanResponse` change.
+- No path-policy loosening.
+- No generated `.lutest` artifacts committed.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed.
+- PowerShell `npm.ps1` / `npx.ps1` still printed `Test-Path : Access is denied`, but all commands above exited `0`.
+
+Known limitations:
+- Only latest production graph is persisted; timestamped production graph snapshots are not added in this phase.
+- Production graph remains symbol-level static analysis; runtime correlation is for later phases.
+
+Next recommended phase:
+- R6.1 — DOM Geometry extraction and viewport scan
+
+## R5.9 — MVP legacy cleanup and production cutover
+
+Status: completed.
+
+Legacy audit:
+- Frontend active production path: `useDashboardData` loads `lutestApi.getProductionGraph`, `lutestApi.getLatestReport`, status/project, and scan action.
+- Frontend legacy UI before cleanup: `GraphMode`, `SHOW_LEGACY_GRAPH`, graph toggle, `LegacyGraphPanel`, and `LegacyColumn` in `dashboard-shell.tsx` / `use-dashboard-data.ts`.
+- Backend compatibility endpoint: `GET /api/graph` remains mounted and returns legacy file-level `GraphResponse` through `graphService.buildAndSaveGraph`.
+- Contract legacy usage: `GraphResponse`, `GraphNode`, `GraphEdge`, and `GraphSummary` remain because `/api/graph` and `lutestApi.getGraph()` remain compatibility/debug surfaces.
+- Test/self-check dependency: production graph HTTP self-check still asserts legacy `/api/graph` exists and is not symbol-level; dashboard API request self-check still verifies `lutestApi.getGraph()` path/error behavior.
+- Safe deletions: frontend legacy graph toggle/panel/state and normal `/api/graph` fetch path.
+- Kept for now: backend `graph.service.ts`, `/api/graph`, `GraphResponse` contract, and `lutestApi.getGraph()` for compatibility/debug.
+
+Files changed:
+- `apps/ui/src/lib/use-dashboard-data.ts`
+- `apps/ui/src/components/dashboard-shell.tsx`
+- `apps/ui/src/lib/dashboard-navigation.self-check.ts`
+- `apps/worker-node/src/modules/graph/graph.routes.ts`
+- `apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts`
+- `packages/contracts/src/validators.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/04-decisions.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+
+What was removed:
+- Normal UI graph mode state and production/legacy toggle.
+- Legacy graph panel and columns from `dashboard-shell.tsx`.
+- Default app data flow call to `lutestApi.getGraph()`.
+- `GraphMode`, `DEFAULT_GRAPH_MODE`, and `SHOW_LEGACY_GRAPH` from `use-dashboard-data.ts`.
+
+What was deprecated/kept:
+- Backend `/api/graph` remains as deprecated compatibility/debug endpoint.
+- `graph.service.ts` remains legacy file-level graph implementation for that endpoint.
+- `GraphResponse` contract remains because the compatibility endpoint still returns it.
+- `lutestApi.getGraph()` remains as compatibility/debug API client helper, but normal dashboard flow no longer calls it.
+
+Production path after cleanup:
+- Dashboard default graph data source is only `/api/graph/production`.
+- `useDashboardData` fetches status, project, production graph, latest report, and scan action.
+- Production graph response shape remains unchanged.
+
+What was not changed:
+- No DOM Geometry.
+- No Playwright runtime scan changes.
+- No `/api/actions/scan` changes.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` changes.
+- No path-policy changes.
+- No report/project summary removal.
+- No legacy backend endpoint removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed.
+- PowerShell `npm.ps1` / `npx.ps1` still printed `Test-Path : Access is denied`, but all commands above exited `0`.
+
+Known limitations:
+- Backend legacy graph remains for compatibility/debug and self-check coverage.
+- Timestamped production graph snapshots are still not added.
+- Runtime scan remains internal service/self-check.
+- No DOM geometry/viewport matrix/layout detection yet.
+
+Next recommended phase:
+- R6.1 — DOM Geometry extraction and viewport scan

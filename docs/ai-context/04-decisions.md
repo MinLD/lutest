@@ -8,8 +8,15 @@
 ## Production Graph Is Primary
 
 - UI should use production graph as primary path.
+- Default UI graph data flow must call `/api/graph/production`, not legacy `/api/graph`.
 - Legacy `/api/graph` remains for compatibility/debug, not as production source of truth.
 - Do not migrate legacy `graph.service.ts` accidentally during unrelated phases.
+
+## Legacy Graph Compatibility
+
+- Backend `/api/graph` remains mounted for compatibility/debug until explicit removal approval.
+- `GraphResponse` contracts remain while `/api/graph` exists.
+- `lutestApi.getGraph()` may remain as compatibility/debug helper, but normal dashboard flow must not call it.
 
 ## API And Validation
 

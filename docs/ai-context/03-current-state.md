@@ -1,42 +1,49 @@
-# Current State
+﻿# Current State
 
 ## Latest Completed Phase
 
-R6.0.1 — Runtime scan safety and result correctness.
+R5.9 — MVP legacy cleanup and production cutover.
 
 ## Current Status
 
 - Production graph is primary graph path.
 - UI production graph integration exists and graph canvas is interactive.
-- Production graph accuracy audit for `D:/Projects/lutest/apps/ui` passed in latest recorded verification.
+- Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
+- Legacy graph toggle/panel was removed from normal UI.
+- Backend `/api/graph` remains as deprecated compatibility/debug endpoint.
+- Production graph endpoint uses selected/validated root resolution and persists latest production graph artifact.
+- Production graph latest artifact path is `<projectRoot>/.lutest/graph/latest-production-graph.json`.
+- Production graph latest metadata path is `<projectRoot>/.lutest/graph/latest-production-graph.meta.json`.
 - Runtime scan foundation exists as internal service/self-check.
-- R6.0.1 fixed runtime scan safety and result correctness issues.
 
-## R6.0.1 Runtime Scan Facts
+## Production Graph Persistence Facts
 
-- Runtime scan no longer bypasses path policy with `allowedRoot: request.projectRoot`.
-- Runtime scan validates `baseUrl` as local HTTP(S) only.
-- Route discovery rejects absolute/protocol-relative external routes.
-- Route navigation/load errors are stored per route.
-- `screenshotPath` is optional and set only after screenshot success.
-- `summary.screenshotCount` counts only real screenshots.
-- Screenshot filenames include index and short hash to avoid collisions.
-- `routeDiscovery.routes` is included in runtime scan JSON.
+- Legacy graph latest artifact remains `<projectRoot>/.lutest/graph/latest-graph.json`.
+- Production graph latest artifact is raw `ProductionGraphResponse` and validates with `validateProductionGraphResponse`.
+- `/api/graph/production` response body is unchanged.
+- Explicit `?path=` / `?projectPath=` still goes through path-policy.
+- No-query production graph request uses configured selected root from `LUTEST_PROJECT_PATH` / `PROJECT_PATH` / allowed root fallback.
 
-## Working Tree Note
+## Legacy Graph Facts
 
-At AICTX-1 creation time, `git status` showed uncommitted R6.0.1 runtime scan files plus progress doc. Always check current status before new phase work.
+- Frontend normal flow no longer calls `lutestApi.getGraph()`.
+- `lutestApi.getGraph()` remains for compatibility/debug.
+- Backend `/api/graph` remains mounted and returns legacy file-level `GraphResponse`.
+- `GraphResponse` contracts remain because the compatibility endpoint still uses them.
 
 ## Latest Verification Recorded
 
-From `docs/plan/production-refactor-progress.md` R6.0.1:
+From current R5.9 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
 - `npm run build -w @lutest/contracts` — passed.
 - `npm run build -w @lutest/worker-node` — passed.
-- `npm run build -w ui` — passed.
-- Runtime scan self-check — passed.
+- Dashboard navigation self-check — passed.
+- Production graph adapter self-check — passed.
+- Contracts validators self-check — passed.
 - Production graph self-check — passed.
 - Production graph HTTP self-check — passed.
 - Path-policy HTTP self-check — passed.
+- Runtime scan self-check — passed.
 - Production graph accuracy audit for `D:/Projects/lutest/apps/ui` — passed.
