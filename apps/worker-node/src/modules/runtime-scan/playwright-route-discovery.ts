@@ -3,6 +3,9 @@
 const normalizeRoute = (route: string): string => {
   const trimmed = route.trim();
   if (!trimmed) return "/";
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed) || trimmed.startsWith("//")) {
+    throw new Error("Runtime scan route must be a local path");
+  }
   return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
 };
 

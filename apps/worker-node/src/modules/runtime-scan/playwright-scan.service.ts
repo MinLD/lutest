@@ -1,4 +1,5 @@
-﻿import fs from "node:fs/promises";
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { pathPolicyService } from "../../shared/services/path-policy.service";
@@ -14,8 +15,13 @@ import type {
 
 const DEFAULT_VIEWPORT = { width: 1440, height: 900 };
 const DEFAULT_TIMEOUT_MS = Number(process.env.WORKER_TIMEOUT ?? 15_000);
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+const BASE_URL_ERROR = "Runtime scan baseUrl must be a local HTTP(S) URL";
 
 const nowId = (): string => new Date().toISOString().replace(/[:.]/g, "-");
+
+const errorMessage = (cause: unknown): string =>
+  cause instanceof Error ? cause.message : String(cause);
 
 const assertInside = (parent: string, child: string): void => {
   const relative = path.relative(parent, child);
@@ -24,15 +30,40 @@ const assertInside = (parent: string, child: string): void => {
   }
 };
 
-const safeRouteName = (route: string): string => {
-  const normalized = route === "/" ? "root" : route.replace(/^\/+/, "");
-  return `${normalized.replace(/[^a-zA-Z0-9._-]+/g, "-") || "root"}.png`;
+const validateBaseUrl = (baseUrl: string): URL => {
+  let parsed: URL;
+  try {
+    parsed = new URL(baseUrl);
+  } catch {
+    throw new Error(BASE_URL_ERROR);
+  }
+
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    throw new Error(BASE_URL_ERROR);
+  }
+  if (parsed.username || parsed.password) {
+    throw new Error(BASE_URL_ERROR);
+  }
+  if (!LOCAL_HOSTS.has(parsed.hostname)) {
+    throw new Error(BASE_URL_ERROR);
+  }
+  return parsed;
 };
 
-const routeUrl = (baseUrl: string, route: string): string => {
-  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
-  const relative = route.replace(/^\/+/, "");
-  return new URL(relative, base).toString();
+const safeRouteName = (route: string, index: number): string => {
+  const normalized = route === "/" ? "root" : route.replace(/^\/+/, "");
+  const slug = normalized.replace(/[^a-zA-Z0-9._-]+/g, "-") || "root";
+  const hash = crypto.createHash("sha1").update(route).digest("hex").slice(0, 8);
+  return `${String(index + 1).padStart(3, "0")}-${slug}-${hash}.png`;
+};
+
+const routeUrl = (baseUrl: URL, route: string): string => {
+  const safeRoute = route.replace(/^\/+/, "");
+  const url = new URL(safeRoute, baseUrl.href.endsWith("/") ? baseUrl.href : `${baseUrl.href}/`);
+  if (url.origin !== baseUrl.origin) {
+    throw new Error("Runtime scan route must stay under baseUrl");
+  }
+  return url.toString();
 };
 
 const summarize = (routes: RuntimeRouteScanResult[]) => ({
@@ -55,9 +86,8 @@ const closeQuietly = async (target: Browser | BrowserContext | Page | null): Pro
 export const runPlaywrightRuntimeScan = async (
   request: RuntimeScanRequest,
 ): Promise<RuntimeScanResult> => {
-  const policy = await pathPolicyService.assertProjectRoot(request.projectRoot, {
-    allowedRoot: request.projectRoot,
-  });
+  const baseUrl = validateBaseUrl(request.baseUrl);
+  const policy = await pathPolicyService.assertProjectRoot(request.projectRoot);
   if (!policy.ok) throw new Error(policy.message);
 
   const projectRoot = policy.rootDir;
@@ -85,17 +115,20 @@ export const runPlaywrightRuntimeScan = async (
     browser = await chromium.launch({ headless: request.headless ?? true });
     context = await browser.newContext({ viewport });
 
-    for (const route of routeDiscovery.routes) {
+    for (const [index, route] of routeDiscovery.routes.entries()) {
       const page = await context.newPage();
-      const url = routeUrl(request.baseUrl, route);
-      const screenshotPath = path.join(screenshotsDir, safeRouteName(route));
-      assertInside(projectRoot, screenshotPath);
+      const url = routeUrl(baseUrl, route);
+      const candidateScreenshotPath = path.join(screenshotsDir, safeRouteName(route, index));
+      assertInside(projectRoot, candidateScreenshotPath);
       const consoleMessages: RuntimeConsoleMessage[] = [];
       const pageErrors: string[] = [];
       const networkErrors: RuntimeNetworkError[] = [];
       const failedResponses: RuntimeFailedResponse[] = [];
       const started = Date.now();
       let status: number | undefined;
+      let error: string | undefined;
+      let screenshotPath: string | undefined;
+      let screenshotError: string | undefined;
 
       page.on("console", (message) => {
         if (message.type() !== "warning" && message.type() !== "error") return;
@@ -106,7 +139,7 @@ export const runPlaywrightRuntimeScan = async (
           location: location.url ? `${location.url}:${location.lineNumber}:${location.columnNumber}` : undefined,
         });
       });
-      page.on("pageerror", (error) => pageErrors.push(error.message));
+      page.on("pageerror", (pageError) => pageErrors.push(pageError.message));
       page.on("requestfailed", (failedRequest) => {
         networkErrors.push({
           url: failedRequest.url(),
@@ -127,21 +160,34 @@ export const runPlaywrightRuntimeScan = async (
         const response = await page.goto(url, { waitUntil: "load", timeout: timeoutMs });
         status = response?.status();
         await page.waitForLoadState("networkidle", { timeout: Math.min(timeoutMs, 5_000) }).catch(() => undefined);
-        await page.screenshot({ path: screenshotPath, fullPage: true });
-      } finally {
-        routeResults.push({
-          route,
-          url,
-          status,
-          screenshotPath,
-          consoleMessages,
-          pageErrors,
-          networkErrors,
-          failedResponses,
-          durationMs: Date.now() - started,
-        });
-        await closeQuietly(page);
+      } catch (cause) {
+        error = errorMessage(cause);
       }
+
+      if (!error) {
+
+        try {
+          await page.screenshot({ path: candidateScreenshotPath, fullPage: true });
+          screenshotPath = candidateScreenshotPath;
+        } catch (cause) {
+          screenshotError = errorMessage(cause);
+        }
+      }
+
+      routeResults.push({
+        route,
+        url,
+        status,
+        screenshotPath,
+        screenshotError,
+        error,
+        consoleMessages,
+        pageErrors,
+        networkErrors,
+        failedResponses,
+        durationMs: Date.now() - started,
+      });
+      await closeQuietly(page);
     }
   } finally {
     await closeQuietly(context);
@@ -151,7 +197,7 @@ export const runPlaywrightRuntimeScan = async (
   const result: RuntimeScanResult = {
     scanId,
     projectRoot,
-    baseUrl: request.baseUrl,
+    baseUrl: baseUrl.toString().replace(/\/$/, ""),
     startedAt,
     finishedAt: new Date().toISOString(),
     routes: routeResults,
@@ -167,3 +213,8 @@ export const runPlaywrightRuntimeScan = async (
   await fs.writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, "utf-8");
   return result;
 };
+
+
+
+
+

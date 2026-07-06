@@ -1,4 +1,4 @@
-﻿export type RuntimeScanViewport = {
+export type RuntimeScanViewport = {
   width: number;
   height: number;
 };
@@ -11,6 +11,7 @@ export type RuntimeScanRequest = {
   headless?: boolean;
   timeoutMs?: number;
 };
+
 
 export type RuntimeConsoleMessage = {
   type: string;
@@ -34,7 +35,9 @@ export type RuntimeRouteScanResult = {
   route: string;
   url: string;
   status?: number;
-  screenshotPath: string;
+  screenshotPath?: string;
+  screenshotError?: string;
+  error?: string;
   consoleMessages: RuntimeConsoleMessage[];
   pageErrors: string[];
   networkErrors: RuntimeNetworkError[];
@@ -67,7 +70,9 @@ export type RuntimeScanResult = {
   summary: RuntimeScanSummary;
   artifacts: RuntimeScanArtifacts;
   routeDiscovery: {
+    routes: string[];
     source: "request" | "production-graph" | "fallback";
     reason: string;
   };
 };
+

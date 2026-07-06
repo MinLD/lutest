@@ -1,0 +1,28 @@
+# Known Issues And Limitations
+
+## Runtime Scan
+
+- Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
+- No DOM Geometry extraction yet.
+- No viewport matrix yet.
+- No layout overlap/contrast issue detection yet.
+- Browser install may require operator action: `npx playwright install chromium`.
+
+## Graph
+
+- Legacy graph remains intentionally. Do not confuse it with production graph.
+- Production graph has known staged scope; future phases may improve dependency chains and runtime connections.
+
+## Environment
+
+- PowerShell `npx.ps1` may print `Test-Path : Access is denied` while command exits `0`. Treat as known local environment noise unless exit code fails.
+- Generated `.lutest` artifacts may change during verification. Do not commit unless intentionally part of task.
+
+## Path Policy
+
+- Strict path-policy is expected behavior.
+- `PATH_NOT_ALLOWED` means selected project path is outside worker allowed root, not worker offline.
+
+## Documentation
+
+- This context package can become stale. Future AI sessions must verify against code and progress doc.

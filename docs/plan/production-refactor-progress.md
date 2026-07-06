@@ -1,4 +1,4 @@
-﻿# Production Refactor Progress
+# Production Refactor Progress
 
 Updated: 2026-06-30
 Phase: R0 — docs + audit only
@@ -2981,3 +2981,133 @@ Tests/checks run:
 Next phase:
 - R6.1 — DOM Geometry extraction and viewport scan
 
+
+## R6.0.1 — Runtime scan safety and result correctness
+
+Status: completed.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-route-discovery.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `docs/plan/production-refactor-progress.md`
+
+Path policy bypass fixed:
+- Removed unsafe `allowedRoot: request.projectRoot` behavior.
+- Runtime scan now calls configured path policy with `pathPolicyService.assertProjectRoot(request.projectRoot)`.
+- Outside project roots are rejected by configured allowed root.
+
+BaseUrl local-only policy:
+- Runtime scan accepts only `http:`/`https:` local URLs.
+- Allowed hostnames: `localhost`, `127.0.0.1`, `::1`.
+- Rejects external hosts, credentials, `file:`, `data:`, `javascript:`, and other non-HTTP(S) protocols.
+- Invalid baseUrl throws `Runtime scan baseUrl must be a local HTTP(S) URL`.
+
+Screenshot/result correctness:
+- `screenshotPath` is now optional and set only after `page.screenshot()` succeeds.
+- `screenshotError` records screenshot failure messages.
+- `summary.screenshotCount` counts only routes with a real `screenshotPath`.
+
+Route error capture:
+- Navigation/load errors are stored in route-level `error`.
+- One failed route no longer discards the whole scan result.
+- Browser context/page/browser still close in `finally` paths.
+
+Filename collision fix:
+- Screenshot filenames now include route index and short hash.
+- Routes like `/foo/bar` and `/foo-bar` produce distinct screenshot paths.
+
+Route discovery type fix:
+- `RuntimeScanResult.routeDiscovery` now includes `routes`.
+- Runtime result JSON persists `routeDiscovery.routes`.
+
+Route normalization safety:
+- Empty route normalizes to `/`.
+- Missing leading slash is added.
+- Absolute URL-like routes such as `https://evil.com` are rejected as local path violations.
+
+Self-check coverage:
+- Allowed root project scan passes.
+- Outside project root is rejected.
+- Local baseUrl passes.
+- `https://example.com`, `file:///etc/passwd`, and credentialed local URL are rejected.
+- Unreachable route returns route result with `error` and no screenshot count.
+- Screenshot collision routes produce distinct paths.
+- `routeDiscovery.routes` is present in artifact JSON.
+
+What was not changed:
+- No `/api/actions/scan` integration.
+- `ScanResponse` unchanged.
+- `LatestReportResponse` unchanged.
+- No DOM Geometry, overlap, or contrast checks.
+- Production graph endpoints and builder unchanged.
+- UI unchanged.
+
+Known limitations:
+- Runtime scan remains internal service + self-check only.
+- Browser installation remains operator-managed with `npx playwright install chromium` if needed.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/graph/production/production-graph-accuracy.audit.ts D:/Projects/lutest/apps/ui` — passed.
+- PowerShell `npx.ps1` still prints `Test-Path : Access is denied`, but `npx` self-check commands exited successfully.
+
+Next phase:
+- R6.1 — DOM Geometry extraction and viewport scan
+
+## AICTX-1 — Repo-local AI handoff context package
+
+Status: completed.
+
+Why this was added:
+- Long phase history now has a repo-local AI handoff entrypoint instead of relying on chat history.
+- Future AI sessions can read curated project state, decisions, known issues, and next tasks from versioned files.
+- Context intentionally stores durable facts only, not full chat logs or secrets.
+
+Files created:
+- `AI_HANDOFF.md`
+- `docs/ai-context/00-read-me-first.md`
+- `docs/ai-context/01-project-overview.md`
+- `docs/ai-context/02-architecture.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/04-decisions.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/ai-context/prompts/start-session-read.md`
+- `docs/ai-context/prompts/end-session-update.md`
+
+How future AI sessions should use it:
+- Start with `AI_HANDOFF.md`.
+- Read `docs/ai-context/00-read-me-first.md` through `07-session-handoff.md`.
+- Check `git status` and `git diff --stat` before editing.
+- Use `docs/plan/production-refactor-progress.md` for detailed phase history.
+- If context conflicts with code, prefer code and report/update the context.
+
+Update workflow:
+- At session end, update current state, decisions, known issues, next tasks, and session handoff only when durable facts changed.
+- Record tests actually run; do not mark unrun checks as passed.
+- Do not copy chat history.
+- Do not store secrets, tokens, cookies, passwords, or private credentials.
+
+Known limitations:
+- Context can become stale and must be verified against code/progress docs each session.
+- Attached AICTX-1 prompt referenced R5.8 as latest, but repo progress shows R6.0.1 is latest completed phase; context records R6.0.1.
+- Working tree already had uncommitted R6.0.1 runtime scan changes before AICTX-1.
+- No markdown lint script was found in root package scripts.
+
+Tests/checks run:
+- `git status` — run.
+- `git diff --stat` — run.
+- Markdown lint — not available in repo scripts.
+
+Next phase:
+- R6.1 — DOM Geometry extraction and viewport scan
