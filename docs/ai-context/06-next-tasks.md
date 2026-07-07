@@ -2,14 +2,14 @@
 
 ## Next Recommended
 
-R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
+R6.2 — Runtime Artifact Repository Foundation.
 
-## R6.1 Goal
+## R6.2 Goal
 
-- Define internal runtime scan contracts and limits.
-- Clarify runtime artifact shape boundaries before DOM capture.
+- Implement runtime artifact repository save/read behavior behind the R6.1 contract.
+- Move the existing Playwright runtime JSON write path into repository code.
+- Add latest runtime scan artifact and metadata handling under validated project root.
 - Preserve public API response shapes unless the phase explicitly changes them.
-- Keep artifacts under validated project root.
 
 ## Later Runtime Phases
 
@@ -18,11 +18,11 @@ R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
 - R6.7 — Runtime Layout Issue Engine.
 - R6.8 — Runtime Artifact Repository Hardening.
 
-## Non-Goals For R6.1 Unless Requested
+## Non-Goals For R6.2 Unless Requested
 
 - No DOM Geometry implementation.
+- No public API contract exposure.
 - No path-policy loosening.
 - No production graph rewrite.
 - No legacy graph migration.
 - No broad UI redesign.
-- No new package unless clearly required.

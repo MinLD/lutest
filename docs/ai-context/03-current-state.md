@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.0.2 — Runtime Browser Preflight.
+R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
 
 ## Current Status
 
@@ -16,6 +16,7 @@ R6.0.2 — Runtime Browser Preflight.
 - Production graph latest metadata path is `<projectRoot>/.lutest/graph/latest-production-graph.meta.json`.
 - Runtime scan foundation exists as internal service/self-check.
 - Runtime scan runs Playwright Chromium preflight before real browser scan work.
+- Runtime scan internal result shape is versioned as `runtime-scan.v1` and validated before JSON write.
 
 ## Production Graph Persistence Facts
 
@@ -34,7 +35,7 @@ R6.0.2 — Runtime Browser Preflight.
 
 ## Latest Verification Recorded
 
-From current R6.0.2 session:
+From current R6.1 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -46,6 +47,9 @@ From current R6.0.2 session:
 - Production graph self-check — passed.
 - Production graph HTTP self-check — passed.
 - Path-policy HTTP self-check — passed.
+- Runtime schema self-check — passed.
 - Runtime browser preflight self-check — passed.
 - Runtime scan self-check — passed.
+- Path-policy HTTP self-check — passed.
+- Worker build — passed.
 - Production graph accuracy audit for `D:/Projects/lutest/apps/ui` — passed.

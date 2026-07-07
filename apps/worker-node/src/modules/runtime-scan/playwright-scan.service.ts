@@ -1,21 +1,24 @@
-import crypto from "node:crypto";
+﻿import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { pathPolicyService } from "../../shared/services/path-policy.service";
 import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
+import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
+import { RUNTIME_SCAN_SCHEMA_VERSION, validateRuntimeScanResult } from "./runtime-scan.schema";
 import type {
   RuntimeConsoleMessage,
   RuntimeFailedResponse,
   RuntimeNetworkError,
   RuntimeRouteScanResult,
+  RuntimeRouteTarget,
+  RuntimeScanError,
   RuntimeScanRequest,
   RuntimeScanResult,
 } from "./playwright-scan.types";
 
 const DEFAULT_VIEWPORT = { width: 1440, height: 900 };
-const DEFAULT_TIMEOUT_MS = Number(process.env.WORKER_TIMEOUT ?? 15_000);
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 const BASE_URL_ERROR = "Runtime scan baseUrl must be a local HTTP(S) URL";
 
@@ -23,6 +26,13 @@ const nowId = (): string => new Date().toISOString().replace(/[:.]/g, "-");
 
 const errorMessage = (cause: unknown): string =>
   cause instanceof Error ? cause.message : String(cause);
+
+const toRuntimeError = (code: string, message: string, input?: { targetId?: string; route?: string }): RuntimeScanError => ({
+  code,
+  message,
+  targetId: input?.targetId,
+  route: input?.route,
+});
 
 const assertInside = (parent: string, child: string): void => {
   const relative = path.relative(parent, child);
@@ -69,11 +79,13 @@ const routeUrl = (baseUrl: URL, route: string): string => {
 
 const summarize = (routes: RuntimeRouteScanResult[]) => ({
   routeCount: routes.length,
+  targetCount: routes.length,
   consoleMessageCount: routes.reduce((sum, route) => sum + route.consoleMessages.length, 0),
   pageErrorCount: routes.reduce((sum, route) => sum + route.pageErrors.length, 0),
   networkErrorCount: routes.reduce((sum, route) => sum + route.networkErrors.length, 0),
   failedResponseCount: routes.reduce((sum, route) => sum + route.failedResponses.length, 0),
   screenshotCount: routes.filter((route) => route.screenshotPath).length,
+  errorCount: routes.filter((route) => route.error).length,
 });
 
 const closeQuietly = async (target: Browser | BrowserContext | Page | null): Promise<void> => {
@@ -92,10 +104,25 @@ export const runPlaywrightRuntimeScan = async (
   if (!policy.ok) throw new Error(policy.message);
 
   const projectRoot = policy.rootDir;
-  const routeDiscovery = await discoverRuntimeScanRoutes({
+  const limits = resolveRuntimeScanLimits({ routeTimeoutMs: request.timeoutMs });
+  const discoveredRoutes = await discoverRuntimeScanRoutes({
     projectRoot,
     routes: request.routes,
   });
+  const scanRoutes = discoveredRoutes.routes.slice(0, limits.maxRoutes);
+  const routeDiscovery = {
+    ...discoveredRoutes,
+    routes: scanRoutes,
+    reason: discoveredRoutes.routes.length > scanRoutes.length
+      ? `${discoveredRoutes.reason}; capped by maxRoutes=${limits.maxRoutes}`
+      : discoveredRoutes.reason,
+  };
+  const targets: RuntimeRouteTarget[] = scanRoutes.slice(0, limits.maxTargets).map((route, index) => ({
+    id: `route:${index + 1}`,
+    kind: "route",
+    route,
+  }));
+
   await assertPlaywrightBrowserPreflight();
   const scanId = `runtime_${nowId()}`;
   const artifactRoot = path.join(projectRoot, ".lutest", "runtime-scans", scanId);
@@ -107,7 +134,6 @@ export const runPlaywrightRuntimeScan = async (
   await fs.mkdir(screenshotsDir, { recursive: true });
 
   const startedAt = new Date().toISOString();
-  const timeoutMs = request.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const viewport = request.viewport ?? DEFAULT_VIEWPORT;
   const routeResults: RuntimeRouteScanResult[] = [];
   let browser: Browser | null = null;
@@ -117,8 +143,9 @@ export const runPlaywrightRuntimeScan = async (
     browser = await chromium.launch({ headless: request.headless ?? true });
     context = await browser.newContext({ viewport });
 
-    for (const [index, route] of routeDiscovery.routes.entries()) {
+    for (const [index, target] of targets.entries()) {
       const page = await context.newPage();
+      const route = target.route;
       const url = routeUrl(baseUrl, route);
       const candidateScreenshotPath = path.join(screenshotsDir, safeRouteName(route, index));
       assertInside(projectRoot, candidateScreenshotPath);
@@ -128,7 +155,7 @@ export const runPlaywrightRuntimeScan = async (
       const failedResponses: RuntimeFailedResponse[] = [];
       const started = Date.now();
       let status: number | undefined;
-      let error: string | undefined;
+      let error: RuntimeScanError | undefined;
       let screenshotPath: string | undefined;
       let screenshotError: string | undefined;
 
@@ -159,15 +186,14 @@ export const runPlaywrightRuntimeScan = async (
       });
 
       try {
-        const response = await page.goto(url, { waitUntil: "load", timeout: timeoutMs });
+        const response = await page.goto(url, { waitUntil: "load", timeout: limits.routeTimeoutMs });
         status = response?.status();
-        await page.waitForLoadState("networkidle", { timeout: Math.min(timeoutMs, 5_000) }).catch(() => undefined);
+        await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, 5_000) }).catch(() => undefined);
       } catch (cause) {
-        error = errorMessage(cause);
+        error = toRuntimeError("ROUTE_LOAD_FAILED", errorMessage(cause), { targetId: target.id, route });
       }
 
-      if (!error) {
-
+      if (!error && index < limits.maxScreenshots) {
         try {
           await page.screenshot({ path: candidateScreenshotPath, fullPage: true });
           screenshotPath = candidateScreenshotPath;
@@ -177,6 +203,8 @@ export const runPlaywrightRuntimeScan = async (
       }
 
       routeResults.push({
+        targetId: target.id,
+        target,
         route,
         url,
         status,
@@ -187,6 +215,7 @@ export const runPlaywrightRuntimeScan = async (
         pageErrors,
         networkErrors,
         failedResponses,
+        viewportResults: [{ viewport, screenshotPath, screenshotError, layoutIssues: [] }],
         durationMs: Date.now() - started,
       });
       await closeQuietly(page);
@@ -196,13 +225,20 @@ export const runPlaywrightRuntimeScan = async (
     await closeQuietly(browser);
   }
 
+  const generatedAt = new Date().toISOString();
   const result: RuntimeScanResult = {
+    schemaVersion: RUNTIME_SCAN_SCHEMA_VERSION,
     scanId,
+    generatedAt,
     projectRoot,
+    selectedRoot: projectRoot,
     baseUrl: baseUrl.toString().replace(/\/$/, ""),
     startedAt,
-    finishedAt: new Date().toISOString(),
+    finishedAt: generatedAt,
+    targets,
     routes: routeResults,
+    limits,
+    errors: routeResults.flatMap((route) => route.error ? [route.error] : []),
     summary: summarize(routeResults),
     artifacts: {
       rootDir: artifactRoot,
@@ -212,11 +248,7 @@ export const runPlaywrightRuntimeScan = async (
     routeDiscovery,
   };
 
+  validateRuntimeScanResult(result);
   await fs.writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, "utf-8");
   return result;
 };
-
-
-
-
-

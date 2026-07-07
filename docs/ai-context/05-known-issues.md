@@ -3,6 +3,7 @@
 ## Runtime Scan
 
 - Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
+- Runtime artifact repository save/read is not implemented yet; R6.2 should move the existing Playwright JSON write path behind the repository contract.
 - No DOM Geometry extraction yet.
 - No viewport matrix yet.
 - No layout overlap/contrast issue detection yet.

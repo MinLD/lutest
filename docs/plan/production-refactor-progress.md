@@ -3313,3 +3313,71 @@ Known limitations:
 
 Next recommended phase:
 - R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
+
+## R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
+
+Status: completed.
+
+Audit before:
+- Runtime result type lived in `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`.
+- Route result fields were `route`, `url`, `status`, `screenshotPath`, `screenshotError`, `error`, console/page/network/failed response arrays, and `durationMs`.
+- Screenshot output was stored as optional `screenshotPath` only after screenshot success; screenshot failures used `screenshotError`.
+- Route errors were strings before R6.1; R6.1 standardizes them as `RuntimeScanError` objects internally.
+- Runtime artifact write path already existed in Playwright service at `<projectRoot>/.lutest/runtime-scans/<scanId>/runtime-scan.json`.
+- Playwright service was already writing JSON itself; R6.1 validates the internal schema and records migration plan to move writes into repository in R6.2.
+- Limits before R6.1 were partial: default viewport constant and timeout from `request.timeoutMs ?? WORKER_TIMEOUT ?? 15000`; no max route/target/screenshot/element/text/ignored-tags contract.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-limits.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifact-contract.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added internal `runtime-scan.v1` schema/version and validator.
+- Added internal route/state/flow target types, target result, viewport result, runtime error, artifact meta, DOM placeholder, and layout issue placeholder types.
+- Added default runtime scan limits: `maxRoutes`, `maxTargets`, `maxElementsPerViewport`, `maxTextSnippetLength`, `maxScreenshots`, `routeTimeoutMs`, `scanTimeoutMs`, and `ignoredTags`.
+- Runtime scan uses resolved limits for route timeout, max routes, max targets, and max screenshots.
+- Added runtime artifact repository path/interface contract for R6.2 without full save/read implementation.
+- Existing Playwright JSON write path now validates the internal artifact shape before writing.
+
+What was not changed:
+- No R6.2 repository save/read implementation.
+- No DOM Geometry extraction.
+- No Viewport Matrix.
+- No State/Flow execution.
+- No Layout Issue Engine.
+- No `/api/actions/scan` change.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public API contracts exposed.
+- No UI change.
+- No path-policy/baseUrl policy change.
+- No legacy backend `/api/graph` removal.
+
+Repository migration note:
+- Current write path remains `<projectRoot>/.lutest/runtime-scans/<scanId>/runtime-scan.json` inside Playwright service for R6.1.
+- R6.2 should move this write behind `RuntimeArtifactRepositoryContract`, implement save/read latest, and add metadata handling.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- PowerShell `npm.ps1` / `npx.ps1` printed known `Test-Path : Access is denied` noise, commands exited `0`.
+
+Known limitations:
+- Runtime artifact repository behavior is contract-only until R6.2.
+- DOM geometry/viewport matrix/state-flow/layout issue detection remain future phases.
+
+Next recommended phase:
+- R6.2 — Runtime Artifact Repository Foundation

@@ -48,3 +48,5 @@ docs
 AGENTS.md
 AI_HANDOFF.md
 apps\worker-node\dist
+.lutest
+apps/ui/.lutest
