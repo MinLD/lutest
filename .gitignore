@@ -40,7 +40,11 @@ Thumbs.db
 *.log
 
 
-AGENTS.MD
+AGENTS.md
 .agents
 skills-lock.json
 node_modules
+docs
+AGENTS.md
+AI_HANDOFF.md
+apps\worker-node\dist

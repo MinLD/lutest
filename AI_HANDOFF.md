@@ -18,10 +18,11 @@ Repo-local context entrypoint for AI/code sessions.
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R5.9 — MVP legacy cleanup and production cutover.
-- Next recommended phase: R6.1 — DOM Geometry extraction and viewport scan.
+- Latest completed phase recorded here: R6.0.2 — Runtime Browser Preflight.
+- Next recommended phase: R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
+- Runtime scan now runs Playwright Chromium preflight before real scan work.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

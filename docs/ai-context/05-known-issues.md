@@ -6,7 +6,7 @@
 - No DOM Geometry extraction yet.
 - No viewport matrix yet.
 - No layout overlap/contrast issue detection yet.
-- Browser install may require operator action: `npx playwright install chromium`.
+- Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 
 ## Graph
 

@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R5.9 — MVP legacy cleanup and production cutover.
+R6.0.2 — Runtime Browser Preflight.
 
 ## Current Status
 
@@ -15,6 +15,7 @@ R5.9 — MVP legacy cleanup and production cutover.
 - Production graph latest artifact path is `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Production graph latest metadata path is `<projectRoot>/.lutest/graph/latest-production-graph.meta.json`.
 - Runtime scan foundation exists as internal service/self-check.
+- Runtime scan runs Playwright Chromium preflight before real browser scan work.
 
 ## Production Graph Persistence Facts
 
@@ -33,7 +34,7 @@ R5.9 — MVP legacy cleanup and production cutover.
 
 ## Latest Verification Recorded
 
-From current R5.9 session:
+From current R6.0.2 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -45,5 +46,6 @@ From current R5.9 session:
 - Production graph self-check — passed.
 - Production graph HTTP self-check — passed.
 - Path-policy HTTP self-check — passed.
+- Runtime browser preflight self-check — passed.
 - Runtime scan self-check — passed.
 - Production graph accuracy audit for `D:/Projects/lutest/apps/ui` — passed.

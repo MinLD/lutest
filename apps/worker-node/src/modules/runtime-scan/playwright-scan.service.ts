@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { pathPolicyService } from "../../shared/services/path-policy.service";
+import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
 import type {
   RuntimeConsoleMessage,
@@ -95,6 +96,7 @@ export const runPlaywrightRuntimeScan = async (
     projectRoot,
     routes: request.routes,
   });
+  await assertPlaywrightBrowserPreflight();
   const scanId = `runtime_${nowId()}`;
   const artifactRoot = path.join(projectRoot, ".lutest", "runtime-scans", scanId);
   const screenshotsDir = path.join(artifactRoot, "screenshots");

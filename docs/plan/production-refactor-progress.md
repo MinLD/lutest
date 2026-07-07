@@ -2963,7 +2963,7 @@ Self-check behavior:
 Known limitations:
 - No `/api/actions/scan` integration in R6.0; runtime scan is internal service + self-check only.
 - Latest report schema does not include runtime scan yet.
-- DOM Geometry, overlap checks, and contrast checks are deferred to R6.1+.
+- DOM Geometry is later: R6.4 — DOM Geometry Foundation.
 - Auth/password/settings behavior unchanged.
 
 Tests/checks run:
@@ -2979,7 +2979,7 @@ Tests/checks run:
 - npm/npx PowerShell shim still prints `Test-Path : Access is denied`, but commands exited `0`.
 
 Next phase:
-- R6.1 — DOM Geometry extraction and viewport scan
+- R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
 
 
 ## R6.0.1 — Runtime scan safety and result correctness
@@ -3061,7 +3061,7 @@ Tests/checks run:
 - PowerShell `npx.ps1` still prints `Test-Path : Access is denied`, but `npx` self-check commands exited successfully.
 
 Next phase:
-- R6.1 — DOM Geometry extraction and viewport scan
+- R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
 
 ## AICTX-1 — Repo-local AI handoff context package
 
@@ -3110,7 +3110,7 @@ Tests/checks run:
 - Markdown lint — not available in repo scripts.
 
 Next phase:
-- R6.1 — DOM Geometry extraction and viewport scan
+- R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
 
 ## R5.8.1 — Production graph persistence and selected-root parity
 
@@ -3181,7 +3181,7 @@ Known limitations:
 - Production graph remains symbol-level static analysis; runtime correlation is for later phases.
 
 Next recommended phase:
-- R6.1 — DOM Geometry extraction and viewport scan
+- R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
 
 ## R5.9 — MVP legacy cleanup and production cutover
 
@@ -3259,4 +3259,57 @@ Known limitations:
 - No DOM geometry/viewport matrix/layout detection yet.
 
 Next recommended phase:
-- R6.1 — DOM Geometry extraction and viewport scan
+- R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
+
+## R6.0.2 — Runtime Browser Preflight
+
+Status: completed.
+
+Audit before:
+- Browser launch errors previously escaped from `chromium.launch()` inside `runPlaywrightRuntimeScan` and rejected the service call.
+- `runPlaywrightRuntimeScan` returned `RuntimeScanResult` on scan completion, but threw for invalid baseUrl, path-policy failure, route discovery validation, artifact path failure, and browser launch failure.
+- Existing self-check expected config/path errors to reject, successful routes to produce screenshots, and unreachable route navigation to be captured in `routes[0].error` with no `screenshotPath`.
+- Route-level errors were recorded per route via `error`, `screenshotError`, `consoleMessages`, `pageErrors`, `networkErrors`, and `failedResponses`.
+- Config/baseUrl errors were modeled as thrown `Error("Runtime scan baseUrl must be a local HTTP(S) URL")` before artifacts/browser work.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added Playwright Chromium browser preflight before real runtime scan browser work.
+- Missing browser is classified as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
+- Generic launch failure is classified as `PLAYWRIGHT_BROWSER_LAUNCH_FAILED`.
+- Preflight error messages are sanitized and do not include raw stack/path details.
+- Runtime code does not install browsers and does not use a user-open dashboard browser.
+
+What was not changed:
+- No DOM Geometry.
+- No runtime contracts/artifact shape change.
+- No `/api/actions/scan` behavior change.
+- No `ScanRequest` / `ScanResponse` change.
+- No UI change.
+- No path-policy loosening.
+- No external baseUrl policy change.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+- PowerShell `npm.ps1` / `npx.ps1` printed known `Test-Path : Access is denied` noise, commands exited `0`.
+
+Known limitations:
+- Runtime scan remains internal service/self-check.
+- No DOM geometry/viewport matrix/layout detection yet.
+
+Next recommended phase:
+- R6.1 — Runtime Internal Contracts, Limits & Artifact Shape
