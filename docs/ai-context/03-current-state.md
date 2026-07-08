@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.4 — DOM Geometry Foundation.
+R6.5 — Viewport Matrix.
 
 ## Current Status
 
@@ -27,6 +27,9 @@ R6.4 — DOM Geometry Foundation.
 - Runtime scan captures DOM geometry per executable route target viewport result.
 - DOM geometry includes selector hints, attributes, clipped text, bounding rect, visibility metadata, clickable heuristic, order, and truncation metadata.
 - DOM capture enforces `maxElementsPerViewport`, `maxTextSnippetLength`, and ignored tags.
+- Runtime scan default viewport matrix is mobile `390x844`, tablet `768x1024`, desktop `1440x900`.
+- Runtime scan attaches one `viewportResults[]` entry per viewport, with per-viewport screenshot and DOM geometry.
+- Internal `request.viewport` still acts as a custom single-viewport override for self-check/internal callers.
 
 ## Production Graph Persistence Facts
 
@@ -45,7 +48,7 @@ R6.4 — DOM Geometry Foundation.
 
 ## Latest Verification Recorded
 
-From current R6.4 session:
+From current R6.5 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -63,6 +66,7 @@ From current R6.4 session:
 - Runtime artifacts self-check — passed.
 - Runtime targets self-check — passed.
 - Runtime DOM geometry self-check — passed.
+- Runtime viewport matrix self-check — passed.
 - Runtime scan artifact repository read/write self-check — passed.
 - Path-policy HTTP self-check — passed.
 - Worker build — passed.

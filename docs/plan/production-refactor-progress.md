@@ -3587,3 +3587,70 @@ Known limitations:
 
 Next recommended phase:
 - R6.5 — Viewport Matrix
+
+## R6.5 — Viewport Matrix
+
+Status: completed.
+
+Audit before:
+- Playwright runtime scan used one viewport: `request.viewport ?? { width: 1440, height: 900 }`.
+- Browser context was created once per scan with that single viewport.
+- Each route result had a single `viewportResults[]` entry.
+- Screenshot filenames did not include viewport because only one viewport existed.
+- DOM geometry from R6.4 was captured for the single current viewport.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added default production viewport matrix:
+  - mobile `390x844`
+  - tablet `768x1024`
+  - desktop `1440x900`
+- Added runtime viewport resolver helper and self-check.
+- Playwright runtime scan now runs each executable route target across all default viewports when no custom internal viewport is provided.
+- Internal `request.viewport` remains a single custom viewport override for current self-check/internal callers; no public contract changed.
+- Each route result now records one `viewportResults[]` entry per executed viewport.
+- Each viewport result records per-viewport screenshot path, screenshot error, DOM geometry, and layoutIssues placeholder.
+- Screenshot filenames include viewport slug to avoid collisions.
+- Summary screenshot count now counts per-viewport screenshots.
+
+What was not changed:
+- No R6.6 Manual State/Flow Execution.
+- No click/fill/waitForSelector/auto-click behavior.
+- No Layout Issue Engine.
+- No `/api/actions/scan` integration.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public runtime API contracts exposed.
+- No UI change.
+- No path-policy/baseUrl policy change.
+- No Playwright browser auto-install.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+
+Known limitations:
+- State and flow targets remain placeholders only.
+- Layout issue detection remains a future phase.
+
+Next recommended phase:
+- R6.6 — Manual State/Flow Execution

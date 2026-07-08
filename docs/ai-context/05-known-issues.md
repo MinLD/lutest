@@ -4,7 +4,6 @@
 
 - Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
 - State and flow targets are placeholders only; R6.3 does not execute steps or app states.
-- Viewport matrix is not implemented; DOM geometry is captured only for the current single viewport.
 - No layout overlap/contrast issue detection yet.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 

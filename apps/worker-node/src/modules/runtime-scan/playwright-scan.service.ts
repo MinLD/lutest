@@ -10,6 +10,7 @@ import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-
 import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
 import { assertExecutableRuntimeRouteTarget, resolveRuntimeTargetDiscovery } from "./runtime-scan-targets";
+import { resolveRuntimeScanViewports, viewportSlug } from "./runtime-scan-viewports";
 
 import type {
   RuntimeConsoleMessage,
@@ -20,9 +21,9 @@ import type {
   RuntimeScanError,
   RuntimeScanRequest,
   RuntimeScanResult,
+  RuntimeViewportResult,
 } from "./playwright-scan.types";
 
-const DEFAULT_VIEWPORT = { width: 1440, height: 900 };
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 const BASE_URL_ERROR = "Runtime scan baseUrl must be a local HTTP(S) URL";
 
@@ -65,11 +66,11 @@ const validateBaseUrl = (baseUrl: string): URL => {
   return parsed;
 };
 
-const safeRouteName = (route: string, index: number): string => {
+const safeRouteName = (route: string, index: number, viewportName: string): string => {
   const normalized = route === "/" ? "root" : route.replace(/^\/+/, "");
   const slug = normalized.replace(/[^a-zA-Z0-9._-]+/g, "-") || "root";
   const hash = crypto.createHash("sha1").update(route).digest("hex").slice(0, 8);
-  return `${String(index + 1).padStart(3, "0")}-${slug}-${hash}.png`;
+  return `${String(index + 1).padStart(3, "0")}-${slug}-${viewportName}-${hash}.png`;
 };
 
 const routeUrl = (baseUrl: URL, route: string): string => {
@@ -88,7 +89,7 @@ const summarize = (routes: RuntimeRouteScanResult[]) => ({
   pageErrorCount: routes.reduce((sum, route) => sum + route.pageErrors.length, 0),
   networkErrorCount: routes.reduce((sum, route) => sum + route.networkErrors.length, 0),
   failedResponseCount: routes.reduce((sum, route) => sum + route.failedResponses.length, 0),
-  screenshotCount: routes.filter((route) => route.screenshotPath).length,
+  screenshotCount: routes.reduce((sum, route) => sum + route.viewportResults.filter((viewport) => viewport.screenshotPath).length, 0),
   errorCount: routes.filter((route) => route.error).length,
 });
 
@@ -137,22 +138,18 @@ export const runPlaywrightRuntimeScan = async (
   await fs.mkdir(screenshotsDir, { recursive: true });
 
   const startedAt = new Date().toISOString();
-  const viewport = request.viewport ?? DEFAULT_VIEWPORT;
+  const viewports = resolveRuntimeScanViewports(request.viewport);
   const routeResults: RuntimeRouteScanResult[] = [];
   let browser: Browser | null = null;
-  let context: BrowserContext | null = null;
+  let screenshotIndex = 0;
 
   try {
     browser = await chromium.launch({ headless: request.headless ?? true });
-    context = await browser.newContext({ viewport });
 
     for (const [index, target] of targets.entries()) {
-      const page = await context.newPage();
       const routeTarget = assertExecutableRuntimeRouteTarget(target);
       const route = routeTarget.route;
       const url = routeUrl(baseUrl, route);
-      const candidateScreenshotPath = path.join(screenshotsDir, safeRouteName(route, index));
-      assertInside(projectRoot, candidateScreenshotPath);
       const consoleMessages: RuntimeConsoleMessage[] = [];
       const pageErrors: string[] = [];
       const networkErrors: RuntimeNetworkError[] = [];
@@ -162,57 +159,89 @@ export const runPlaywrightRuntimeScan = async (
       let error: RuntimeScanError | undefined;
       let screenshotPath: string | undefined;
       let screenshotError: string | undefined;
-      let domGeometry: DomGeometry | undefined;
+      const viewportResults: RuntimeViewportResult[] = [];
 
-      page.on("console", (message) => {
-        if (message.type() !== "warning" && message.type() !== "error") return;
-        const location = message.location();
-        consoleMessages.push({
-          type: message.type(),
-          text: message.text(),
-          location: location.url ? `${location.url}:${location.lineNumber}:${location.columnNumber}` : undefined,
-        });
-      });
-      page.on("pageerror", (pageError) => pageErrors.push(pageError.message));
-      page.on("requestfailed", (failedRequest) => {
-        networkErrors.push({
-          url: failedRequest.url(),
-          method: failedRequest.method(),
-          failureText: failedRequest.failure()?.errorText,
-        });
-      });
-      page.on("response", (response) => {
-        if (response.status() < 400) return;
-        failedResponses.push({
-          url: response.url(),
-          status: response.status(),
-          statusText: response.statusText(),
-        });
-      });
+      for (const viewport of viewports) {
+        let context: BrowserContext | null = null;
+        let page: Page | null = null;
+        let viewportStatus: number | undefined;
+        let viewportError: RuntimeScanError | undefined;
+        let viewportScreenshotPath: string | undefined;
+        let viewportScreenshotError: string | undefined;
+        let domGeometry: DomGeometry | undefined;
 
-      try {
-        const response = await page.goto(url, { waitUntil: "load", timeout: limits.routeTimeoutMs });
-        status = response?.status();
-        await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, 5_000) }).catch(() => undefined);
-      } catch (cause) {
-        error = toRuntimeError("ROUTE_LOAD_FAILED", errorMessage(cause), { targetId: target.id, route });
-      }
-
-      if (!error && index < limits.maxScreenshots) {
         try {
-          await page.screenshot({ path: candidateScreenshotPath, fullPage: true });
-          screenshotPath = candidateScreenshotPath;
-        } catch (cause) {
-          screenshotError = errorMessage(cause);
-        }
-      }
+          context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+          page = await context.newPage();
+          page.on("console", (message) => {
+            if (message.type() !== "warning" && message.type() !== "error") return;
+            const location = message.location();
+            consoleMessages.push({
+              type: message.type(),
+              text: message.text(),
+              location: location.url ? `${location.url}:${location.lineNumber}:${location.columnNumber}` : undefined,
+            });
+          });
+          page.on("pageerror", (pageError) => pageErrors.push(pageError.message));
+          page.on("requestfailed", (failedRequest) => {
+            networkErrors.push({
+              url: failedRequest.url(),
+              method: failedRequest.method(),
+              failureText: failedRequest.failure()?.errorText,
+            });
+          });
+          page.on("response", (response) => {
+            if (response.status() < 400) return;
+            failedResponses.push({
+              url: response.url(),
+              status: response.status(),
+              statusText: response.statusText(),
+            });
+          });
 
-      if (!error) {
-        try {
-          domGeometry = await captureRuntimeDomGeometry({ page, viewport, limits });
-        } catch (cause) {
-          error = toRuntimeError("DOM_GEOMETRY_CAPTURE_FAILED", errorMessage(cause), { targetId: target.id, route });
+          try {
+            const response = await page.goto(url, { waitUntil: "load", timeout: limits.routeTimeoutMs });
+            viewportStatus = response?.status();
+            status ??= viewportStatus;
+            await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, 5_000) }).catch(() => undefined);
+          } catch (cause) {
+            viewportError = toRuntimeError("ROUTE_LOAD_FAILED", errorMessage(cause), { targetId: target.id, route });
+          }
+
+          if (!viewportError && screenshotIndex < limits.maxScreenshots) {
+            const candidateScreenshotPath = path.join(screenshotsDir, safeRouteName(route, index, viewportSlug(viewport)));
+            assertInside(projectRoot, candidateScreenshotPath);
+            try {
+              await page.screenshot({ path: candidateScreenshotPath, fullPage: true });
+              viewportScreenshotPath = candidateScreenshotPath;
+              screenshotPath ??= candidateScreenshotPath;
+              screenshotIndex += 1;
+            } catch (cause) {
+              viewportScreenshotError = errorMessage(cause);
+              screenshotError ??= viewportScreenshotError;
+            }
+          }
+
+          if (!viewportError) {
+            try {
+              domGeometry = await captureRuntimeDomGeometry({ page, viewport, limits });
+            } catch (cause) {
+              viewportError = toRuntimeError("DOM_GEOMETRY_CAPTURE_FAILED", errorMessage(cause), { targetId: target.id, route });
+            }
+          }
+        } finally {
+          await closeQuietly(page);
+          await closeQuietly(context);
         }
+
+        error ??= viewportError;
+        viewportResults.push({
+          viewport,
+          screenshotPath: viewportScreenshotPath,
+          screenshotError: viewportScreenshotError,
+          ...(domGeometry ? { domGeometry } : {}),
+          layoutIssues: [],
+        });
       }
 
       routeResults.push({
@@ -228,19 +257,11 @@ export const runPlaywrightRuntimeScan = async (
         pageErrors,
         networkErrors,
         failedResponses,
-        viewportResults: [{
-          viewport,
-          screenshotPath,
-          screenshotError,
-          ...(domGeometry ? { domGeometry } : {}),
-          layoutIssues: [],
-        }],
+        viewportResults,
         durationMs: Date.now() - started,
       });
-      await closeQuietly(page);
     }
   } finally {
-    await closeQuietly(context);
     await closeQuietly(browser);
   }
 

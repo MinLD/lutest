@@ -99,6 +99,22 @@ const main = async () => {
       const artifact = JSON.parse(await fs.readFile(result.artifacts.resultPath, "utf-8")) as { scanId?: string; routeDiscovery?: { routes?: string[] } };
       assert.equal(artifact.scanId, result.scanId);
       assert.deepEqual(artifact.routeDiscovery?.routes, result.routeDiscovery.routes);
+
+      const matrix = await runPlaywrightRuntimeScan({
+        projectRoot,
+        baseUrl: server.baseUrl,
+        routes: ["/"],
+        headless: true,
+        timeoutMs: 10_000,
+      });
+      assert.deepEqual(matrix.routes[0]?.viewportResults.map((entry) => `${entry.viewport.width}x${entry.viewport.height}`), [
+        "390x844",
+        "768x1024",
+        "1440x900",
+      ]);
+      assert.equal(matrix.summary.screenshotCount, 3);
+      assert.equal(new Set(matrix.routes[0]?.viewportResults.map((entry) => entry.screenshotPath)).size, 3);
+      assert(matrix.routes[0]?.viewportResults.every((entry) => entry.domGeometry?.viewport.width === entry.viewport.width));
     } finally {
       await server.close();
     }
