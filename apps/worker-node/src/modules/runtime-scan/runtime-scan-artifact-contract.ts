@@ -1,4 +1,4 @@
-﻿import path from "node:path";
+import path from "node:path";
 import type { RuntimeScanResult } from "./runtime-scan.schema";
 
 export type RuntimeArtifactRepositoryPaths = {
@@ -7,6 +7,7 @@ export type RuntimeArtifactRepositoryPaths = {
   resultPath: string;
   latestResultPath: string;
   metaPath: string;
+  snapshotPath: string;
 };
 
 export type RuntimeArtifactRepositoryContract = {
@@ -19,12 +20,13 @@ export const resolveRuntimeArtifactRepositoryPaths = (input: {
   projectRoot: string;
   scanId: string;
 }): RuntimeArtifactRepositoryPaths => {
-  const rootDir = path.join(input.projectRoot, ".lutest", "runtime-scans", input.scanId);
+  const rootDir = path.join(input.projectRoot, ".lutest", "runtime");
   return {
     rootDir,
-    screenshotsDir: path.join(rootDir, "screenshots"),
-    resultPath: path.join(rootDir, "runtime-scan.json"),
-    latestResultPath: path.join(input.projectRoot, ".lutest", "runtime-scans", "latest-runtime-scan.json"),
-    metaPath: path.join(input.projectRoot, ".lutest", "runtime-scans", "latest-runtime-scan.meta.json"),
+    screenshotsDir: path.join(rootDir, "screenshots", input.scanId),
+    resultPath: path.join(rootDir, "latest-runtime-scan.json"),
+    latestResultPath: path.join(rootDir, "latest-runtime-scan.json"),
+    metaPath: path.join(rootDir, "latest-runtime-scan.meta.json"),
+    snapshotPath: path.join(rootDir, "scans", `${input.scanId}.json`),
   };
 };

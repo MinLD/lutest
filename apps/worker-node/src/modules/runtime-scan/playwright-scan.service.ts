@@ -5,8 +5,9 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import { pathPolicyService } from "../../shared/services/path-policy.service";
 import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
+import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
 import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
-import { RUNTIME_SCAN_SCHEMA_VERSION, validateRuntimeScanResult } from "./runtime-scan.schema";
+import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
 import type {
   RuntimeConsoleMessage,
   RuntimeFailedResponse,
@@ -125,12 +126,10 @@ export const runPlaywrightRuntimeScan = async (
 
   await assertPlaywrightBrowserPreflight();
   const scanId = `runtime_${nowId()}`;
-  const artifactRoot = path.join(projectRoot, ".lutest", "runtime-scans", scanId);
-  const screenshotsDir = path.join(artifactRoot, "screenshots");
-  const resultPath = path.join(artifactRoot, "runtime-scan.json");
-  assertInside(projectRoot, artifactRoot);
-  assertInside(projectRoot, screenshotsDir);
-  assertInside(projectRoot, resultPath);
+  const artifactPaths = runtimeScanArtifactPaths({ projectRoot, scanId });
+  const artifactRoot = artifactPaths.rootDir;
+  const screenshotsDir = artifactPaths.screenshotsDir;
+  const resultPath = artifactPaths.latestResultPath;
   await fs.mkdir(screenshotsDir, { recursive: true });
 
   const startedAt = new Date().toISOString();
@@ -248,7 +247,6 @@ export const runPlaywrightRuntimeScan = async (
     routeDiscovery,
   };
 
-  validateRuntimeScanResult(result);
-  await fs.writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, "utf-8");
+  await saveLatestRuntimeScan(result);
   return result;
 };

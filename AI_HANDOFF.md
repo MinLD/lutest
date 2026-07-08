@@ -1,4 +1,4 @@
-﻿# Lutest AI Handoff
+# Lutest AI Handoff
 
 Repo-local context entrypoint for AI/code sessions.
 
@@ -18,11 +18,11 @@ Repo-local context entrypoint for AI/code sessions.
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
-- Next recommended phase: R6.2 — Runtime Artifact Repository Foundation.
+- Latest completed phase recorded here: R6.2 — Runtime Artifact Repository Foundation.
+- Next recommended phase: R6.3 — Runtime Target Model & Discovery Modes.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
-- Runtime scan now runs Playwright Chromium preflight and writes validated internal `runtime-scan.v1` results before real repository migration.
+- Runtime scan now writes/reads validated internal `runtime-scan.v1` artifacts through the runtime artifact repository at `<projectRoot>/.lutest/runtime/`.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

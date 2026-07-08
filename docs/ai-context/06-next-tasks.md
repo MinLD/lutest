@@ -2,14 +2,13 @@
 
 ## Next Recommended
 
-R6.2 — Runtime Artifact Repository Foundation.
+R6.3 — Runtime Target Model & Discovery Modes.
 
-## R6.2 Goal
+## R6.3 Goal
 
-- Implement runtime artifact repository save/read behavior behind the R6.1 contract.
-- Move the existing Playwright runtime JSON write path into repository code.
-- Add latest runtime scan artifact and metadata handling under validated project root.
-- Preserve public API response shapes unless the phase explicitly changes them.
+- Define runtime target model beyond hardcoded route-only scanning.
+- Add discovery mode foundation without changing public API contracts unless explicitly scoped.
+- Preserve existing R6.0.2 browser preflight, R6.1 internal schema/limits, and R6.2 artifact repository behavior.
 
 ## Later Runtime Phases
 
@@ -18,7 +17,7 @@ R6.2 — Runtime Artifact Repository Foundation.
 - R6.7 — Runtime Layout Issue Engine.
 - R6.8 — Runtime Artifact Repository Hardening.
 
-## Non-Goals For R6.2 Unless Requested
+## Non-Goals For R6.3 Unless Requested
 
 - No DOM Geometry implementation.
 - No public API contract exposure.

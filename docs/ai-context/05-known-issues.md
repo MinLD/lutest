@@ -1,9 +1,8 @@
-﻿# Known Issues And Limitations
+# Known Issues And Limitations
 
 ## Runtime Scan
 
 - Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
-- Runtime artifact repository save/read is not implemented yet; R6.2 should move the existing Playwright JSON write path behind the repository contract.
 - No DOM Geometry extraction yet.
 - No viewport matrix yet.
 - No layout overlap/contrast issue detection yet.
@@ -29,3 +28,5 @@
 ## Documentation
 
 - This context package can become stale. Future AI sessions must verify against code and progress doc.
+
+- Runtime artifact repository is implemented for latest/meta/snapshot, but no public runtime artifact API is exposed yet.

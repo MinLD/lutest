@@ -1,17 +1,17 @@
 {
-  "scanId": "scan_1783260035371",
-  "startedAt": "2026-07-05T14:00:35.371Z",
-  "finishedAt": "2026-07-05T14:00:35.436Z",
+  "scanId": "scan_1783481030100",
+  "startedAt": "2026-07-08T03:23:50.100Z",
+  "finishedAt": "2026-07-08T03:23:50.140Z",
   "status": "warning",
   "project": {
     "name": "ui",
-    "rootDir": "D:/Projects/lutest/apps/ui",
-    "lutestDir": "D:/Projects/lutest/apps/ui/.lutest",
+    "rootDir": "/home/minld/MinLD/Project/lutest/apps/ui",
+    "lutestDir": "/home/minld/MinLD/Project/lutest/apps/ui/.lutest",
     "packageJsonExists": true,
     "detectedFramework": "next",
-    "sourceFileCount": 14
+    "sourceFileCount": 16
   },
-  "sourceFileCount": 14,
+  "sourceFileCount": 16,
   "issues": [
     {
       "id": "no-console:src/lib/dashboard-data-request.self-check.ts",
@@ -19,6 +19,13 @@
       "severity": "warning",
       "message": "console.* found in src/lib/dashboard-data-request.self-check.ts",
       "filePath": "src/lib/dashboard-data-request.self-check.ts"
+    },
+    {
+      "id": "no-console:src/lib/dashboard-navigation.self-check.ts",
+      "type": "console",
+      "severity": "warning",
+      "message": "console.* found in src/lib/dashboard-navigation.self-check.ts",
+      "filePath": "src/lib/dashboard-navigation.self-check.ts"
     },
     {
       "id": "no-console:src/lib/production-graph-adapter.self-check.ts",
@@ -31,9 +38,9 @@
       "id": "large-file:src/components/dashboard-shell.tsx",
       "type": "large-file",
       "severity": "warning",
-      "message": "Large file: src/components/dashboard-shell.tsx has 670 lines",
+      "message": "Large file: src/components/dashboard-shell.tsx has 747 lines",
       "filePath": "src/components/dashboard-shell.tsx"
     }
   ],
-  "reportPath": "D:\\Projects\\lutest\\apps\\ui\\.lutest\\reports\\scan_1783260035371.json"
+  "reportPath": "/home/minld/MinLD/Project/lutest/apps/ui/.lutest/reports/scan_1783481030100.json"
 }

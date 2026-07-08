@@ -11,9 +11,10 @@ const main = () => {
   assert(limits.ignoredTags.includes("SCRIPT"));
 
   const paths = resolveRuntimeArtifactRepositoryPaths({ projectRoot: "D:/repo/app", scanId: "runtime_1" });
-  assert(paths.resultPath.endsWith("runtime-scan.json"));
+  assert(paths.resultPath.endsWith("latest-runtime-scan.json"));
   assert(paths.latestResultPath.endsWith("latest-runtime-scan.json"));
   assert(paths.metaPath.endsWith("latest-runtime-scan.meta.json"));
+  assert(paths.snapshotPath.endsWith("runtime_1.json"));
 
   const artifact: RuntimeScanResult = {
     schemaVersion: RUNTIME_SCAN_SCHEMA_VERSION,

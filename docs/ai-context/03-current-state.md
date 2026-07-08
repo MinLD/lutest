@@ -1,8 +1,8 @@
-﻿# Current State
+# Current State
 
 ## Latest Completed Phase
 
-R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
+R6.2 — Runtime Artifact Repository Foundation.
 
 ## Current Status
 
@@ -16,7 +16,11 @@ R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
 - Production graph latest metadata path is `<projectRoot>/.lutest/graph/latest-production-graph.meta.json`.
 - Runtime scan foundation exists as internal service/self-check.
 - Runtime scan runs Playwright Chromium preflight before real browser scan work.
-- Runtime scan internal result shape is versioned as `runtime-scan.v1` and validated before JSON write.
+- Runtime scan internal result shape is versioned as `runtime-scan.v1` and validated before write and after read.
+- Runtime scan latest artifact path is `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`.
+- Runtime scan latest metadata path is `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`.
+- Runtime scan snapshot path is `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
+- Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
 
 ## Production Graph Persistence Facts
 
@@ -35,7 +39,7 @@ R6.1 — Runtime Internal Contracts, Limits & Artifact Shape.
 
 ## Latest Verification Recorded
 
-From current R6.1 session:
+From current R6.2 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -50,6 +54,8 @@ From current R6.1 session:
 - Runtime schema self-check — passed.
 - Runtime browser preflight self-check — passed.
 - Runtime scan self-check — passed.
+- Runtime artifacts self-check — passed.
+- Runtime scan artifact repository read/write self-check — passed.
 - Path-policy HTTP self-check — passed.
 - Worker build — passed.
 - Production graph accuracy audit for `D:/Projects/lutest/apps/ui` — passed.
