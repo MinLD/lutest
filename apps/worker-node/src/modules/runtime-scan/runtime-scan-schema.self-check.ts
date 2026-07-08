@@ -70,6 +70,23 @@ const main = () => {
   };
 
   assert.equal(validateRuntimeScanResult(artifact).schemaVersion, RUNTIME_SCAN_SCHEMA_VERSION);
+  artifact.routes[0].viewportResults[0].domGeometry = {
+    viewport: { width: 1440, height: 900 },
+    capturedAt: "2026-01-01T00:00:00.000Z",
+    elementCount: 1,
+    truncated: false,
+    elements: [{
+      internalId: "el:1",
+      tagName: "MAIN",
+      selectorHint: "main",
+      textSnippet: "Hello",
+      rect: { x: 0, y: 0, width: 100, height: 40, top: 0, right: 100, bottom: 40, left: 0 },
+      visibility: { display: "block", visibility: "visible", opacity: 1 },
+      clickable: false,
+      order: 0,
+    }],
+  };
+  assert.equal(validateRuntimeScanResult(artifact).routes[0].viewportResults[0]?.domGeometry?.elementCount, 1);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, schemaVersion: "bad" }), /schemaVersion/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, targets: [{ id: "bad", kind: "bad" }] }), /target kind/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, limits: { ...limits, maxRoutes: "25" } }), /maxRoutes/);

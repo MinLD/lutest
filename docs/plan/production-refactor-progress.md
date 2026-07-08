@@ -3521,3 +3521,69 @@ Known limitations:
 
 Next recommended phase:
 - R6.4 — DOM Geometry Foundation
+
+## R6.4 — DOM Geometry Foundation
+
+Status: completed.
+
+Audit before:
+- Internal schema had `DomGeometry` placeholder as `{ elements: DomElementGeometry[] }`.
+- `RuntimeViewportResult` already had optional `domGeometry`, but Playwright service did not populate it.
+- Runtime scan executed route targets from the R6.3 target model and attached results to `viewportResults`.
+- Limits already included `maxElementsPerViewport`, `maxTextSnippetLength`, and `ignoredTags`, but they were not used for DOM capture.
+- Artifact repository persisted validated runtime result shape from R6.2.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added Playwright DOM geometry capture helper.
+- DOM geometry now includes viewport, capturedAt, elementCount, truncated, and elements.
+- Element geometry includes internalId, tagName, selectorHint, id, className, role, ariaLabel, textSnippet, full rect, visibility metadata, clickable heuristic, and order.
+- Playwright runtime scan captures DOM geometry after successful page load and attaches it to `viewportResults[].domGeometry`.
+- DOM capture filters ignored tags, zero-area elements, hidden elements, and fully transparent elements.
+- DOM capture enforces `maxElementsPerViewport` and `maxTextSnippetLength`.
+- Runtime schema validation now checks viewportResults and domGeometry element arrays.
+
+What was not changed:
+- No R6.5 Viewport Matrix.
+- No Manual State/Flow Execution.
+- No click/fill/waitForSelector/auto-click behavior.
+- No Layout Issue Engine.
+- No `/api/actions/scan` change.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public runtime API contracts exposed.
+- No UI change.
+- No path-policy/baseUrl policy change.
+- No Playwright browser auto-install.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+
+Known limitations:
+- DOM geometry is captured for the current single viewport only.
+- State and flow targets remain placeholders only.
+- Layout issue detection remains a future phase.
+
+Next recommended phase:
+- R6.5 — Viewport Matrix

@@ -86,6 +86,12 @@ const main = async () => {
       assert(result.routes[0]?.consoleMessages.some((message) => message.text.includes("self-check warning")));
       assert(result.routes[0]?.consoleMessages.some((message) => message.text.includes("self-check error")));
       assert(result.routes[0]?.failedResponses.some((response) => response.status === 404 && response.url.endsWith("/missing.js")));
+      const domGeometry = result.routes[0]?.viewportResults[0]?.domGeometry;
+      assert(domGeometry);
+      assert.equal(domGeometry?.viewport.width, 640);
+      assert((domGeometry?.elements.length ?? 0) > 0);
+      assert(domGeometry?.elements.some((element) => element.tagName === "MAIN" && (element.rect.width ?? 0) > 0));
+      assert(!domGeometry?.elements.some((element) => element.tagName === "SCRIPT"));
       assert.equal(result.summary.screenshotCount, 3);
       assert.equal(new Set(result.routes.map((route) => route.screenshotPath)).size, 3);
       assert.equal(await exists(result.routes[0]?.screenshotPath), true);

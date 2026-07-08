@@ -29,13 +29,27 @@ export type RuntimeScanTarget = RuntimeRouteTarget | RuntimeStateTarget | Runtim
 export type RuntimeDiscoveryMode = "all-routes" | "selected-routes" | "custom-targets";
 
 export type DomElementGeometry = {
-  selector?: string;
+  internalId: string;
   tagName: string;
+  selectorHint?: string;
+  id?: string;
+  className?: string;
+  role?: string;
+  ariaLabel?: string;
   textSnippet?: string;
-  rect: { x: number; y: number; width: number; height: number };
+  rect: { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number };
+  visibility: { display: string; visibility: string; opacity: number };
+  clickable: boolean;
+  order: number;
 };
 
-export type DomGeometry = { elements: DomElementGeometry[] };
+export type DomGeometry = {
+  viewport: RuntimeScanViewport;
+  capturedAt: string;
+  elementCount: number;
+  truncated: boolean;
+  elements: DomElementGeometry[];
+};
 
 export type RuntimeLayoutIssue = {
   code: string;
@@ -145,5 +159,16 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
   }
   if (!Array.isArray(value.limits.ignoredTags)) throw new Error("Runtime scan ignoredTags must be array");
   if (!isObject(value.summary)) throw new Error("Runtime scan summary must be object");
+  for (const route of value.routes) {
+    if (!isObject(route)) throw new Error("Runtime scan route result must be object");
+    if (!Array.isArray(route.viewportResults)) throw new Error("Runtime scan viewportResults must be array");
+    for (const viewportResult of route.viewportResults) {
+      if (!isObject(viewportResult)) throw new Error("Runtime scan viewport result must be object");
+      if ("domGeometry" in viewportResult) {
+        if (!isObject(viewportResult.domGeometry)) throw new Error("Runtime scan domGeometry must be object");
+        if (!Array.isArray(viewportResult.domGeometry.elements)) throw new Error("Runtime scan domGeometry elements must be array");
+      }
+    }
+  }
   return value as RuntimeScanResult;
 };

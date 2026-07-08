@@ -5,6 +5,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from "playwrig
 import { pathPolicyService } from "../../shared/services/path-policy.service";
 import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
+import { captureRuntimeDomGeometry } from "./runtime-dom-geometry";
 import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
 import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
@@ -12,6 +13,7 @@ import { assertExecutableRuntimeRouteTarget, resolveRuntimeTargetDiscovery } fro
 
 import type {
   RuntimeConsoleMessage,
+  DomGeometry,
   RuntimeFailedResponse,
   RuntimeNetworkError,
   RuntimeRouteScanResult,
@@ -160,6 +162,7 @@ export const runPlaywrightRuntimeScan = async (
       let error: RuntimeScanError | undefined;
       let screenshotPath: string | undefined;
       let screenshotError: string | undefined;
+      let domGeometry: DomGeometry | undefined;
 
       page.on("console", (message) => {
         if (message.type() !== "warning" && message.type() !== "error") return;
@@ -204,6 +207,14 @@ export const runPlaywrightRuntimeScan = async (
         }
       }
 
+      if (!error) {
+        try {
+          domGeometry = await captureRuntimeDomGeometry({ page, viewport, limits });
+        } catch (cause) {
+          error = toRuntimeError("DOM_GEOMETRY_CAPTURE_FAILED", errorMessage(cause), { targetId: target.id, route });
+        }
+      }
+
       routeResults.push({
         targetId: target.id,
         target: routeTarget,
@@ -217,7 +228,13 @@ export const runPlaywrightRuntimeScan = async (
         pageErrors,
         networkErrors,
         failedResponses,
-        viewportResults: [{ viewport, screenshotPath, screenshotError, layoutIssues: [] }],
+        viewportResults: [{
+          viewport,
+          screenshotPath,
+          screenshotError,
+          ...(domGeometry ? { domGeometry } : {}),
+          layoutIssues: [],
+        }],
         durationMs: Date.now() - started,
       });
       await closeQuietly(page);

@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.3 — Runtime Target Model & Discovery Modes.
+R6.4 — DOM Geometry Foundation.
 
 ## Current Status
 
@@ -24,6 +24,9 @@ R6.3 — Runtime Target Model & Discovery Modes.
 - Runtime scan target model includes route targets plus state/flow placeholders.
 - Runtime scan records discovery mode as `all-routes` or `selected-routes`; `custom-targets` is reserved internally for future phases.
 - R6.3 still executes route targets only; state/flow execution is not implemented.
+- Runtime scan captures DOM geometry per executable route target viewport result.
+- DOM geometry includes selector hints, attributes, clipped text, bounding rect, visibility metadata, clickable heuristic, order, and truncation metadata.
+- DOM capture enforces `maxElementsPerViewport`, `maxTextSnippetLength`, and ignored tags.
 
 ## Production Graph Persistence Facts
 
@@ -42,7 +45,7 @@ R6.3 — Runtime Target Model & Discovery Modes.
 
 ## Latest Verification Recorded
 
-From current R6.3 session:
+From current R6.4 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -59,6 +62,7 @@ From current R6.3 session:
 - Runtime scan self-check — passed.
 - Runtime artifacts self-check — passed.
 - Runtime targets self-check — passed.
+- Runtime DOM geometry self-check — passed.
 - Runtime scan artifact repository read/write self-check — passed.
 - Path-policy HTTP self-check — passed.
 - Worker build — passed.

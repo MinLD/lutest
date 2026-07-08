@@ -2,22 +2,20 @@
 
 ## Phase Completed
 
-R6.3 — Runtime Target Model & Discovery Modes.
+R6.4 — DOM Geometry Foundation.
 
 ## Summary
 
-R6.3 added an internal runtime target model/discovery layer. Runtime scan now resolves route targets through `runtime-scan-targets.ts`, records discovery mode in artifacts, and keeps state/flow targets as placeholders only. Public API contracts and `/api/actions/scan` remain unchanged.
+R6.4 added real DOM geometry capture for executable route targets after page load. Geometry is attached to the existing target/viewport result shape and persisted through the R6.2 repository. Public API contracts and `/api/actions/scan` remain unchanged.
 
 ## Changed Files From Latest Phase
 
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts`
 - `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
-- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
 - `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
 - `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
 - `apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts`
 - `AI_HANDOFF.md`
 - `docs/ai-context/03-current-state.md`
 - `docs/ai-context/05-known-issues.md`
@@ -27,12 +25,12 @@ R6.3 added an internal runtime target model/discovery layer. Runtime scan now re
 
 ## What Changed
 
-- Added `RuntimeFlowStep` placeholder type and `RuntimeDiscoveryMode` internal type.
-- Added target discovery helper with `all-routes`, `selected-routes`, and reserved `custom-targets` mode.
-- Added state/flow target placeholder constructors without executing state or flow steps.
-- Playwright scan now uses resolved route targets instead of building route targets inline.
-- Runtime artifact records `targetDiscovery` and `routeDiscovery.mode`.
-- Schema self-check validates target kind safety.
+- Added DOM geometry capture helper for Playwright pages.
+- Extended internal DOM schema with stable element id, selector hint, id/class/role/aria metadata, clipped text, full bounding rect, visibility metadata, clickable heuristic, order, capturedAt, elementCount, and truncated flag.
+- Playwright runtime scan captures DOM geometry after successful page load and attaches it to `viewportResults[].domGeometry`.
+- DOM capture filters ignored tags, zero-area elements, and hidden/transparent elements.
+- DOM capture enforces `maxElementsPerViewport` and `maxTextSnippetLength`.
+- Schema self-check and runtime scan self-check now verify DOM geometry.
 
 ## Tests Run
 
@@ -44,13 +42,14 @@ R6.3 added an internal runtime target model/discovery layer. Runtime scan now re
 - `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
 
 ## Known Limitations
 
-- State and flow targets are placeholders only; no click/fill/waitForSelector/manual app state execution.
-- DOM Geometry extraction remains future R6.4.
-- Viewport matrix/layout issue engine/UI/public API changes remain future phases.
+- DOM geometry is captured for the current single viewport only; R6.5 adds viewport matrix.
+- State and flow targets remain placeholders only; no click/fill/waitForSelector/manual app state execution.
+- Layout issue engine/UI/public API changes remain future phases.
 
 ## Result
 
-R6.3 completed. Next phase should be R6.4 — DOM Geometry Foundation.
+R6.4 completed. Next phase should be R6.5 — Viewport Matrix.
