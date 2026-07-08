@@ -20,7 +20,11 @@ const startServer = async (): Promise<{ baseUrl: string; close: () => Promise<vo
         <head><title>runtime scan self-check</title></head>
         <body>
           <main>Runtime scan self-check ${req.url}</main>
+          <button id="open-settings">Open settings</button>
+          <input id="settings-name" />
+          <section id="settings-panel" hidden>Settings panel</section>
           <script>
+            document.querySelector('#open-settings').addEventListener('click', () => document.querySelector('#settings-panel').hidden = false);
             console.warn("self-check warning");
             console.error("self-check error");
           </script>
@@ -115,6 +119,32 @@ const main = async () => {
       assert.equal(matrix.summary.screenshotCount, 3);
       assert.equal(new Set(matrix.routes[0]?.viewportResults.map((entry) => entry.screenshotPath)).size, 3);
       assert(matrix.routes[0]?.viewportResults.every((entry) => entry.domGeometry?.viewport.width === entry.viewport.width));
+
+      const flow = await runPlaywrightRuntimeScan({
+        projectRoot,
+        baseUrl: server.baseUrl,
+        targets: [{
+          id: "flow:settings",
+          kind: "flow",
+          name: "settings",
+          route: "/",
+          steps: [
+            { kind: "click", selector: "#open-settings" },
+            { kind: "fill", selector: "#settings-name", value: "Visible state" },
+            { kind: "waitForSelector", selector: "#settings-panel:not([hidden])" },
+            { kind: "screenshotMarker", label: "settings-open" },
+          ],
+        }],
+        viewport: { width: 640, height: 480 },
+        headless: true,
+        timeoutMs: 10_000,
+      });
+      assert.equal(flow.targetDiscovery?.mode, "custom-targets");
+      assert.equal(flow.routes[0]?.target.kind, "flow");
+      assert.deepEqual(flow.routes[0]?.executionSteps?.map((step) => step.status), ["passed", "passed", "passed", "passed"]);
+      assert(flow.routes[0]?.executionSteps?.some((step) => step.kind === "fill" && step.redacted === true && step.selector === "#settings-name"));
+      assert(flow.routes[0]?.viewportResults[0]?.domGeometry?.elements.some((element) => element.textSnippet?.includes("Settings panel")));
+      assert(!JSON.stringify(flow).includes("Visible state"));
     } finally {
       await server.close();
     }

@@ -35,7 +35,18 @@ const main = () => {
   const flow = createRuntimeFlowTargetPlaceholder("checkout", 0);
   assert.deepEqual(state, { id: "state:1", kind: "state", name: "signed-in" });
   assert.deepEqual(flow, { id: "flow:1", kind: "flow", name: "checkout", steps: [] });
-  assert.throws(() => assertExecutableRuntimeRouteTarget(state), /only executes route targets/);
+  assert.throws(() => assertExecutableRuntimeRouteTarget(state), /not a route target/);
+
+  const custom = resolveRuntimeTargetDiscovery({
+    routes: ["/ignored"],
+    customTargets: [{ id: "flow:1", kind: "flow", name: "settings", route: "/", steps: [{ kind: "click", selector: "#settings" }] }],
+    source: "request",
+    reason: "self-check",
+    limits: DEFAULT_RUNTIME_SCAN_LIMITS,
+  });
+  assert.equal(custom.mode, "custom-targets");
+  assert.deepEqual(custom.routes, ["/"]);
+  assert.equal(custom.targets[0]?.kind, "flow");
 
   console.log("runtime scan targets self-check passed");
 };

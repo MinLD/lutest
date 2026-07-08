@@ -2,8 +2,10 @@
 
 ## Runtime Scan
 
+- Auth storageState is not implemented; manual flows only use declared in-page steps without stored auth.
+- Layout issue detection is not implemented yet.
+
 - Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
-- State and flow targets are placeholders only; R6.3 does not execute steps or app states.
 - No layout overlap/contrast issue detection yet.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 

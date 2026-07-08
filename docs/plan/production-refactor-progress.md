@@ -3654,3 +3654,72 @@ Known limitations:
 
 Next recommended phase:
 - R6.6 — Manual State/Flow Execution
+
+## R6.6 — Manual State/Flow Execution
+
+Status: completed.
+
+Audit before:
+- Runtime schema had state/flow target placeholders but no executable step model.
+- Internal `RuntimeScanRequest` accepted routes only, not custom runtime targets.
+- R6.5 Playwright runtime scan executed route targets across viewport matrix only.
+- No click/fill/waitForSelector/waitForTimeout support existed in runtime scan.
+- Public API contracts were not connected to runtime scan and remain unchanged.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added declared internal manual flow step model: `goto`, `click`, `fill`, `waitForSelector`, `waitForTimeout`, `screenshotMarker`.
+- Added internal custom `targets?: RuntimeScanTarget[]` support on `RuntimeScanRequest`; no public contract changed.
+- State and flow targets can now include route and declared steps.
+- Added manual flow runner that executes only declared steps and stops on first failed step.
+- Runtime target discovery supports internal `custom-targets` mode.
+- Playwright runtime scan executes manual steps after route load and before screenshot/DOM capture for each viewport.
+- Runtime target results can record `executionSteps` with step kind/status/message.
+
+What was not changed:
+- No R6.7 Layout Issue Engine.
+- No Auth StorageState.
+- No automatic crawling or exploratory clicking.
+- No `/api/actions/scan` integration.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public runtime API contracts exposed.
+- No UI change.
+- No path-policy/baseUrl policy change.
+- No Playwright browser auto-install.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+
+Known limitations:
+- Manual execution is internal only; no public API/UI controls yet.
+- Auth StorageState remains future work.
+- Layout issue detection remains a future phase.
+
+Next recommended phase:
+- R6.7 — Runtime Layout Issue Engine

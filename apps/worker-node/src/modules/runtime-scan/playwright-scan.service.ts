@@ -6,10 +6,11 @@ import { pathPolicyService } from "../../shared/services/path-policy.service";
 import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
 import { captureRuntimeDomGeometry } from "./runtime-dom-geometry";
+import { manualTargetRoute, manualTargetSteps, redactRuntimeTarget, runManualFlowSteps, type RuntimeManualStepResult } from "./runtime-manual-flow";
 import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
 import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
-import { assertExecutableRuntimeRouteTarget, resolveRuntimeTargetDiscovery } from "./runtime-scan-targets";
+import { resolveRuntimeTargetDiscovery } from "./runtime-scan-targets";
 import { resolveRuntimeScanViewports, viewportSlug } from "./runtime-scan-viewports";
 
 import type {
@@ -116,10 +117,12 @@ export const runPlaywrightRuntimeScan = async (
   });
   const targetDiscovery = resolveRuntimeTargetDiscovery({
     routes: discoveredRoutes.routes,
+    customTargets: request.targets,
     source: discoveredRoutes.source,
-    reason: discoveredRoutes.reason,
+    reason: request.targets?.length ? "Custom runtime targets provided by internal request" : discoveredRoutes.reason,
     limits,
   });
+  const artifactTargets = targetDiscovery.targets.map(redactRuntimeTarget);
   const scanRoutes = targetDiscovery.routes;
   const routeDiscovery = {
     routes: targetDiscovery.routes,
@@ -147,8 +150,8 @@ export const runPlaywrightRuntimeScan = async (
     browser = await chromium.launch({ headless: request.headless ?? true });
 
     for (const [index, target] of targets.entries()) {
-      const routeTarget = assertExecutableRuntimeRouteTarget(target);
-      const route = routeTarget.route;
+      const route = manualTargetRoute(target);
+      const manualSteps = manualTargetSteps(target);
       const url = routeUrl(baseUrl, route);
       const consoleMessages: RuntimeConsoleMessage[] = [];
       const pageErrors: string[] = [];
@@ -160,6 +163,7 @@ export const runPlaywrightRuntimeScan = async (
       let screenshotPath: string | undefined;
       let screenshotError: string | undefined;
       const viewportResults: RuntimeViewportResult[] = [];
+      const executionSteps: RuntimeManualStepResult[] = [];
 
       for (const viewport of viewports) {
         let context: BrowserContext | null = null;
@@ -204,6 +208,17 @@ export const runPlaywrightRuntimeScan = async (
             viewportStatus = response?.status();
             status ??= viewportStatus;
             await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, 5_000) }).catch(() => undefined);
+            if (manualSteps.length > 0) {
+              const stepResults = await runManualFlowSteps({
+                page,
+                steps: manualSteps,
+                routeUrl: (nextRoute) => routeUrl(baseUrl, nextRoute),
+                timeoutMs: limits.routeTimeoutMs,
+              });
+              executionSteps.push(...stepResults);
+              const failedStep = stepResults.find((step) => step.status === "failed");
+              if (failedStep) viewportError = toRuntimeError("MANUAL_FLOW_STEP_FAILED", failedStep.message ?? "Manual flow step failed", { targetId: target.id, route });
+            }
           } catch (cause) {
             viewportError = toRuntimeError("ROUTE_LOAD_FAILED", errorMessage(cause), { targetId: target.id, route });
           }
@@ -246,7 +261,7 @@ export const runPlaywrightRuntimeScan = async (
 
       routeResults.push({
         targetId: target.id,
-        target: routeTarget,
+        target: redactRuntimeTarget(target),
         route,
         url,
         status,
@@ -258,6 +273,7 @@ export const runPlaywrightRuntimeScan = async (
         networkErrors,
         failedResponses,
         viewportResults,
+        ...(executionSteps.length ? { executionSteps } : {}),
         durationMs: Date.now() - started,
       });
     }
@@ -275,7 +291,7 @@ export const runPlaywrightRuntimeScan = async (
     baseUrl: baseUrl.toString().replace(/\/$/, ""),
     startedAt,
     finishedAt: generatedAt,
-    targets,
+    targets: artifactTargets,
     routes: routeResults,
     limits,
     errors: routeResults.flatMap((route) => route.error ? [route.error] : []),
@@ -287,7 +303,7 @@ export const runPlaywrightRuntimeScan = async (
     },
     targetDiscovery: {
       mode: targetDiscovery.mode,
-      targetIds: targets.map((target) => target.id),
+      targetIds: artifactTargets.map((target) => target.id),
       reason: targetDiscovery.reason,
     },
     routeDiscovery,

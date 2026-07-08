@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.5 — Viewport Matrix.
+R6.6 — Manual State/Flow Execution.
 
 ## Current Status
 
@@ -22,7 +22,7 @@ R6.5 — Viewport Matrix.
 - Runtime scan snapshot path is `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
 - Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
 - Runtime scan target model includes route targets plus state/flow placeholders.
-- Runtime scan records discovery mode as `all-routes` or `selected-routes`; `custom-targets` is reserved internally for future phases.
+- Runtime scan records discovery mode as `all-routes`, `selected-routes`, or internal `custom-targets`.
 - R6.3 still executes route targets only; state/flow execution is not implemented.
 - Runtime scan captures DOM geometry per executable route target viewport result.
 - DOM geometry includes selector hints, attributes, clipped text, bounding rect, visibility metadata, clickable heuristic, order, and truncation metadata.
@@ -30,6 +30,9 @@ R6.5 — Viewport Matrix.
 - Runtime scan default viewport matrix is mobile `390x844`, tablet `768x1024`, desktop `1440x900`.
 - Runtime scan attaches one `viewportResults[]` entry per viewport, with per-viewport screenshot and DOM geometry.
 - Internal `request.viewport` still acts as a custom single-viewport override for self-check/internal callers.
+- Runtime scan supports declared internal custom targets for route/state/flow execution.
+- Manual flow steps supported internally: `goto`, `click`, `fill`, `waitForSelector`, `waitForTimeout`, `screenshotMarker`.
+- Scanner only executes explicitly declared steps; no crawler or auto-click discovery.
 
 ## Production Graph Persistence Facts
 
@@ -48,7 +51,7 @@ R6.5 — Viewport Matrix.
 
 ## Latest Verification Recorded
 
-From current R6.5 session:
+From current R6.6 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -67,6 +70,7 @@ From current R6.5 session:
 - Runtime targets self-check — passed.
 - Runtime DOM geometry self-check — passed.
 - Runtime viewport matrix self-check — passed.
+- Runtime manual flow self-check — passed.
 - Runtime scan artifact repository read/write self-check — passed.
 - Path-policy HTTP self-check — passed.
 - Worker build — passed.

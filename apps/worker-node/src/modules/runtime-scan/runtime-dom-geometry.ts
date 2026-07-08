@@ -29,7 +29,8 @@ export const captureRuntimeDomGeometry = async (input: {
       if (rect.width <= 0 || rect.height <= 0) continue;
       const style = window.getComputedStyle(element);
       if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) continue;
-      const text = (element.textContent ?? "").replace(/\s+/g, " ").trim();
+      const canCaptureText = tagName !== "INPUT" && tagName !== "TEXTAREA" && tagName !== "SELECT";
+      const text = canCaptureText ? (element.textContent ?? "").replace(/\s+/g, " ").trim() : "";
       const role = element.getAttribute("role") ?? undefined;
       elements.push({
         internalId: `el:${index + 1}`,

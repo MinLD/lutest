@@ -12,6 +12,9 @@ const main = async () => {
         <head><title>dom geometry self-check</title><style>.hidden { display: none; }</style><meta name="x" content="y"></head>
         <body>
           <main id="hero" class="card primary" aria-label="Hero region">${"Visible text ".repeat(30)}</main>
+          <input id="secret-input" value="DoNotLeakInputValue" />
+          <textarea id="secret-textarea">DoNotLeakTextareaValue</textarea>
+          <input id="secret-password" type="password" value="DoNotLeakPasswordValue" />
           <button role="button">Click me</button>
           <script>window.__ignored = true;</script>
           <div class="hidden">Hidden text</div>
@@ -21,14 +24,18 @@ const main = async () => {
     const geometry = await captureRuntimeDomGeometry({
       page,
       viewport: { width: 800, height: 600 },
-      limits: { ...DEFAULT_RUNTIME_SCAN_LIMITS, maxElementsPerViewport: 2, maxTextSnippetLength: 20 },
+      limits: { ...DEFAULT_RUNTIME_SCAN_LIMITS, maxElementsPerViewport: 5, maxTextSnippetLength: 20 },
     });
 
     assert.equal(geometry.viewport.width, 800);
     assert.equal(geometry.truncated, true);
-    assert.equal(geometry.elements.length, 2);
+    assert.equal(geometry.elements.length, 5);
     assert(geometry.capturedAt.includes("T"));
     assert(!geometry.elements.some((element) => ["SCRIPT", "STYLE", "META", "LINK"].includes(element.tagName)));
+    const serializedGeometry = JSON.stringify(geometry);
+    assert(!serializedGeometry.includes("DoNotLeakInputValue"));
+    assert(!serializedGeometry.includes("DoNotLeakTextareaValue"));
+    assert(!serializedGeometry.includes("DoNotLeakPasswordValue"));
 
     const hero = geometry.elements.find((element) => element.id === "hero");
     assert(hero);

@@ -18,6 +18,7 @@ export type RuntimeTargetDiscovery = {
 
 export type RuntimeTargetInput = {
   routes: string[];
+  customTargets?: RuntimeScanTarget[];
   source: "request" | "production-graph" | "fallback";
   reason: string;
   limits: RuntimeScanLimits;
@@ -43,6 +44,18 @@ export const createRuntimeFlowTargetPlaceholder = (name: string, index: number):
 });
 
 export const resolveRuntimeTargetDiscovery = (input: RuntimeTargetInput): RuntimeTargetDiscovery => {
+  if (input.customTargets?.length) {
+    const targets = input.customTargets.slice(0, input.limits.maxTargets);
+    return {
+      mode: "custom-targets",
+      routes: [...new Set(targets.map((target) => target.kind === "route" ? target.route : target.route ?? "/"))],
+      targets,
+      source: input.source,
+      reason: input.customTargets.length > targets.length
+        ? `${input.reason}; capped by maxTargets=${input.limits.maxTargets}`
+        : input.reason,
+    };
+  }
   const cappedRoutes = input.routes.slice(0, input.limits.maxRoutes);
   const mode: RuntimeDiscoveryMode = input.source === "request" ? "selected-routes" : "all-routes";
   const targets = cappedRoutes.slice(0, input.limits.maxTargets).map(createRuntimeRouteTarget);
@@ -63,8 +76,6 @@ export const resolveRuntimeTargetDiscovery = (input: RuntimeTargetInput): Runtim
 };
 
 export const assertExecutableRuntimeRouteTarget = (target: RuntimeScanTarget): RuntimeRouteTarget => {
-  if (target.kind !== "route") {
-    throw new Error("Runtime scan only executes route targets in R6.3");
-  }
+  if (target.kind !== "route") throw new Error("Runtime scan target is not a route target");
   return target;
 };

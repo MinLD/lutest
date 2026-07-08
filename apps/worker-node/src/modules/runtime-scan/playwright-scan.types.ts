@@ -1,9 +1,10 @@
-﻿import type { RuntimeScanViewport } from "./runtime-scan.schema";
+import type { RuntimeScanTarget, RuntimeScanViewport } from "./runtime-scan.schema";
 
 export type RuntimeScanRequest = {
   projectRoot: string;
   baseUrl: string;
   routes?: string[];
+  targets?: RuntimeScanTarget[];
   viewport?: RuntimeScanViewport;
   headless?: boolean;
   timeoutMs?: number;

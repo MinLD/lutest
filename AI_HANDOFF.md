@@ -18,11 +18,11 @@ Repo-local context entrypoint for AI/code sessions.
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R6.5 — Viewport Matrix.
-- Next recommended phase: R6.6 — Manual State/Flow Execution.
+- Latest completed phase recorded here: R6.6 — Manual State/Flow Execution.
+- Next recommended phase: R6.7 — Runtime Layout Issue Engine.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
-- Runtime scan now runs executable route targets across the default viewport matrix and captures DOM geometry per viewport before writing validated artifacts under `<projectRoot>/.lutest/runtime/`.
+- Runtime scan now runs declared route/state/flow targets across the viewport matrix with DOM geometry before writing validated artifacts under `<projectRoot>/.lutest/runtime/`.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

@@ -2,16 +2,20 @@
 
 ## Phase Completed
 
-R6.5 — Viewport Matrix.
+R6.6 — Manual State/Flow Execution.
 
 ## Summary
 
-R6.5 expanded runtime scan from one viewport to the production viewport matrix. Executable route targets now run across mobile, tablet, and desktop viewports by default, with per-viewport screenshot and DOM geometry results. Public API contracts and `/api/actions/scan` remain unchanged.
+R6.6 added internal declared manual state/flow execution. Runtime scan can now execute custom route/state/flow targets with explicit steps only, then capture screenshots and DOM geometry across the viewport matrix. Public API contracts and `/api/actions/scan` remain unchanged.
 
 ## Changed Files From Latest Phase
 
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
 - `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
 - `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
 - `AI_HANDOFF.md`
@@ -23,14 +27,13 @@ R6.5 expanded runtime scan from one viewport to the production viewport matrix. 
 
 ## What Changed
 
-- Added default viewport matrix: mobile `390x844`, tablet `768x1024`, desktop `1440x900`.
-- Added viewport resolver helper and viewport self-check.
-- Playwright runtime scan now creates one browser context/page per target viewport.
-- Each route result records multiple `viewportResults[]` entries.
-- Each viewport result has its own screenshot path and DOM geometry.
-- Screenshot filenames include viewport slug to avoid collisions.
-- Summary screenshot count now counts per-viewport screenshots.
-- Internal custom `request.viewport` still runs a single custom viewport for existing self-check/internal callers.
+- Added internal flow step union: `goto`, `click`, `fill`, `waitForSelector`, `waitForTimeout`, `screenshotMarker`.
+- Added internal `targets?: RuntimeScanTarget[]` to `RuntimeScanRequest`; no public API contract changed.
+- Added manual flow runner that executes only declared steps and stops on first failed step.
+- State/flow targets can declare a route and steps.
+- Runtime target discovery supports internal `custom-targets` mode.
+- Playwright runtime scan executes declared manual steps before screenshot and DOM geometry capture.
+- Runtime result can record `executionSteps` status per target result.
 
 ## Tests Run
 
@@ -44,12 +47,14 @@ R6.5 expanded runtime scan from one viewport to the production viewport matrix. 
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
 
 ## Known Limitations
 
-- State and flow targets remain placeholders only; no click/fill/waitForSelector/manual app state execution.
+- No Auth StorageState; flows cannot reuse stored auth yet.
+- No automatic crawling or exploratory clicking.
 - Layout issue engine/UI/public API changes remain future phases.
 
 ## Result
 
-R6.5 completed. Next phase should be R6.6 — Manual State/Flow Execution.
+R6.6 completed. Next phase should be R6.7 — Runtime Layout Issue Engine.

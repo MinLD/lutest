@@ -89,6 +89,10 @@ const main = () => {
   assert.equal(validateRuntimeScanResult(artifact).routes[0].viewportResults[0]?.domGeometry?.elementCount, 1);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, schemaVersion: "bad" }), /schemaVersion/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, targets: [{ id: "bad", kind: "bad" }] }), /target kind/);
+  assert.throws(() => validateRuntimeScanResult({
+    ...artifact,
+    targets: [{ id: "flow:1", kind: "flow", name: "bad", steps: [{ kind: "fill", selector: "#secret", value: "secret" }] }],
+  }), /fill values must be redacted/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, limits: { ...limits, maxRoutes: "25" } }), /maxRoutes/);
 
   console.log("runtime scan schema self-check passed");

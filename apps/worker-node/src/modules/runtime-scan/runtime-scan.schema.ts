@@ -22,9 +22,15 @@ export type RuntimeScanError = {
 };
 
 export type RuntimeRouteTarget = { id: string; kind: "route"; route: string };
-export type RuntimeStateTarget = { id: string; kind: "state"; name: string };
-export type RuntimeFlowStep = { kind: "placeholder"; description: string };
-export type RuntimeFlowTarget = { id: string; kind: "flow"; name: string; steps: RuntimeFlowStep[] };
+export type RuntimeFlowStep =
+  | { kind: "goto"; route: string }
+  | { kind: "click"; selector: string; allowDestructive?: boolean }
+  | { kind: "fill"; selector: string; value?: string; valueFromEnv?: string }
+  | { kind: "waitForSelector"; selector: string }
+  | { kind: "waitForTimeout"; timeoutMs: number }
+  | { kind: "screenshotMarker"; label: string };
+export type RuntimeStateTarget = { id: string; kind: "state"; name: string; route?: string; steps?: RuntimeFlowStep[] };
+export type RuntimeFlowTarget = { id: string; kind: "flow"; name: string; route?: string; steps: RuntimeFlowStep[] };
 export type RuntimeScanTarget = RuntimeRouteTarget | RuntimeStateTarget | RuntimeFlowTarget;
 export type RuntimeDiscoveryMode = "all-routes" | "selected-routes" | "custom-targets";
 
@@ -80,11 +86,21 @@ export type RuntimeTargetResult = {
   networkErrors: RuntimeNetworkError[];
   failedResponses: RuntimeFailedResponse[];
   viewportResults: RuntimeViewportResult[];
+  executionSteps?: {
+    kind: RuntimeFlowStep["kind"];
+    selector?: string;
+    status: "passed" | "failed";
+    durationMs: number;
+    redacted?: boolean;
+    valueSource?: "direct" | "env";
+    valueFromEnv?: string;
+    code?: string;
+    message?: string;
+  }[];
   durationMs: number;
 };
 
 export type RuntimeRouteResult = RuntimeTargetResult & {
-  target: RuntimeRouteTarget;
   route: string;
   screenshotPath?: string;
   screenshotError?: string;
@@ -139,6 +155,16 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const isString = (value: unknown): value is string => typeof value === "string";
 const isNumber = (value: unknown): value is number => Number.isFinite(value);
 
+const assertRuntimeTargetSafe = (target: unknown): void => {
+  if (!isObject(target)) throw new Error("Runtime scan target must be object");
+  if (target.kind !== "route" && target.kind !== "state" && target.kind !== "flow") throw new Error("Runtime scan target kind invalid");
+  if (Array.isArray(target.steps)) {
+    for (const step of target.steps) {
+      if (isObject(step) && step.kind === "fill" && "value" in step) throw new Error("Runtime scan artifact fill values must be redacted");
+    }
+  }
+};
+
 export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => {
   if (!isObject(value)) throw new Error("Runtime scan artifact must be an object");
   if (value.schemaVersion !== RUNTIME_SCAN_SCHEMA_VERSION) throw new Error("Runtime scan artifact schemaVersion mismatch");
@@ -149,10 +175,7 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
   if (!Array.isArray(value.targets)) throw new Error("Runtime scan artifact targets must be array");
   if (!Array.isArray(value.routes)) throw new Error("Runtime scan artifact routes must be array");
   if (!Array.isArray(value.errors)) throw new Error("Runtime scan artifact errors must be array");
-  for (const target of value.targets) {
-    if (!isObject(target)) throw new Error("Runtime scan target must be object");
-    if (target.kind !== "route" && target.kind !== "state" && target.kind !== "flow") throw new Error("Runtime scan target kind invalid");
-  }
+  for (const target of value.targets) assertRuntimeTargetSafe(target);
   if (!isObject(value.limits)) throw new Error("Runtime scan artifact limits must be object");
   for (const key of ["maxRoutes", "maxTargets", "maxElementsPerViewport", "maxTextSnippetLength", "maxScreenshots", "routeTimeoutMs", "scanTimeoutMs"]) {
     if (!isNumber(value.limits[key])) throw new Error(`Runtime scan limit ${key} must be number`);
@@ -161,6 +184,7 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
   if (!isObject(value.summary)) throw new Error("Runtime scan summary must be object");
   for (const route of value.routes) {
     if (!isObject(route)) throw new Error("Runtime scan route result must be object");
+    if ("target" in route) assertRuntimeTargetSafe(route.target);
     if (!Array.isArray(route.viewportResults)) throw new Error("Runtime scan viewportResults must be array");
     for (const viewportResult of route.viewportResults) {
       if (!isObject(viewportResult)) throw new Error("Runtime scan viewport result must be object");
