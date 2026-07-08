@@ -2,8 +2,9 @@
 
 ## Runtime Scan
 
+- Layout issue detection is heuristic-only and does not include contrast, OCR, or AI analysis.
+
 - Auth storageState is not implemented; manual flows only use declared in-page steps without stored auth.
-- Layout issue detection is not implemented yet.
 
 - Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
 - No layout overlap/contrast issue detection yet.

@@ -57,10 +57,35 @@ export type DomGeometry = {
   elements: DomElementGeometry[];
 };
 
+export type RuntimeLayoutIssueType =
+  | "horizontal-overflow"
+  | "element-outside-viewport"
+  | "small-click-target"
+  | "suspicious-overlap"
+  | "zero-size-visible-element";
+
 export type RuntimeLayoutIssue = {
-  code: string;
-  message: string;
+  id: string;
+  type: RuntimeLayoutIssueType;
+  code: RuntimeLayoutIssueType;
   severity: "info" | "warning" | "error";
+  message: string;
+  scanTargetId: string;
+  route: string;
+  viewport: RuntimeScanViewport;
+  elementRef: string;
+  evidence: {
+    selectorHint?: string;
+    boundingBox: DomElementGeometry["rect"];
+    relatedElementRef?: string;
+    relatedSelectorHint?: string;
+    relatedBoundingBox?: DomElementGeometry["rect"];
+    overlapArea?: number;
+    overlapRatio?: number;
+    viewport: RuntimeScanViewport;
+    screenshotPath?: string;
+    threshold: string;
+  };
 };
 
 export type RuntimeViewportResult = {
@@ -165,6 +190,22 @@ const assertRuntimeTargetSafe = (target: unknown): void => {
   }
 };
 
+const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueType =>
+  value === "horizontal-overflow" ||
+  value === "element-outside-viewport" ||
+  value === "small-click-target" ||
+  value === "suspicious-overlap" ||
+  value === "zero-size-visible-element";
+
+const assertRuntimeLayoutIssueSafe = (issue: unknown): void => {
+  if (!isObject(issue)) throw new Error("Runtime layout issue must be object");
+  if (!isRuntimeLayoutIssueType(issue.type)) throw new Error("Runtime layout issue type invalid");
+  if (issue.code !== issue.type) throw new Error("Runtime layout issue code must equal type");
+  if (!isString(issue.scanTargetId)) throw new Error("Runtime layout issue scanTargetId must be string");
+  if (!isString(issue.elementRef)) throw new Error("Runtime layout issue elementRef must be string");
+  if (!isObject(issue.evidence)) throw new Error("Runtime layout issue evidence must be object");
+};
+
 export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => {
   if (!isObject(value)) throw new Error("Runtime scan artifact must be an object");
   if (value.schemaVersion !== RUNTIME_SCAN_SCHEMA_VERSION) throw new Error("Runtime scan artifact schemaVersion mismatch");
@@ -192,6 +233,8 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
         if (!isObject(viewportResult.domGeometry)) throw new Error("Runtime scan domGeometry must be object");
         if (!Array.isArray(viewportResult.domGeometry.elements)) throw new Error("Runtime scan domGeometry elements must be array");
       }
+      if (!Array.isArray(viewportResult.layoutIssues)) throw new Error("Runtime scan layoutIssues must be array");
+      for (const layoutIssue of viewportResult.layoutIssues) assertRuntimeLayoutIssueSafe(layoutIssue);
     }
   }
   return value as RuntimeScanResult;

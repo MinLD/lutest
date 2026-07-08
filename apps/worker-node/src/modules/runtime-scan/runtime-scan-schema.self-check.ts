@@ -87,6 +87,34 @@ const main = () => {
     }],
   };
   assert.equal(validateRuntimeScanResult(artifact).routes[0].viewportResults[0]?.domGeometry?.elementCount, 1);
+  artifact.routes[0].viewportResults[0].layoutIssues = [{
+    id: "issue:1",
+    type: "small-click-target",
+    code: "small-click-target",
+    severity: "warning",
+    message: "Small click target",
+    scanTargetId: "route:1",
+    route: "/",
+    viewport: { width: 1440, height: 900 },
+    elementRef: "el:1",
+    evidence: {
+      selectorHint: "main",
+      boundingBox: { x: 0, y: 0, width: 20, height: 20, top: 0, right: 20, bottom: 20, left: 0 },
+      viewport: { width: 1440, height: 900 },
+      threshold: "44x44px",
+    },
+  }];
+  assert.equal(validateRuntimeScanResult(artifact).routes[0].viewportResults[0]?.layoutIssues[0]?.code, "small-click-target");
+  assert.throws(() => validateRuntimeScanResult({
+    ...artifact,
+    routes: [{
+      ...artifact.routes[0],
+      viewportResults: [{
+        ...artifact.routes[0].viewportResults[0],
+        layoutIssues: [{ ...artifact.routes[0].viewportResults[0].layoutIssues[0], code: "horizontal-overflow" }],
+      }],
+    }],
+  }), /code must equal type/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, schemaVersion: "bad" }), /schemaVersion/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, targets: [{ id: "bad", kind: "bad" }] }), /target kind/);
   assert.throws(() => validateRuntimeScanResult({

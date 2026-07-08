@@ -6,6 +6,7 @@ import { pathPolicyService } from "../../shared/services/path-policy.service";
 import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
 import { captureRuntimeDomGeometry } from "./runtime-dom-geometry";
+import { detectRuntimeLayoutIssues } from "./runtime-layout-issue-detector";
 import { manualTargetRoute, manualTargetSteps, redactRuntimeTarget, runManualFlowSteps, type RuntimeManualStepResult } from "./runtime-manual-flow";
 import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
 import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
@@ -255,7 +256,13 @@ export const runPlaywrightRuntimeScan = async (
           screenshotPath: viewportScreenshotPath,
           screenshotError: viewportScreenshotError,
           ...(domGeometry ? { domGeometry } : {}),
-          layoutIssues: [],
+          layoutIssues: detectRuntimeLayoutIssues({
+            scanTargetId: target.id,
+            route,
+            viewport,
+            domGeometry,
+            screenshotPath: viewportScreenshotPath,
+          }),
         });
       }
 

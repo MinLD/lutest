@@ -3723,3 +3723,69 @@ Known limitations:
 
 Next recommended phase:
 - R6.7 — Runtime Layout Issue Engine
+
+## R6.7 — Runtime Layout Issue Engine
+
+Status: completed.
+
+Audit before:
+- `RuntimeLayoutIssue` existed as a minimal placeholder with code/message/severity only.
+- `viewportResults[].layoutIssues` was always an empty array.
+- DOM geometry, viewport matrix, and manual flow execution were already available internally.
+- No detector module existed; Playwright service owned runtime scan orchestration.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added standalone runtime layout issue detector that consumes DOM geometry only.
+- Added structured runtime issue shape: id, type, code, severity, message, scanTargetId, route, viewport, elementRef, and evidence.
+- Implemented issue types: `horizontal-overflow`, `element-outside-viewport`, `small-click-target`, `suspicious-overlap`, `zero-size-visible-element`.
+- Added severity mapping and explicit threshold/evidence strings.
+- Playwright runtime scan now calls the detector after DOM geometry capture and attaches issues to `viewportResults[].layoutIssues`.
+- Detector self-check uses fake DOM geometry input and does not depend on browser/Playwright.
+
+What was not changed:
+- No R7 public runtime contracts.
+- No `/api/actions/scan` integration.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public runtime API contracts exposed.
+- No UI change.
+- No contrast detection.
+- No OCR.
+- No AI analysis.
+- No Auth StorageState.
+- No path-policy/baseUrl policy change.
+- No Playwright browser auto-install.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+
+Known limitations:
+- Detector is heuristic-only and internal.
+- Contrast/OCR/AI analysis are intentionally not implemented.
+- Public API/UI integration remains future work.
+
+Next recommended phase:
+- R6.8 — Runtime Artifact Repository Hardening

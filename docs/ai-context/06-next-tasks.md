@@ -2,23 +2,25 @@
 
 ## Next Recommended
 
-R6.7 — Runtime Layout Issue Engine.
+R6.8 — Runtime Artifact Repository Hardening.
 
-## R6.7 Goal
+## R6.8 Goal
 
-- Add internal layout issue detection on top of R6.4 DOM geometry and R6.5 viewport matrix.
-- Preserve R6.6 declared manual state/flow execution.
+- Harden runtime artifact repository now that DOM geometry, viewport matrix, manual flows, and layout issues all use the artifact shape.
+- Preserve strict path-policy and validated latest/snapshot writes.
 - Keep public API contracts unchanged unless explicitly scoped.
 
 ## Later Runtime Phases
 
-- R6.8 — Runtime Artifact Repository Hardening.
+- R7.1 — Public Runtime Contracts.
+- R7.2 — Scan Service Integration.
 
-## Non-Goals For R6.7 Unless Requested
+## Non-Goals For R6.8 Unless Requested
 
-- No Auth StorageState.
 - No public API contract exposure.
+- No `/api/actions/scan` integration.
+- No UI work.
+- No Auth StorageState.
 - No path-policy loosening.
 - No production graph rewrite.
 - No legacy graph migration.
-- No broad UI redesign.

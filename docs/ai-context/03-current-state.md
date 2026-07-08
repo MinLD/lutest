@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.6 — Manual State/Flow Execution.
+R6.7 — Runtime Layout Issue Engine.
 
 ## Current Status
 
@@ -33,6 +33,9 @@ R6.6 — Manual State/Flow Execution.
 - Runtime scan supports declared internal custom targets for route/state/flow execution.
 - Manual flow steps supported internally: `goto`, `click`, `fill`, `waitForSelector`, `waitForTimeout`, `screenshotMarker`.
 - Scanner only executes explicitly declared steps; no crawler or auto-click discovery.
+- Runtime layout issue detector runs from DOM geometry only, independent of Playwright browser APIs.
+- Runtime issues currently cover horizontal overflow, outside viewport, small click target, suspicious overlap, and zero-size visible element.
+- Contrast, OCR, and AI analysis are intentionally not implemented.
 
 ## Production Graph Persistence Facts
 
@@ -51,7 +54,7 @@ R6.6 — Manual State/Flow Execution.
 
 ## Latest Verification Recorded
 
-From current R6.6 session:
+From current R6.7 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -71,6 +74,7 @@ From current R6.6 session:
 - Runtime DOM geometry self-check — passed.
 - Runtime viewport matrix self-check — passed.
 - Runtime manual flow self-check — passed.
+- Runtime layout issue detector self-check — passed.
 - Runtime scan artifact repository read/write self-check — passed.
 - Path-policy HTTP self-check — passed.
 - Worker build — passed.
