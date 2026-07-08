@@ -60,7 +60,8 @@ const sample = (projectRoot: string): RuntimeScanResult => ({
     screenshotsDir: path.join(projectRoot, ".lutest", "runtime", "screenshots", "runtime_self_check"),
     resultPath: path.join(projectRoot, ".lutest", "runtime", "latest-runtime-scan.json"),
   },
-  routeDiscovery: { routes: ["/"], source: "request", reason: "self-check" },
+  targetDiscovery: { mode: "selected-routes", targetIds: ["route:1"], reason: "self-check" },
+  routeDiscovery: { routes: ["/"], source: "request", mode: "selected-routes", reason: "self-check" },
 });
 
 const main = async () => {

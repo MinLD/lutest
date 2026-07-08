@@ -2,19 +2,22 @@
 
 ## Phase Completed
 
-R6.2 — Runtime Artifact Repository Foundation.
+R6.3 — Runtime Target Model & Discovery Modes.
 
 ## Summary
 
-R6.2 moved runtime artifact persistence behind repository helpers. Runtime scan still uses internal `runtime-scan.v1` schema/limits from R6.1 and browser preflight from R6.0.2. Public API contracts and `/api/actions/scan` remain unchanged.
+R6.3 added an internal runtime target model/discovery layer. Runtime scan now resolves route targets through `runtime-scan-targets.ts`, records discovery mode in artifacts, and keeps state/flow targets as placeholders only. Public API contracts and `/api/actions/scan` remain unchanged.
 
 ## Changed Files From Latest Phase
 
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifact-contract.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
 - `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts`
 - `AI_HANDOFF.md`
 - `docs/ai-context/03-current-state.md`
 - `docs/ai-context/05-known-issues.md`
@@ -24,15 +27,12 @@ R6.2 moved runtime artifact persistence behind repository helpers. Runtime scan 
 
 ## What Changed
 
-- Added `runtimeScanArtifactPaths(...)` with path-safe scanId validation and project-root containment checks.
-- Added `saveLatestRuntimeScan(...)`, `readLatestRuntimeScan(...)`, and `saveRuntimeScanSnapshot(...)`.
-- Canonical runtime artifact paths:
-  - `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`
-  - `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`
-  - `<projectRoot>/.lutest/runtime/scans/<scanId>.json`
-- Playwright service now calls repository helpers instead of writing runtime JSON directly.
-- Repository validates runtime artifacts before write and after read.
-- Metadata stores safe fields only: schemaVersion, scanId, generatedAt, roots, paths, targetCount, errorCount.
+- Added `RuntimeFlowStep` placeholder type and `RuntimeDiscoveryMode` internal type.
+- Added target discovery helper with `all-routes`, `selected-routes`, and reserved `custom-targets` mode.
+- Added state/flow target placeholder constructors without executing state or flow steps.
+- Playwright scan now uses resolved route targets instead of building route targets inline.
+- Runtime artifact records `targetDiscovery` and `routeDiscovery.mode`.
+- Schema self-check validates target kind safety.
 
 ## Tests Run
 
@@ -43,13 +43,14 @@ R6.2 moved runtime artifact persistence behind repository helpers. Runtime scan 
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
 
 ## Known Limitations
 
-- Runtime repository is internal only; no public latest-runtime API yet.
-- No DOM Geometry extraction yet.
-- No viewport matrix/state-flow/layout issue engine/UI/public API changes.
+- State and flow targets are placeholders only; no click/fill/waitForSelector/manual app state execution.
+- DOM Geometry extraction remains future R6.4.
+- Viewport matrix/layout issue engine/UI/public API changes remain future phases.
 
 ## Result
 
-R6.2 completed. Next phase should be R6.3 — Runtime Target Model & Discovery Modes.
+R6.3 completed. Next phase should be R6.4 — DOM Geometry Foundation.

@@ -3453,3 +3453,71 @@ Known limitations:
 
 Next recommended phase:
 - R6.3 — Runtime Target Model & Discovery Modes
+
+## R6.3 — Runtime Target Model & Discovery Modes
+
+Status: completed.
+
+Audit before:
+- Runtime scan input still receives optional `routes?: string[]` through internal `RuntimeScanRequest`; no public API contract was changed.
+- Route discovery returns normalized sorted routes from request, production graph page nodes, or fallback `/`.
+- Runtime result had `targets` and route results, but Playwright service built route targets inline from routes.
+- R6.1 schema already had `RuntimeRouteTarget`, `RuntimeStateTarget`, `RuntimeFlowTarget`, `RuntimeScanTarget`, and `RuntimeTargetResult` placeholders.
+- R6.2 artifact repository persisted the existing `targets`, `routes`, `routeDiscovery`, and summary shape through validated latest/snapshot writes.
+- `maxRoutes` was applied before target creation; `maxTargets` was applied while building route targets.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added `RuntimeFlowStep` placeholder type and internal `RuntimeDiscoveryMode`.
+- Added `runtime-scan-targets.ts` for route target creation, state/flow placeholders, target discovery resolution, and route-only execution assertion.
+- Discovery modes are now explicit internally: `all-routes`, `selected-routes`, and reserved `custom-targets`.
+- Playwright runtime scan uses target discovery instead of building route targets inline.
+- Runtime artifacts now record `targetDiscovery` with mode, targetIds, and reason, plus `routeDiscovery.mode`.
+- Schema validation now rejects invalid target kinds.
+
+What was not changed:
+- No R6.4 DOM Geometry.
+- No Viewport Matrix.
+- No Manual State/Flow Execution.
+- No click/fill/waitForSelector/auto-click behavior.
+- No Layout Issue Engine.
+- No `/api/actions/scan` change.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public runtime API contracts exposed.
+- No UI change.
+- No path-policy/baseUrl policy change.
+- No Playwright browser auto-install.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+
+Known limitations:
+- State and flow targets are placeholders only.
+- `custom-targets` mode is reserved internally; no public request/API path feeds custom targets yet.
+- DOM geometry/viewport matrix/layout issue detection remain future phases.
+
+Next recommended phase:
+- R6.4 — DOM Geometry Foundation

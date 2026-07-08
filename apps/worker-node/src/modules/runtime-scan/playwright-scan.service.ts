@@ -8,12 +8,13 @@ import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
 import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
 import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
+import { assertExecutableRuntimeRouteTarget, resolveRuntimeTargetDiscovery } from "./runtime-scan-targets";
+
 import type {
   RuntimeConsoleMessage,
   RuntimeFailedResponse,
   RuntimeNetworkError,
   RuntimeRouteScanResult,
-  RuntimeRouteTarget,
   RuntimeScanError,
   RuntimeScanRequest,
   RuntimeScanResult,
@@ -110,19 +111,20 @@ export const runPlaywrightRuntimeScan = async (
     projectRoot,
     routes: request.routes,
   });
-  const scanRoutes = discoveredRoutes.routes.slice(0, limits.maxRoutes);
+  const targetDiscovery = resolveRuntimeTargetDiscovery({
+    routes: discoveredRoutes.routes,
+    source: discoveredRoutes.source,
+    reason: discoveredRoutes.reason,
+    limits,
+  });
+  const scanRoutes = targetDiscovery.routes;
   const routeDiscovery = {
-    ...discoveredRoutes,
-    routes: scanRoutes,
-    reason: discoveredRoutes.routes.length > scanRoutes.length
-      ? `${discoveredRoutes.reason}; capped by maxRoutes=${limits.maxRoutes}`
-      : discoveredRoutes.reason,
+    routes: targetDiscovery.routes,
+    source: targetDiscovery.source,
+    mode: targetDiscovery.mode,
+    reason: targetDiscovery.reason,
   };
-  const targets: RuntimeRouteTarget[] = scanRoutes.slice(0, limits.maxTargets).map((route, index) => ({
-    id: `route:${index + 1}`,
-    kind: "route",
-    route,
-  }));
+  const targets = targetDiscovery.targets;
 
   await assertPlaywrightBrowserPreflight();
   const scanId = `runtime_${nowId()}`;
@@ -144,7 +146,8 @@ export const runPlaywrightRuntimeScan = async (
 
     for (const [index, target] of targets.entries()) {
       const page = await context.newPage();
-      const route = target.route;
+      const routeTarget = assertExecutableRuntimeRouteTarget(target);
+      const route = routeTarget.route;
       const url = routeUrl(baseUrl, route);
       const candidateScreenshotPath = path.join(screenshotsDir, safeRouteName(route, index));
       assertInside(projectRoot, candidateScreenshotPath);
@@ -203,7 +206,7 @@ export const runPlaywrightRuntimeScan = async (
 
       routeResults.push({
         targetId: target.id,
-        target,
+        target: routeTarget,
         route,
         url,
         status,
@@ -243,6 +246,11 @@ export const runPlaywrightRuntimeScan = async (
       rootDir: artifactRoot,
       screenshotsDir,
       resultPath,
+    },
+    targetDiscovery: {
+      mode: targetDiscovery.mode,
+      targetIds: targets.map((target) => target.id),
+      reason: targetDiscovery.reason,
     },
     routeDiscovery,
   };

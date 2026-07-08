@@ -23,8 +23,10 @@ export type RuntimeScanError = {
 
 export type RuntimeRouteTarget = { id: string; kind: "route"; route: string };
 export type RuntimeStateTarget = { id: string; kind: "state"; name: string };
-export type RuntimeFlowTarget = { id: string; kind: "flow"; name: string; steps: string[] };
+export type RuntimeFlowStep = { kind: "placeholder"; description: string };
+export type RuntimeFlowTarget = { id: string; kind: "flow"; name: string; steps: RuntimeFlowStep[] };
 export type RuntimeScanTarget = RuntimeRouteTarget | RuntimeStateTarget | RuntimeFlowTarget;
+export type RuntimeDiscoveryMode = "all-routes" | "selected-routes" | "custom-targets";
 
 export type DomElementGeometry = {
   selector?: string;
@@ -105,9 +107,15 @@ export type RuntimeScanResult = RuntimeArtifactMeta & {
   errors: RuntimeScanError[];
   summary: RuntimeScanSummary;
   artifacts: RuntimeScanArtifacts;
+  targetDiscovery?: {
+    mode: RuntimeDiscoveryMode;
+    targetIds: string[];
+    reason: string;
+  };
   routeDiscovery: {
     routes: string[];
     source: "request" | "production-graph" | "fallback";
+    mode?: RuntimeDiscoveryMode;
     reason: string;
   };
 };
@@ -127,6 +135,10 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
   if (!Array.isArray(value.targets)) throw new Error("Runtime scan artifact targets must be array");
   if (!Array.isArray(value.routes)) throw new Error("Runtime scan artifact routes must be array");
   if (!Array.isArray(value.errors)) throw new Error("Runtime scan artifact errors must be array");
+  for (const target of value.targets) {
+    if (!isObject(target)) throw new Error("Runtime scan target must be object");
+    if (target.kind !== "route" && target.kind !== "state" && target.kind !== "flow") throw new Error("Runtime scan target kind invalid");
+  }
   if (!isObject(value.limits)) throw new Error("Runtime scan artifact limits must be object");
   for (const key of ["maxRoutes", "maxTargets", "maxElementsPerViewport", "maxTextSnippetLength", "maxScreenshots", "routeTimeoutMs", "scanTimeoutMs"]) {
     if (!isNumber(value.limits[key])) throw new Error(`Runtime scan limit ${key} must be number`);

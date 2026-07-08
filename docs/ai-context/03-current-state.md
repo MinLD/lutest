@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.2 — Runtime Artifact Repository Foundation.
+R6.3 — Runtime Target Model & Discovery Modes.
 
 ## Current Status
 
@@ -21,6 +21,9 @@ R6.2 — Runtime Artifact Repository Foundation.
 - Runtime scan latest metadata path is `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`.
 - Runtime scan snapshot path is `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
 - Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
+- Runtime scan target model includes route targets plus state/flow placeholders.
+- Runtime scan records discovery mode as `all-routes` or `selected-routes`; `custom-targets` is reserved internally for future phases.
+- R6.3 still executes route targets only; state/flow execution is not implemented.
 
 ## Production Graph Persistence Facts
 
@@ -39,7 +42,7 @@ R6.2 — Runtime Artifact Repository Foundation.
 
 ## Latest Verification Recorded
 
-From current R6.2 session:
+From current R6.3 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
@@ -55,6 +58,7 @@ From current R6.2 session:
 - Runtime browser preflight self-check — passed.
 - Runtime scan self-check — passed.
 - Runtime artifacts self-check — passed.
+- Runtime targets self-check — passed.
 - Runtime scan artifact repository read/write self-check — passed.
 - Path-policy HTTP self-check — passed.
 - Worker build — passed.

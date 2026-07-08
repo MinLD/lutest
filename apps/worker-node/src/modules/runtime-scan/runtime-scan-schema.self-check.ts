@@ -56,15 +56,22 @@ const main = () => {
       screenshotsDir: paths.screenshotsDir,
       resultPath: paths.resultPath,
     },
+    targetDiscovery: {
+      mode: "selected-routes",
+      targetIds: ["route:1"],
+      reason: "self-check",
+    },
     routeDiscovery: {
       routes: ["/"],
       source: "request",
+      mode: "selected-routes",
       reason: "self-check",
     },
   };
 
   assert.equal(validateRuntimeScanResult(artifact).schemaVersion, RUNTIME_SCAN_SCHEMA_VERSION);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, schemaVersion: "bad" }), /schemaVersion/);
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, targets: [{ id: "bad", kind: "bad" }] }), /target kind/);
   assert.throws(() => validateRuntimeScanResult({ ...artifact, limits: { ...limits, maxRoutes: "25" } }), /maxRoutes/);
 
   console.log("runtime scan schema self-check passed");

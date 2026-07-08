@@ -3,6 +3,7 @@
 ## Runtime Scan
 
 - Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
+- State and flow targets are placeholders only; R6.3 does not execute steps or app states.
 - No DOM Geometry extraction yet.
 - No viewport matrix yet.
 - No layout overlap/contrast issue detection yet.

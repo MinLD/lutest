@@ -77,6 +77,9 @@ const main = async () => {
       });
 
       assert.equal(result.routes.length, 3);
+      assert.equal(result.targetDiscovery?.mode, "selected-routes");
+      assert.deepEqual(result.targetDiscovery?.targetIds, ["route:1", "route:2", "route:3"]);
+      assert.equal(result.routeDiscovery.mode, "selected-routes");
       assert.deepEqual(result.routeDiscovery.routes, ["/", "/foo-bar", "/foo/bar"]);
       assert.equal(result.summary.routeCount, 3);
       assert.equal(result.routes[0]?.status, 200);

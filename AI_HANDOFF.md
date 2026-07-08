@@ -18,11 +18,11 @@ Repo-local context entrypoint for AI/code sessions.
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R6.2 — Runtime Artifact Repository Foundation.
-- Next recommended phase: R6.3 — Runtime Target Model & Discovery Modes.
+- Latest completed phase recorded here: R6.3 — Runtime Target Model & Discovery Modes.
+- Next recommended phase: R6.4 — DOM Geometry Foundation.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
-- Runtime scan now writes/reads validated internal `runtime-scan.v1` artifacts through the runtime artifact repository at `<projectRoot>/.lutest/runtime/`.
+- Runtime scan now uses an internal target discovery model with route targets, state/flow placeholders, and discovery modes before writing validated artifacts under `<projectRoot>/.lutest/runtime/`.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

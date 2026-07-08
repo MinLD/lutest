@@ -16,6 +16,8 @@ export type {
   RuntimeConsoleMessage,
   RuntimeFailedResponse,
   RuntimeFlowTarget,
+  RuntimeFlowStep,
+  RuntimeDiscoveryMode,
   RuntimeLayoutIssue,
   RuntimeNetworkError,
   RuntimeRouteResult as RuntimeRouteScanResult,
