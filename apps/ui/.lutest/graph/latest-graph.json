@@ -97,10 +97,34 @@
       "filePath": "src/lib/production-graph-layout.ts"
     },
     {
+      "id": "file:src/lib/runtime-report-view-model.self-check.ts",
+      "type": "file",
+      "label": "runtime-report-view-model.self-check.ts",
+      "filePath": "src/lib/runtime-report-view-model.self-check.ts"
+    },
+    {
+      "id": "file:src/lib/runtime-report-view-model.ts",
+      "type": "file",
+      "label": "runtime-report-view-model.ts",
+      "filePath": "src/lib/runtime-report-view-model.ts"
+    },
+    {
       "id": "file:src/lib/use-dashboard-data.ts",
       "type": "file",
       "label": "use-dashboard-data.ts",
       "filePath": "src/lib/use-dashboard-data.ts"
+    },
+    {
+      "id": "file:src/components/runtime/runtime-report-panel.tsx",
+      "type": "component",
+      "label": "runtime-report-panel.tsx",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx"
+    },
+    {
+      "id": "file:src/components/runtime/runtime-summary-card.tsx",
+      "type": "component",
+      "label": "runtime-summary-card.tsx",
+      "filePath": "src/components/runtime/runtime-summary-card.tsx"
     }
   ],
   "edges": [
@@ -109,6 +133,18 @@
       "type": "import",
       "source": "file:src/components/dashboard-shell.tsx",
       "target": "file:src/components/production-graph-canvas.tsx"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/components/runtime/runtime-report-panel.tsx",
+      "type": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/components/runtime/runtime-report-panel.tsx"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/components/runtime/runtime-summary-card.tsx",
+      "type": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/components/runtime/runtime-summary-card.tsx"
     },
     {
       "id": "import:file:src/components/production-graph-canvas.tsx->file:src/components/production-graph-detail-panel.tsx",
@@ -153,6 +189,12 @@
       "target": "file:src/lib/production-graph-adapter.ts"
     },
     {
+      "id": "import:file:src/lib/runtime-report-view-model.self-check.ts->file:src/lib/runtime-report-view-model.ts",
+      "type": "import",
+      "source": "file:src/lib/runtime-report-view-model.self-check.ts",
+      "target": "file:src/lib/runtime-report-view-model.ts"
+    },
+    {
       "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
       "type": "import",
       "source": "file:src/lib/use-dashboard-data.ts",
@@ -167,8 +209,8 @@
   ],
   "summary": {
     "pageCount": 1,
-    "componentCount": 4,
+    "componentCount": 6,
     "apiCount": 1,
-    "fileCount": 15
+    "fileCount": 19
   }
 }

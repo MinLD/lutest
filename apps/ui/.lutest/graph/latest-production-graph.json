@@ -62,193 +62,193 @@
       "reason": "Source file included in production scan"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@66-104",
       "kind": "component",
       "name": "Sidebar",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 64,
-        "endLine": 102
+        "startLine": 66,
+        "endLine": 104
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@106-158",
       "kind": "component",
       "name": "MobileSidebar",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 104,
-        "endLine": 156
+        "startLine": 106,
+        "endLine": 158
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#Brand@160-176",
       "kind": "component",
       "name": "Brand",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 158,
-        "endLine": 174
+        "startLine": 160,
+        "endLine": 176
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@176-259",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@178-261",
       "kind": "component",
       "name": "Topbar",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 176,
-        "endLine": 259
+        "startLine": 178,
+        "endLine": 261
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@261-283",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@263-285",
       "kind": "component",
       "name": "DashboardNotice",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 261,
-        "endLine": 283
+        "startLine": 263,
+        "endLine": 285
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "kind": "component",
       "name": "PageTitle",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 285,
-        "endLine": 307
+        "startLine": 287,
+        "endLine": 309
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@311-331",
       "kind": "component",
       "name": "MetricCard",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 309,
-        "endLine": 329
+        "startLine": 311,
+        "endLine": 331
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "kind": "component",
       "name": "StatusRow",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 331,
-        "endLine": 353
+        "startLine": 333,
+        "endLine": 355
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418",
       "kind": "component",
       "name": "EndpointPage",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 355,
-        "endLine": 416
+        "startLine": 357,
+        "endLine": 418
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@420-459",
       "kind": "component",
       "name": "ProductionSummaryCards",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 418,
-        "endLine": 457
+        "startLine": 420,
+        "endLine": 459
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474",
       "kind": "component",
       "name": "GraphPage",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 459,
-        "endLine": 472
+        "startLine": 461,
+        "endLine": 474
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
       "kind": "component",
       "name": "ReportsPage",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 474,
-        "endLine": 531
+        "startLine": 476,
+        "endLine": 539
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597",
       "kind": "component",
       "name": "ScansPage",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 533,
-        "endLine": 589
+        "startLine": 541,
+        "endLine": 597
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654",
       "kind": "component",
       "name": "SettingsPage",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 591,
-        "endLine": 646
+        "startLine": 599,
+        "endLine": 654
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@656-682",
       "kind": "component",
       "name": "SettingCard",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 648,
-        "endLine": 674
+        "startLine": 656,
+        "endLine": 682
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
     },
     {
-      "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "id": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
       "kind": "component",
       "name": "DashboardShell",
       "filePath": "src/components/dashboard-shell.tsx",
       "loc": {
-        "startLine": 676,
-        "endLine": 745
+        "startLine": 684,
+        "endLine": 753
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
@@ -345,6 +345,154 @@
       "loc": {
         "startLine": 15,
         "endLine": 40
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/components/runtime/runtime-report-panel.tsx",
+      "kind": "file",
+      "name": "runtime-report-panel.tsx",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#SelectField@29-44",
+      "kind": "component",
+      "name": "SelectField",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 29,
+        "endLine": 44
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeErrorList@46-62",
+      "kind": "component",
+      "name": "RuntimeErrorList",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 46,
+        "endLine": 62
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeTargets@64-81",
+      "kind": "component",
+      "name": "RuntimeTargets",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 64,
+        "endLine": 81
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeViewports@83-99",
+      "kind": "component",
+      "name": "RuntimeViewports",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 83,
+        "endLine": 99
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeIssueList@101-123",
+      "kind": "component",
+      "name": "RuntimeIssueList",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 101,
+        "endLine": 123
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeIssueDetail@125-147",
+      "kind": "component",
+      "name": "RuntimeIssueDetail",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 125,
+        "endLine": 147
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "kind": "component",
+      "name": "RuntimeReportPanel",
+      "filePath": "src/components/runtime/runtime-report-panel.tsx",
+      "loc": {
+        "startLine": 149,
+        "endLine": 193
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "file:src/components/runtime/runtime-summary-card.tsx",
+      "kind": "file",
+      "name": "runtime-summary-card.tsx",
+      "filePath": "src/components/runtime/runtime-summary-card.tsx",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeStat@86-95",
+      "kind": "component",
+      "name": "RuntimeStat",
+      "filePath": "src/components/runtime/runtime-summary-card.tsx",
+      "loc": {
+        "startLine": 86,
+        "endLine": 95
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#SeverityPills@97-114",
+      "kind": "component",
+      "name": "SeverityPills",
+      "filePath": "src/components/runtime/runtime-summary-card.tsx",
+      "loc": {
+        "startLine": 97,
+        "endLine": 114
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeErrors@116-134",
+      "kind": "component",
+      "name": "RuntimeErrors",
+      "filePath": "src/components/runtime/runtime-summary-card.tsx",
+      "loc": {
+        "startLine": 116,
+        "endLine": 134
+      },
+      "confidence": "high",
+      "reason": "PascalCase symbol with JSX"
+    },
+    {
+      "id": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207",
+      "kind": "component",
+      "name": "RuntimeSummaryCard",
+      "filePath": "src/components/runtime/runtime-summary-card.tsx",
+      "loc": {
+        "startLine": 136,
+        "endLine": 207
       },
       "confidence": "high",
       "reason": "PascalCase symbol with JSX"
@@ -562,6 +710,70 @@
       "reason": "Exported symbol without framework-specific role"
     },
     {
+      "id": "file:src/lib/runtime-report-view-model.self-check.ts",
+      "kind": "file",
+      "name": "runtime-report-view-model.self-check.ts",
+      "filePath": "src/lib/runtime-report-view-model.self-check.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "file:src/lib/runtime-report-view-model.ts",
+      "kind": "file",
+      "name": "runtime-report-view-model.ts",
+      "filePath": "src/lib/runtime-report-view-model.ts",
+      "confidence": "high",
+      "reason": "Source file included in production scan"
+    },
+    {
+      "id": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#viewportKey@85-86",
+      "kind": "utility",
+      "name": "viewportKey",
+      "filePath": "src/lib/runtime-report-view-model.ts",
+      "loc": {
+        "startLine": 85,
+        "endLine": 86
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#safeArtifactRef@97-101",
+      "kind": "utility",
+      "name": "safeArtifactRef",
+      "filePath": "src/lib/runtime-report-view-model.ts",
+      "loc": {
+        "startLine": 97,
+        "endLine": 101
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#runtimeReportViewModel@190-233",
+      "kind": "utility",
+      "name": "runtimeReportViewModel",
+      "filePath": "src/lib/runtime-report-view-model.ts",
+      "loc": {
+        "startLine": 190,
+        "endLine": 233
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
+      "id": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#filterRuntimeIssues@235-244",
+      "kind": "utility",
+      "name": "filterRuntimeIssues",
+      "filePath": "src/lib/runtime-report-view-model.ts",
+      "loc": {
+        "startLine": 235,
+        "endLine": 244
+      },
+      "confidence": "low",
+      "reason": "Exported symbol without framework-specific role"
+    },
+    {
       "id": "file:src/lib/use-dashboard-data.ts",
       "kind": "file",
       "name": "use-dashboard-data.ts",
@@ -650,9 +862,9 @@
   ],
   "edges": [
     {
-      "id": "call:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
+      "id": "call:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
       "kind": "call",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
       "target": "hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128",
       "confidence": "high",
       "reason": "DashboardShell calls useDashboardData()"
@@ -672,6 +884,30 @@
       "target": "utility:raw:function:src/lib/production-graph-layout.ts#layoutProductionGraph@18-62",
       "confidence": "high",
       "reason": "ProductionGraphCanvas calls layoutProductionGraph()"
+    },
+    {
+      "id": "call:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#filterRuntimeIssues@235-244",
+      "kind": "call",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#filterRuntimeIssues@235-244",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel calls filterRuntimeIssues()"
+    },
+    {
+      "id": "call:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#runtimeReportViewModel@190-233",
+      "kind": "call",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#runtimeReportViewModel@190-233",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel calls runtimeReportViewModel()"
+    },
+    {
+      "id": "call:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeViewports@83-99->utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#viewportKey@85-86",
+      "kind": "call",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeViewports@83-99",
+      "target": "utility:raw:arrow-function:src/lib/runtime-report-view-model.ts#viewportKey@85-86",
+      "confidence": "high",
+      "reason": "RuntimeViewports calls viewportKey()"
     },
     {
       "id": "call:hook:raw:function:src/lib/use-dashboard-data.ts#useDashboardData@50-128->api-client-method:raw:method:src/lib/api-client.ts#lutestApi.getLatestReport@114-118",
@@ -754,6 +990,22 @@
       "reason": "static-import ./production-graph-canvas resolved by relative-match"
     },
     {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/components/runtime/runtime-report-panel.tsx",
+      "kind": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/components/runtime/runtime-report-panel.tsx",
+      "confidence": "high",
+      "reason": "static-import ./runtime/runtime-report-panel resolved by relative-match"
+    },
+    {
+      "id": "import:file:src/components/dashboard-shell.tsx->file:src/components/runtime/runtime-summary-card.tsx",
+      "kind": "import",
+      "source": "file:src/components/dashboard-shell.tsx",
+      "target": "file:src/components/runtime/runtime-summary-card.tsx",
+      "confidence": "high",
+      "reason": "static-import ./runtime/runtime-summary-card resolved by relative-match"
+    },
+    {
       "id": "import:file:src/components/dashboard-shell.tsx->file:src/lib/dashboard-navigation.ts",
       "kind": "import",
       "source": "file:src/components/dashboard-shell.tsx",
@@ -826,6 +1078,14 @@
       "reason": "type-import @/lib/production-graph-adapter resolved by paths-match"
     },
     {
+      "id": "import:file:src/components/runtime/runtime-report-panel.tsx->file:src/lib/runtime-report-view-model.ts",
+      "kind": "import",
+      "source": "file:src/components/runtime/runtime-report-panel.tsx",
+      "target": "file:src/lib/runtime-report-view-model.ts",
+      "confidence": "high",
+      "reason": "static-import @/lib/runtime-report-view-model resolved by paths-match"
+    },
+    {
       "id": "import:file:src/lib/dashboard-data-request.self-check.ts->file:src/lib/api-client.ts",
       "kind": "import",
       "source": "file:src/lib/dashboard-data-request.self-check.ts",
@@ -866,6 +1126,14 @@
       "reason": "type-import ./production-graph-adapter resolved by relative-match"
     },
     {
+      "id": "import:file:src/lib/runtime-report-view-model.self-check.ts->file:src/lib/runtime-report-view-model.ts",
+      "kind": "import",
+      "source": "file:src/lib/runtime-report-view-model.self-check.ts",
+      "target": "file:src/lib/runtime-report-view-model.ts",
+      "confidence": "high",
+      "reason": "static-import ./runtime-report-view-model resolved by relative-match"
+    },
+    {
       "id": "import:file:src/lib/use-dashboard-data.ts->file:src/lib/api-client.ts",
       "kind": "import",
       "source": "file:src/lib/use-dashboard-data.ts",
@@ -882,186 +1150,202 @@
       "reason": "static-import ./production-graph-adapter resolved by relative-match"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@261-283",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@263-285",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@261-283",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardNotice@263-285",
       "confidence": "high",
       "reason": "DashboardShell renders <DashboardNotice>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418",
       "confidence": "high",
       "reason": "DashboardShell renders <EndpointPage>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474",
       "confidence": "high",
       "reason": "DashboardShell renders <GraphPage>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@106-158",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@106-158",
       "confidence": "high",
       "reason": "DashboardShell renders <MobileSidebar>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
       "confidence": "high",
       "reason": "DashboardShell renders <ReportsPage>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597",
       "confidence": "high",
       "reason": "DashboardShell renders <ScansPage>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654",
       "confidence": "high",
       "reason": "DashboardShell renders <SettingsPage>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#Sidebar@66-104",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@66-104",
       "confidence": "high",
       "reason": "DashboardShell renders <Sidebar>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745->component:raw:function:src/components/dashboard-shell.tsx#Topbar@176-259",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753->component:raw:function:src/components/dashboard-shell.tsx#Topbar@178-261",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@176-259",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Topbar@178-261",
       "confidence": "high",
       "reason": "DashboardShell renders <Topbar>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "confidence": "high",
       "reason": "EndpointPage renders <PageTitle>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@355-416",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#EndpointPage@357-418",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "confidence": "high",
       "reason": "EndpointPage renders <StatusRow>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472->component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474->component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@420-459",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@420-459",
       "confidence": "high",
       "reason": "GraphPage renders <ProductionSummaryCards>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472->component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474->component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@459-472",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#GraphPage@461-474",
       "target": "component:raw:function:src/components/production-graph-canvas.tsx#ProductionGraphCanvas@39-205",
       "confidence": "high",
       "reason": "GraphPage renders <ProductionGraphCanvas>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156->component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@106-158->component:raw:function:src/components/dashboard-shell.tsx#Brand@160-176",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@104-156",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#MobileSidebar@106-158",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Brand@160-176",
       "confidence": "high",
       "reason": "MobileSidebar renders <Brand>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457->component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@420-459->component:raw:function:src/components/dashboard-shell.tsx#MetricCard@311-331",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@418-457",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ProductionSummaryCards@420-459",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@311-331",
       "confidence": "high",
       "reason": "ProductionSummaryCards renders <MetricCard>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531->component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539->component:raw:function:src/components/dashboard-shell.tsx#MetricCard@311-331",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@309-329",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#MetricCard@311-331",
       "confidence": "high",
       "reason": "ReportsPage renders <MetricCard>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@474-531",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "confidence": "high",
       "reason": "ReportsPage renders <PageTitle>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539->component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "confidence": "high",
+      "reason": "ReportsPage renders <RuntimeReportPanel>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539->component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ReportsPage@476-539",
+      "target": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207",
+      "confidence": "high",
+      "reason": "ReportsPage renders <RuntimeSummaryCard>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
+      "kind": "render",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "confidence": "high",
       "reason": "ScansPage renders <PageTitle>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@533-589",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#ScansPage@541-597",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "confidence": "high",
       "reason": "ScansPage renders <StatusRow>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingCard@656-682->component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@331-353",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@656-682",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#StatusRow@333-355",
       "confidence": "high",
       "reason": "SettingCard renders <StatusRow>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654->component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@285-307",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#PageTitle@287-309",
       "confidence": "high",
       "reason": "SettingsPage renders <PageTitle>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646->component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654->component:raw:function:src/components/dashboard-shell.tsx#SettingCard@656-682",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@591-646",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@648-674",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#SettingsPage@599-654",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#SettingCard@656-682",
       "confidence": "high",
       "reason": "SettingsPage renders <SettingCard>"
     },
     {
-      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102->component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "id": "render:component:raw:function:src/components/dashboard-shell.tsx#Sidebar@66-104->component:raw:function:src/components/dashboard-shell.tsx#Brand@160-176",
       "kind": "render",
-      "source": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@64-102",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#Brand@158-174",
+      "source": "component:raw:function:src/components/dashboard-shell.tsx#Sidebar@66-104",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#Brand@160-176",
       "confidence": "high",
       "reason": "Sidebar renders <Brand>"
     },
@@ -1098,10 +1382,82 @@
       "reason": "ProductionGraphDetailPanel renders <DetailShell>"
     },
     {
-      "id": "render:page:raw:function:src/app/page.tsx#Home@3-5->component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "id": "render:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeErrorList@46-62",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeErrorList@46-62",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel renders <RuntimeErrorList>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeIssueDetail@125-147",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeIssueDetail@125-147",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel renders <RuntimeIssueDetail>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeIssueList@101-123",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeIssueList@101-123",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel renders <RuntimeIssueList>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeTargets@64-81",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeTargets@64-81",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel renders <RuntimeTargets>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeViewports@83-99",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeViewports@83-99",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel renders <RuntimeViewports>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193->component:raw:function:src/components/runtime/runtime-report-panel.tsx#SelectField@29-44",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#RuntimeReportPanel@149-193",
+      "target": "component:raw:function:src/components/runtime/runtime-report-panel.tsx#SelectField@29-44",
+      "confidence": "high",
+      "reason": "RuntimeReportPanel renders <SelectField>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207->component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeErrors@116-134",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207",
+      "target": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeErrors@116-134",
+      "confidence": "high",
+      "reason": "RuntimeSummaryCard renders <RuntimeErrors>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207->component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeStat@86-95",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207",
+      "target": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeStat@86-95",
+      "confidence": "high",
+      "reason": "RuntimeSummaryCard renders <RuntimeStat>"
+    },
+    {
+      "id": "render:component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207->component:raw:function:src/components/runtime/runtime-summary-card.tsx#SeverityPills@97-114",
+      "kind": "render",
+      "source": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#RuntimeSummaryCard@136-207",
+      "target": "component:raw:function:src/components/runtime/runtime-summary-card.tsx#SeverityPills@97-114",
+      "confidence": "high",
+      "reason": "RuntimeSummaryCard renders <SeverityPills>"
+    },
+    {
+      "id": "render:page:raw:function:src/app/page.tsx#Home@3-5->component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
       "kind": "render",
       "source": "page:raw:function:src/app/page.tsx#Home@3-5",
-      "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@676-745",
+      "target": "component:raw:function:src/components/dashboard-shell.tsx#DashboardShell@684-753",
       "confidence": "high",
       "reason": "Home renders <DashboardShell>"
     },
@@ -1155,13 +1511,13 @@
     }
   ],
   "summary": {
-    "fileCount": 15,
+    "fileCount": 19,
     "pageCount": 1,
-    "componentCount": 23,
+    "componentCount": 34,
     "hookCount": 1,
     "apiRouteCount": 0,
     "apiClientMethodCount": 6,
     "externalEndpointCount": 6,
-    "edgeCount": 63
+    "edgeCount": 81
   }
 }

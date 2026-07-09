@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ProductionGraphCanvas } from "./production-graph-canvas";
+import { RuntimeReportPanel } from "./runtime/runtime-report-panel";
 import { RuntimeSummaryCard } from "./runtime/runtime-summary-card";
 import type { ProductionFlowModel } from "@/lib/production-graph-adapter";
 import { useDashboardData } from "@/lib/use-dashboard-data";
@@ -505,6 +506,9 @@ function ReportsPage({
       </div>
       <div className="mb-5">
         <RuntimeSummaryCard latestReport={latestReport} />
+      </div>
+      <div className="mb-5">
+        <RuntimeReportPanel latestReport={latestReport} />
       </div>
       <div className="space-y-3">
         {issues.length > 0 ? (
