@@ -2,19 +2,19 @@
 
 ## Next Recommended
 
-R7.4 — Auth StorageState Integration.
+R8.1 — Dashboard Runtime Summary UI.
 
-## R7.4 Goal
+## R8.1 Goal
 
-- Add explicit, safe Auth StorageState support for runtime scans if approved.
-- Keep secrets/cookies out of public summaries and metadata.
-- Preserve local-only baseUrl and strict path-policy.
+- Render latest-report runtime summary, issue summary, and artifact refs in the dashboard.
+- Keep latest report as the dashboard source-of-truth after refresh.
+- Do not expose raw runtime/auth artifacts in UI.
 
 ## Later Runtime Phases
 
-- R8 — Dashboard Runtime Visualization.
+- R8.2 — Runtime Artifact Detail Views.
 
-## Non-Goals For R7.4 Unless Requested
+## Non-Goals For R8.1 Unless Requested
 
 - No UI work.
 - No path-policy loosening.

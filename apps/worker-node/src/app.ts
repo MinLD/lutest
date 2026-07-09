@@ -6,6 +6,7 @@ import { reportRoutes } from "./modules/report/report.routes";
 import { notFoundHandler } from "./shared/middleware/not-found";
 import { errorHandler } from "./shared/middleware/error-handler";
 import { scanRoutes } from "./modules/scan/scan.routes";
+import { authActionRoutes, authRoutes } from "./modules/auth/auth.routes";
 
 export const createApp = () => {
   const app = express();
@@ -29,8 +30,9 @@ export const createApp = () => {
   app.use("/api/project", projectRoutes);
   app.use("/api/graph", graphRoutes);
   app.use("/api/report", reportRoutes);
-  // Canonical production scan route. /api/scan remains a temporary legacy alias.
   app.use("/api/actions/scan", scanRoutes);
+  app.use("/api/actions/auth", authActionRoutes);
+  app.use("/api/auth", authRoutes);
   app.use("/api/scan", scanRoutes);
 
   app.use(notFoundHandler);

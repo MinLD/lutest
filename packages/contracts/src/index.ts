@@ -13,6 +13,11 @@ export type ErrorCode =
   | "ROUTE_SCAN_ERROR"
   | "ARTIFACT_WRITE_ERROR"
   | "RUNTIME_SCAN_FAILED"
+  | "AUTH_STATE_MISSING"
+  | "AUTH_STATE_INVALID"
+  | "AUTH_STATE_WRITE_FAILED"
+  | "AUTH_SESSION_START_FAILED"
+  | "AUTH_SESSION_TIMEOUT"
   | "REPORT_MALFORMED"
   | "REPORT_SCHEMA_INVALID"
   | "REPORT_PERMISSION_DENIED";
@@ -246,7 +251,15 @@ export interface RuntimeScanRequest {
   targets?: RuntimeScanTarget[];
   discoveryMode?: RuntimeDiscoveryMode;
   viewportPreset?: "default";
+  auth?: { useSavedState: true };
 }
+export type AuthErrorCode = "AUTH_STATE_MISSING" | "AUTH_STATE_INVALID" | "AUTH_STATE_WRITE_FAILED" | "AUTH_SESSION_START_FAILED" | "AUTH_SESSION_TIMEOUT";
+export interface AuthError { code: AuthErrorCode; message: string }
+export interface AuthStateSummary { exists: boolean; valid: boolean; savedAt?: string; updatedAt?: string; expiresAt?: string; storageStateRef?: string }
+export interface AuthStartRequest { projectPath?: string; baseUrl: string; timeoutMs?: number; successSelector?: string; successUrlIncludes?: string }
+export interface AuthStartResponse { status: "saved" | "timeout" | "failed"; authState?: AuthStateSummary; error?: AuthError }
+export interface AuthStatusResponse extends AuthStateSummary { status: "missing" | "valid" | "invalid"; error?: AuthError }
+export interface AuthClearResponse { cleared: boolean; status: "cleared" | "missing" }
 export interface RuntimeScanViewport { width: number; height: number }
 export interface RuntimeRect { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number }
 export interface DomElementGeometry {
@@ -368,6 +381,11 @@ const isErrorCode = (value: unknown): value is ErrorCode =>
   value === "ROUTE_SCAN_ERROR" ||
   value === "ARTIFACT_WRITE_ERROR" ||
   value === "RUNTIME_SCAN_FAILED" ||
+  value === "AUTH_STATE_MISSING" ||
+  value === "AUTH_STATE_INVALID" ||
+  value === "AUTH_STATE_WRITE_FAILED" ||
+  value === "AUTH_SESSION_START_FAILED" ||
+  value === "AUTH_SESSION_TIMEOUT" ||
   value === "REPORT_MALFORMED" ||
   value === "REPORT_SCHEMA_INVALID" ||
   value === "REPORT_PERMISSION_DENIED";
@@ -412,6 +430,7 @@ const isLocalRoute = (value: unknown): value is string =>
 const isRuntimeDiscoveryMode = (value: unknown): value is RuntimeDiscoveryMode => value === "all-routes" || value === "selected-routes" || value === "custom-targets";
 const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueType => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element";
 const isRuntimeErrorCode = (value: unknown): value is RuntimeErrorCode => value === "CONFIG_ERROR" || value === "PATH_NOT_ALLOWED" || value === "BASE_URL_NOT_LOCAL" || value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "ROUTE_DISCOVERY_ERROR" || value === "TARGET_EXECUTION_ERROR" || value === "ROUTE_SCAN_ERROR" || value === "ARTIFACT_WRITE_ERROR" || value === "RUNTIME_SCAN_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
+const isAuthErrorCode = (value: unknown): value is AuthErrorCode => value === "AUTH_STATE_MISSING" || value === "AUTH_STATE_INVALID" || value === "AUTH_STATE_WRITE_FAILED" || value === "AUTH_SESSION_START_FAILED" || value === "AUTH_SESSION_TIMEOUT";
 const isSafeId = (value: unknown): value is string => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
 const isSafeEnvName = (value: unknown): value is string => isNonEmptyString(value) && /^[A-Z_][A-Z0-9_]*$/.test(value);
 
@@ -485,7 +504,7 @@ const validateRuntimeResultTarget = (value: unknown): ValidationResult<RuntimeRe
 
 export const validateRuntimeScanRequest = (value: unknown): ValidationResult<RuntimeScanRequest> => {
   if (!isRecord(value)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan must be an object" };
-  const keys = rejectUnknownKeys(value, ["enabled", "baseUrl", "routes", "targets", "discoveryMode", "viewportPreset"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["enabled", "baseUrl", "routes", "targets", "discoveryMode", "viewportPreset", "auth"]); if (!keys.ok) return keys;
   if (value.enabled !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.enabled must be true" };
   const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl); if (!baseUrl.ok) return baseUrl;
   const routes = value.routes === undefined ? undefined : Array.isArray(value.routes) && value.routes.every(isLocalRoute) ? value.routes : undefined;
@@ -494,7 +513,65 @@ export const validateRuntimeScanRequest = (value: unknown): ValidationResult<Run
   if (value.targets !== undefined) { if (!Array.isArray(value.targets)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.targets must be an array" }; for (const rawTarget of value.targets) { const target = validateRuntimeTarget(rawTarget); if (!target.ok) return target; targets?.push(target.value); } }
   if (value.discoveryMode !== undefined && !isRuntimeDiscoveryMode(value.discoveryMode)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.discoveryMode is invalid" };
   if (value.viewportPreset !== undefined && value.viewportPreset !== "default") return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.viewportPreset is invalid" };
-  return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset } };
+  if (value.auth !== undefined) {
+    if (!isRecord(value.auth)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth must be an object" };
+    const authKeys = rejectUnknownKeys(value.auth, ["useSavedState"]); if (!authKeys.ok) return authKeys;
+    if (value.auth.useSavedState !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth.useSavedState must be true" };
+  }
+  return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset, auth: value.auth === undefined ? undefined : { useSavedState: true } } };
+};
+
+export const validateAuthStartRequest = (value: unknown): ValidationResult<AuthStartRequest> => {
+  if (!isRecord(value)) return { ok: false, code: "INVALID_REQUEST", message: "AuthStartRequest must be an object" };
+  const keys = rejectUnknownKeys(value, ["projectPath", "baseUrl", "timeoutMs", "successSelector", "successUrlIncludes"]); if (!keys.ok) return keys;
+  if (!isOptionalNonEmptyString(value.projectPath)) return { ok: false, code: "INVALID_REQUEST", message: "projectPath must be a non-empty string" };
+  const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl); if (!baseUrl.ok) return baseUrl;
+  const timeoutMs = value.timeoutMs;
+  if (timeoutMs !== undefined && (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 1_000 || timeoutMs > 300_000)) return { ok: false, code: "INVALID_REQUEST", message: "timeoutMs must be 1000..300000" };
+  if (value.successSelector !== undefined && (!isNonEmptyString(value.successSelector) || value.successSelector.length > 300)) return { ok: false, code: "INVALID_REQUEST", message: "successSelector is invalid" };
+  if (value.successUrlIncludes !== undefined && (!isNonEmptyString(value.successUrlIncludes) || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value.successUrlIncludes) || value.successUrlIncludes.startsWith("//") || value.successUrlIncludes.length > 300)) return { ok: false, code: "INVALID_REQUEST", message: "successUrlIncludes is invalid" };
+  return { ok: true, value: { projectPath: value.projectPath, baseUrl: baseUrl.value, timeoutMs, successSelector: value.successSelector, successUrlIncludes: value.successUrlIncludes } };
+};
+
+const validateAuthError = (value: unknown): ValidationResult<AuthError> => {
+  if (!isRecord(value)) return runtimeInvalid("auth error must be object");
+  const keys = rejectUnknownKeys(value, ["code", "message"]); if (!keys.ok) return keys;
+  if (!isAuthErrorCode(value.code) || !isNonEmptyString(value.message)) return runtimeInvalid("auth error invalid");
+  return { ok: true, value: { code: value.code, message: value.message } };
+};
+
+const validateAuthStateSummary = (value: unknown): ValidationResult<AuthStateSummary> => {
+  if (!isRecord(value)) return runtimeInvalid("auth state must be object");
+  const keys = rejectUnknownKeys(value, ["exists", "valid", "savedAt", "updatedAt", "expiresAt", "storageStateRef"]); if (!keys.ok) return keys;
+  if (typeof value.exists !== "boolean" || typeof value.valid !== "boolean") return runtimeInvalid("auth state flags invalid");
+  if (!isOptionalString(value.savedAt) || !isOptionalString(value.updatedAt) || !isOptionalString(value.expiresAt)) return runtimeInvalid("auth state dates invalid");
+  if (value.storageStateRef !== undefined && !isSafeArtifactRef(value.storageStateRef)) return runtimeInvalid("auth storageStateRef invalid");
+  return { ok: true, value: { exists: value.exists, valid: value.valid, savedAt: value.savedAt, updatedAt: value.updatedAt, expiresAt: value.expiresAt, storageStateRef: value.storageStateRef } };
+};
+
+export const validateAuthStatusResponse = (value: unknown): ValidationResult<AuthStatusResponse> => {
+  if (!isRecord(value)) return runtimeInvalid("AuthStatusResponse must be object");
+  const keys = rejectUnknownKeys(value, ["status", "exists", "valid", "savedAt", "updatedAt", "expiresAt", "storageStateRef", "error"]); if (!keys.ok) return keys;
+  if (value.status !== "missing" && value.status !== "valid" && value.status !== "invalid") return runtimeInvalid("auth status invalid");
+  const summary = validateAuthStateSummary({ exists: value.exists, valid: value.valid, savedAt: value.savedAt, updatedAt: value.updatedAt, expiresAt: value.expiresAt, storageStateRef: value.storageStateRef }); if (!summary.ok) return summary;
+  const error = value.error === undefined ? undefined : validateAuthError(value.error); if (error && !error.ok) return error;
+  return { ok: true, value: { status: value.status, ...summary.value, error: error?.value } };
+};
+
+export const validateAuthStartResponse = (value: unknown): ValidationResult<AuthStartResponse> => {
+  if (!isRecord(value)) return runtimeInvalid("AuthStartResponse must be object");
+  const keys = rejectUnknownKeys(value, ["status", "authState", "error"]); if (!keys.ok) return keys;
+  if (value.status !== "saved" && value.status !== "timeout" && value.status !== "failed") return runtimeInvalid("auth start status invalid");
+  const authState = value.authState === undefined ? undefined : validateAuthStateSummary(value.authState); if (authState && !authState.ok) return authState;
+  const error = value.error === undefined ? undefined : validateAuthError(value.error); if (error && !error.ok) return error;
+  return { ok: true, value: { status: value.status, authState: authState?.value, error: error?.value } };
+};
+
+export const validateAuthClearResponse = (value: unknown): ValidationResult<AuthClearResponse> => {
+  if (!isRecord(value)) return runtimeInvalid("AuthClearResponse must be object");
+  const keys = rejectUnknownKeys(value, ["cleared", "status"]); if (!keys.ok) return keys;
+  if (typeof value.cleared !== "boolean" || (value.status !== "cleared" && value.status !== "missing")) return runtimeInvalid("auth clear response invalid");
+  return { ok: true, value: { cleared: value.cleared, status: value.status } };
 };
 
 const isProductionGraphNodeKind = (

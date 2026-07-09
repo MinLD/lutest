@@ -4100,3 +4100,81 @@ Known limitations:
 
 Next recommended phase:
 - R7.4 — Auth StorageState Integration
+
+## R7.4 — Auth StorageState Integration
+
+Status: completed.
+
+Audit before:
+- Existing auth support: none.
+- Runtime context creation was in `playwright-scan.service.ts` via `browser.newContext(...)`.
+- Existing endpoints were registered in `app.ts`; scan lived under `/api/actions/scan`.
+- Runtime baseUrl validation was local-only in public contracts and runtime service.
+- Selected project root resolution used path-policy in controllers/services.
+
+Files changed:
+- `packages/contracts/src/index.ts`
+- `packages/contracts/src/validators.self-check.ts`
+- `packages/contracts/dist/index.d.ts`
+- `packages/contracts/dist/index.js`
+- `apps/worker-node/src/app.ts`
+- `apps/worker-node/src/modules/auth/auth-state.repository.ts`
+- `apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts`
+- `apps/worker-node/src/modules/auth/auth-session.service.ts`
+- `apps/worker-node/src/modules/auth/auth.controller.ts`
+- `apps/worker-node/src/modules/auth/auth.routes.ts`
+- `apps/worker-node/src/modules/auth/auth.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.ts`
+- `apps/worker-node/src/modules/scan/scan.service.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added public auth contracts and strict validators.
+- Added auth repository with selected-root path safety and atomic JSON/meta writes.
+- Added auth endpoints for start, clear, and status.
+- Added manual auth session service with Playwright-controlled browser/context and safe timeout/error mapping.
+- Added runtime scan auth opt-in via `runtimeScan.auth.useSavedState`.
+- Runtime scan without auth remains unchanged.
+- Runtime scan with saved auth passes storageState path internally only.
+- API/report/runtime responses do not expose raw storageState, cookies, tokens, passwords, or storage values.
+
+What was not changed:
+- No R8 UI dashboard.
+- No cloud auth.
+- No password manager.
+- No automatic username/password fill.
+- No path-policy or local-only baseUrl loosening.
+- No generated auth artifacts committed.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/latest-report.mapper.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/latest-report-integration.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+
+Known limitations:
+- Auth start requires real user interaction in a Playwright-controlled browser outside mocked tests.
+- No UI for auth workflows yet.
+
+Next recommended phase:
+- R8.1 — Dashboard Runtime Summary UI

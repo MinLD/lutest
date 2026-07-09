@@ -1,4 +1,4 @@
-export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED" | "CONFIG_ERROR" | "BASE_URL_NOT_LOCAL" | "PLAYWRIGHT_BROWSER_MISSING" | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" | "ROUTE_DISCOVERY_ERROR" | "TARGET_EXECUTION_ERROR" | "ROUTE_SCAN_ERROR" | "ARTIFACT_WRITE_ERROR" | "RUNTIME_SCAN_FAILED" | "REPORT_MALFORMED" | "REPORT_SCHEMA_INVALID" | "REPORT_PERMISSION_DENIED";
+export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED" | "CONFIG_ERROR" | "BASE_URL_NOT_LOCAL" | "PLAYWRIGHT_BROWSER_MISSING" | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" | "ROUTE_DISCOVERY_ERROR" | "TARGET_EXECUTION_ERROR" | "ROUTE_SCAN_ERROR" | "ARTIFACT_WRITE_ERROR" | "RUNTIME_SCAN_FAILED" | "AUTH_STATE_MISSING" | "AUTH_STATE_INVALID" | "AUTH_STATE_WRITE_FAILED" | "AUTH_SESSION_START_FAILED" | "AUTH_SESSION_TIMEOUT" | "REPORT_MALFORMED" | "REPORT_SCHEMA_INVALID" | "REPORT_PERMISSION_DENIED";
 export interface ApiErrorResponse {
     error: {
         code: ErrorCode;
@@ -270,6 +270,42 @@ export interface RuntimeScanRequest {
     targets?: RuntimeScanTarget[];
     discoveryMode?: RuntimeDiscoveryMode;
     viewportPreset?: "default";
+    auth?: {
+        useSavedState: true;
+    };
+}
+export type AuthErrorCode = "AUTH_STATE_MISSING" | "AUTH_STATE_INVALID" | "AUTH_STATE_WRITE_FAILED" | "AUTH_SESSION_START_FAILED" | "AUTH_SESSION_TIMEOUT";
+export interface AuthError {
+    code: AuthErrorCode;
+    message: string;
+}
+export interface AuthStateSummary {
+    exists: boolean;
+    valid: boolean;
+    savedAt?: string;
+    updatedAt?: string;
+    expiresAt?: string;
+    storageStateRef?: string;
+}
+export interface AuthStartRequest {
+    projectPath?: string;
+    baseUrl: string;
+    timeoutMs?: number;
+    successSelector?: string;
+    successUrlIncludes?: string;
+}
+export interface AuthStartResponse {
+    status: "saved" | "timeout" | "failed";
+    authState?: AuthStateSummary;
+    error?: AuthError;
+}
+export interface AuthStatusResponse extends AuthStateSummary {
+    status: "missing" | "valid" | "invalid";
+    error?: AuthError;
+}
+export interface AuthClearResponse {
+    cleared: boolean;
+    status: "cleared" | "missing";
 }
 export interface RuntimeScanViewport {
     width: number;
@@ -430,6 +466,10 @@ export type ValidationResult<T> = {
     details?: unknown;
 };
 export declare const validateRuntimeScanRequest: (value: unknown) => ValidationResult<RuntimeScanRequest>;
+export declare const validateAuthStartRequest: (value: unknown) => ValidationResult<AuthStartRequest>;
+export declare const validateAuthStatusResponse: (value: unknown) => ValidationResult<AuthStatusResponse>;
+export declare const validateAuthStartResponse: (value: unknown) => ValidationResult<AuthStartResponse>;
+export declare const validateAuthClearResponse: (value: unknown) => ValidationResult<AuthClearResponse>;
 export declare const validateScanRequest: (value: unknown) => ValidationResult<ScanRequest>;
 export declare const validateProjectPathQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
 export declare const validateGraphQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;

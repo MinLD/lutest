@@ -45,6 +45,7 @@ export const mapPublicRuntimeScanRequest = (input: {
   targets: input.request.discoveryMode === "all-routes" || input.request.discoveryMode === "selected-routes" ? undefined : input.request.targets?.map(mapTarget),
   discoveryMode: input.request.discoveryMode,
   viewportPreset: input.request.viewportPreset ?? "default",
+  auth: input.request.auth,
 });
 
 export const mapRuntimeIntegrationErrorCode = (code: string | undefined): RuntimeErrorCode => {

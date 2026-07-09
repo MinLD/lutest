@@ -2,11 +2,11 @@
 
 ## Phase Completed
 
-R7.3 — Latest Report Integration.
+R7.4 — Auth StorageState Integration.
 
 ## Summary
 
-R7.3 made `GET /api/report/latest` the dashboard source-of-truth after refresh. The endpoint reads stored latest report data from disk, does not rerun static/runtime scan, and maps the stored `ScanResponse` into a dashboard-safe response with generatedAt, static scan summary, runtime summary, runtime issue summary, safe artifact refs, optional production graph ref, and sanitized project metadata.
+R7.4 added manual, local auth storageState support. Auth state is stored under the selected project root only, exposed through safe status/ref metadata, and used by runtime scan only when `runtimeScan.auth.useSavedState` is explicitly requested. No raw cookies, tokens, localStorage/sessionStorage values, passwords, or storageState JSON are returned in API responses or latest report summaries.
 
 ## Changed Files From Latest Phase
 
@@ -14,10 +14,17 @@ R7.3 made `GET /api/report/latest` the dashboard source-of-truth after refresh. 
 - `packages/contracts/src/validators.self-check.ts`
 - `packages/contracts/dist/index.d.ts`
 - `packages/contracts/dist/index.js`
-- `apps/worker-node/src/modules/report/latest-report.mapper.ts`
-- `apps/worker-node/src/modules/report/latest-report.mapper.self-check.ts`
-- `apps/worker-node/src/modules/report/latest-report-integration.self-check.ts`
-- `apps/worker-node/src/modules/report/report.service.ts`
+- `apps/worker-node/src/app.ts`
+- `apps/worker-node/src/modules/auth/auth-state.repository.ts`
+- `apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts`
+- `apps/worker-node/src/modules/auth/auth-session.service.ts`
+- `apps/worker-node/src/modules/auth/auth.controller.ts`
+- `apps/worker-node/src/modules/auth/auth.routes.ts`
+- `apps/worker-node/src/modules/auth/auth.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.ts`
+- `apps/worker-node/src/modules/scan/scan.service.ts`
 - `AI_HANDOFF.md`
 - `docs/ai-context/03-current-state.md`
 - `docs/ai-context/05-known-issues.md`
@@ -27,13 +34,14 @@ R7.3 made `GET /api/report/latest` the dashboard source-of-truth after refresh. 
 
 ## What Changed
 
-- Added public latest-report summary contracts and validators: `ArtifactRef`, static scan summary, runtime scan summary, runtime issue summary, production graph summary/ref, and safe project metadata.
-- Latest report mapper sanitizes stored absolute paths into relative refs under `.lutest/...` or `.`.
-- Latest response no longer duplicates heavy runtime artifacts in `report.runtimeScan`; it exposes runtime counts and issue summary at top level.
-- Runtime issue summary includes total, by severity, and by type.
-- Artifact refs reject absolute paths, traversal, Windows drive prefixes, protocol refs, and unknown fields.
-- Static-only latest reports still validate and read correctly.
-- Runtime latest reports read from repository/storage after save and validate after refresh-style read-back.
+- Added public auth contracts and validators: `AuthStartRequest`, `AuthStartResponse`, `AuthStatusResponse`, `AuthClearResponse`, and `AuthError`.
+- Added auth routes: `POST /api/actions/auth/start`, `POST /api/actions/auth/clear`, and `GET /api/auth/status`.
+- Added auth repository for `<projectRoot>/.lutest/auth/storage-state.json` and `<projectRoot>/.lutest/auth/storage-state.meta.json`.
+- Auth repository writes JSON atomically and metadata separately.
+- Auth status returns only safe summary/ref fields.
+- Manual auth session service opens a Lutest-controlled Playwright context and saves `context.storageState()` after a declared success condition or timeout.
+- Runtime scan supports `runtimeScan.auth.useSavedState` opt-in and passes storageState path only internally to Playwright `newContext`.
+- Missing/invalid auth state maps to `AUTH_STATE_MISSING` / `AUTH_STATE_INVALID`.
 
 ## Tests Run
 
@@ -41,7 +49,11 @@ R7.3 made `GET /api/report/latest` the dashboard source-of-truth after refresh. 
 - `npm run build -w @lutest/contracts` — passed.
 - `npm run build -w @lutest/worker-node` — passed.
 - `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/latest-report.mapper.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/latest-report-integration.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
@@ -50,16 +62,13 @@ R7.3 made `GET /api/report/latest` the dashboard source-of-truth after refresh. 
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
-- `npx tsx ./apps/worker-node/src/modules/report/latest-report.mapper.self-check.ts` — passed.
-- `npx tsx ./apps/worker-node/src/modules/report/latest-report-integration.self-check.ts` — passed.
-- Extra preserved checks: runtime targets, DOM geometry, and viewport self-checks — passed.
 
 ## Known Limitations
 
-- Dashboard UI does not render the new latest-report runtime summary yet.
-- Auth StorageState remains future work.
-- Latest report includes artifact refs only; full artifact loading remains a later endpoint/UI concern.
+- No UI for auth start/status/clear yet.
+- Manual auth session self-check uses a mocked session runner; real login requires a user-controlled Playwright window.
+- No cloud auth, password manager, OAuth helper, or automatic credential fill.
 
 ## Result
 
-R7.3 completed. Next phase should be R7.4 — Auth StorageState Integration.
+R7.4 completed. Next phase should be R8.1 — Dashboard Runtime Summary UI.

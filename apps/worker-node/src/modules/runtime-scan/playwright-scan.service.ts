@@ -180,7 +180,7 @@ export const runPlaywrightRuntimeScan = async (
         const viewportFailedResponses: RuntimeFailedResponse[] = [];
 
         try {
-          context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
+          context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, storageState: request.storageStatePath });
           page = await context.newPage();
           page.on("console", (message) => {
             if (message.type() !== "warning" && message.type() !== "error") return;

@@ -6,7 +6,8 @@
 
 - Layout issue detection is heuristic-only and does not include contrast, OCR, or AI analysis.
 
-- Auth storageState is not implemented; manual flows only use declared in-page steps without stored auth.
+- Auth storageState is implemented as manual, local, selected-root-scoped state. UI for starting/clearing auth is not implemented yet.
+- Auth session self-check uses mocked manual browser interaction; real manual login requires a user-driven Playwright browser session.
 
 - Latest report now exposes runtime summary/meta and safe artifact refs, but UI dashboard rendering for these fields remains future work.
 - No contrast issue detection yet.

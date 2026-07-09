@@ -1,4 +1,8 @@
 import {
+  validateAuthClearResponse,
+  validateAuthStartRequest,
+  validateAuthStartResponse,
+  validateAuthStatusResponse,
   validateGraphQuery,
   validateLatestReportQuery,
   validateLatestReportResponse,
@@ -149,6 +153,28 @@ assert(!validateLatestReportResponse({ ...latestWithSummary, project: { selected
 assert(!validateLatestReportResponse({ ...latestWithSummary, runtimeScanSummary: { ...latestRuntimeSummary, issueCount: 2 } }).ok, "runtime issue count mismatch rejected");
 assert(!validateLatestReportResponse({ ...latestWithSummary, runtimeScanSummary: { ...latestRuntimeSummary, rawFillValue: "secret" } }).ok, "unknown dangerous runtime summary field rejected");
 
+
+
+const authStart = { baseUrl: "http://localhost:3000", timeoutMs: 10_000, successSelector: "[data-ok]", successUrlIncludes: "/dashboard" };
+assert(validateAuthStartRequest(authStart).ok, "auth start local baseUrl valid");
+assert(!validateAuthStartRequest({ ...authStart, baseUrl: "https://example.com" }).ok, "auth external baseUrl invalid");
+assert(!validateAuthStartRequest({ ...authStart, baseUrl: "file:///tmp/x" }).ok, "auth file baseUrl invalid");
+assert(!validateAuthStartRequest({ ...authStart, baseUrl: "data:text/html,x" }).ok, "auth data baseUrl invalid");
+assert(!validateAuthStartRequest({ ...authStart, baseUrl: "javascript:alert(1)" }).ok, "auth javascript baseUrl invalid");
+assert(!validateAuthStartRequest({ ...authStart, baseUrl: "http://user:pass@localhost:3000" }).ok, "auth credential baseUrl invalid");
+assert(!validateAuthStartRequest({ ...authStart, username: "u" }).ok, "auth username rejected");
+assert(!validateAuthStartRequest({ ...authStart, password: "p" }).ok, "auth password rejected");
+assert(!validateAuthStartRequest({ ...authStart, token: "t" }).ok, "auth token rejected");
+assert(!validateAuthStartRequest({ ...authStart, timeoutMs: 999_999 }).ok, "auth timeout too large rejected");
+assert(validateAuthStatusResponse({ status: "missing", exists: false, valid: false }).ok, "auth status missing valid");
+assert(validateAuthStatusResponse({ status: "valid", exists: true, valid: true, savedAt: "2026-07-09T00:00:00.000Z", storageStateRef: ".lutest/auth/storage-state.json" }).ok, "auth status valid validates");
+assert(!validateAuthStatusResponse({ status: "valid", exists: true, valid: true, cookies: [] }).ok, "auth status raw cookies rejected");
+assert(!validateAuthStatusResponse({ status: "valid", exists: true, valid: true, storageState: {} }).ok, "auth status raw storage rejected");
+assert(validateAuthStartResponse({ status: "saved", authState: { exists: true, valid: true, storageStateRef: ".lutest/auth/storage-state.json" } }).ok, "auth start saved validates");
+assert(!validateAuthStartResponse({ status: "saved", cookies: [] }).ok, "auth start raw cookies rejected");
+assert(validateAuthClearResponse({ cleared: true, status: "cleared" }).ok, "auth clear validates");
+assert(!validateAuthStartResponse({ status: "failed", error: { code: "BAD", message: "bad" } }).ok, "auth invalid error rejected");
+assert(validateRuntimeScanRequest({ ...runtimeRequest, auth: { useSavedState: true } }).ok, "runtime auth opt-in valid");
 
 same(validateProjectPathQuery({}), {
   ok: true,

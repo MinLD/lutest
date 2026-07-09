@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R7.3 — Latest Report Integration.
+R7.4 — Auth StorageState Integration.
 
 ## Current Status
 
@@ -29,6 +29,10 @@ R7.3 — Latest Report Integration.
 - Latest report storage now preserves `report.runtimeScan`; read-back can return the runtime result inside the report payload.
 - Latest report response is now dashboard source-of-truth after refresh: it includes `generatedAt`, static scan summary, runtime scan summary, runtime issue summary, safe artifact refs, optional production graph ref, and sanitized selected-root metadata.
 - Latest report response maps stored heavy `report.runtimeScan` to top-level summary/meta and returns `report.runtimeScan: null` to avoid duplicating full runtime artifacts in the dashboard payload.
+- Auth storageState repository persists manual auth state under `<projectRoot>/.lutest/auth/storage-state.json` plus safe metadata under `storage-state.meta.json`.
+- Auth endpoints exist: `POST /api/actions/auth/start`, `POST /api/actions/auth/clear`, and `GET /api/auth/status`.
+- Runtime scans can opt in to saved auth state with `runtimeScan.auth.useSavedState`; auth is not used automatically.
+- Public auth responses never include raw cookies, localStorage/sessionStorage, tokens, passwords, or raw storageState.
 - Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
 - Runtime scan target model includes route targets plus state/flow placeholders.
 - Runtime scan records discovery mode as `all-routes`, `selected-routes`, or internal `custom-targets`.
@@ -65,6 +69,13 @@ R7.3 — Latest Report Integration.
 - `GraphResponse` contracts remain because the compatibility endpoint still uses them.
 
 ## Latest Verification Recorded
+
+From current R7.4 session:
+
+- R7.4 added public auth contracts/validators, auth repository, auth endpoints, mocked/manual auth session boundary, and runtime scan auth opt-in.
+- Auth artifacts are selected-root scoped and use safe relative refs only.
+- Missing/invalid auth state maps to `AUTH_STATE_MISSING` / `AUTH_STATE_INVALID`.
+- R7.4 did not add UI, cloud auth, password manager, or automatic credential filling.
 
 From current R7.3 session:
 

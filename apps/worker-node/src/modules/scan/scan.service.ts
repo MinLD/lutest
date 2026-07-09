@@ -12,6 +12,7 @@ import { runPlaywrightRuntimeScan } from "../runtime-scan/playwright-scan.servic
 import { RuntimeScanArtifactError } from "../runtime-scan/runtime-scan-artifacts";
 import { RuntimePublicContractAdapterError, mapInternalRuntimeScanResult, mapPublicRuntimeScanRequest } from "../runtime-scan/runtime-public-contract-adapter";
 import type { RuntimeScanRequest as InternalRuntimeScanRequest, RuntimeScanResult as InternalRuntimeScanResult } from "../runtime-scan/playwright-scan.types";
+import { AuthStateError, authStatePaths, readAuthStorageState } from "../auth/auth-state.repository";
 export interface RunScanInput {
   cwd: string;
   projectPath?: string;
@@ -60,8 +61,13 @@ const runScan = async (input: RunScanInput): Promise<ScanResponse> => {
         projectRoot: discovery.summary.rootDir,
         request: input.runtimeScan,
       });
+      if (input.runtimeScan.auth?.useSavedState) {
+        try { await readAuthStorageState(discovery.summary.rootDir); runtimeRequest.storageStatePath = authStatePaths(discovery.summary.rootDir).statePath; }
+        catch (error) { if (error instanceof AuthStateError) throw new HttpError(error.code === "AUTH_STATE_MISSING" ? 400 : 400, error.code, error.message); throw error; }
+      }
       runtimeScan = mapInternalRuntimeScanResult(await runtimeScanRunner(runtimeRequest));
     } catch (error) {
+      if (error instanceof HttpError) throw error;
       if (error instanceof PlaywrightBrowserPreflightError) {
         throw new HttpError(400, error.code, error.message, error.remediation ? { remediation: error.remediation } : undefined);
       }
