@@ -108,6 +108,48 @@ export interface ReportSummary {
     infoIssues: number;
 }
 export type LatestReportState = "missing" | "valid";
+export type ArtifactRefKind = "static-report" | "production-graph" | "runtime-scan" | "runtime-scan-meta" | "screenshot";
+export interface ArtifactRef {
+    kind: ArtifactRefKind;
+    ref: string;
+    label?: string;
+    sizeBytes?: number;
+    generatedAt?: string;
+}
+export interface LatestStaticScanSummary {
+    status: ScanResponse["status"];
+    issueCount: number;
+    errorCount: number;
+    warningCount: number;
+    infoCount: number;
+    sourceFileCount: number;
+    reportRef?: ArtifactRef;
+}
+export interface LatestRuntimeIssueSummary {
+    total: number;
+    bySeverity: Record<string, number>;
+    byType: Record<string, number>;
+}
+export interface LatestRuntimeScanSummary {
+    status: RuntimeScanResult["status"];
+    targetCount: number;
+    viewportCount: number;
+    screenshotCount: number;
+    issueCount: number;
+    errorCount: number;
+    issueSummary: LatestRuntimeIssueSummary;
+    artifactRef?: ArtifactRef;
+    meta?: RuntimeArtifactMeta;
+}
+export interface LatestProductionGraphSummary {
+    summary?: ProductionGraphSummary;
+    artifactRef?: ArtifactRef;
+}
+export interface LatestReportProjectMeta {
+    name?: string;
+    selectedRootRef?: string;
+    selectedRootLabel?: string;
+}
 export type LatestReportResponse = {
     state: "missing";
     report: null;
@@ -116,6 +158,12 @@ export type LatestReportResponse = {
 } | {
     state: "valid";
     report: ScanResponse;
+    generatedAt?: string;
+    project?: LatestReportProjectMeta;
+    staticScan?: LatestStaticScanSummary;
+    productionGraph?: LatestProductionGraphSummary | null;
+    runtimeScanSummary?: LatestRuntimeScanSummary | null;
+    artifactRefs?: ArtifactRef[];
     runtimeScan?: RuntimeScanResult | null;
     runtimeArtifactMeta?: RuntimeArtifactMeta | null;
 };
@@ -390,6 +438,7 @@ export declare const validateDomGeometry: (value: unknown) => ValidationResult<D
 export declare const validateRuntimeLayoutIssue: (value: unknown) => ValidationResult<RuntimeLayoutIssue>;
 export declare const validateRuntimeScanResult: (value: unknown) => ValidationResult<RuntimeScanResult>;
 export declare const validateRuntimeArtifactMeta: (value: unknown) => ValidationResult<RuntimeArtifactMeta>;
+export declare const validateArtifactRef: (value: unknown) => ValidationResult<ArtifactRef>;
 export declare const validateLatestReportResponse: (value: unknown) => ValidationResult<LatestReportResponse>;
 export declare const validateScanResponse: (value: unknown) => ValidationResult<ScanResponse>;
 export declare const validateProductionGraphNode: (input: unknown) => ValidationResult<ProductionGraphNode>;

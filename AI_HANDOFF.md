@@ -18,13 +18,14 @@ Repo-local context entrypoint for AI/code sessions.
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R7.2 — Scan Service Integration.
-- Next recommended phase: R7.3 — Latest Report Integration.
+- Latest completed phase recorded here: R7.3 — Latest Report Integration.
+- Next recommended phase: R7.4 — Auth StorageState Integration.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
 - Runtime scan artifacts now use hardened repository save/read, atomic latest/meta/snapshot writes, strict path safety, and separated safe metadata under `<projectRoot>/.lutest/runtime/`.
 - Public contracts now include opt-in `runtimeScan` shapes, local-only `baseUrl` validation, public runtime result/DOM/layout/meta/error types, and optional scan/latest runtime fields.
 - `POST /api/actions/scan` now runs runtime scan only when `runtimeScan.enabled` is present, attaches `ScanResponse.runtimeScan`, persists runtime artifacts via repository, and saves runtime data in latest report payload.
+- `GET /api/report/latest` now maps stored reports into a dashboard-safe source-of-truth response with generatedAt, static summary, runtime summary/issue summary, safe artifact refs, and sanitized project metadata.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

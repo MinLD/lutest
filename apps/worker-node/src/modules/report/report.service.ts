@@ -1,5 +1,7 @@
 ﻿import type { LatestReportResponse } from "@lutest/contracts";
 import { HttpError } from "../../shared/errors/http-error";
+import { pathService } from "../../shared/services/path.service";
+import { mapLatestReportResponse } from "./latest-report.mapper";
 import { reportRepository } from "./report.repository";
 
 export interface GetLatestReportInput {
@@ -14,7 +16,8 @@ const getLatestReport = async (
   const result = await reportRepository.findLatest(input);
 
   if (result.kind === "ok") {
-    return { state: "valid", report: result.report };
+    const paths = await pathService.resolveProjectPaths(input);
+    return mapLatestReportResponse({ report: result.report, projectRoot: paths.targetProjectRoot });
   }
 
   if (result.kind === "missing") {

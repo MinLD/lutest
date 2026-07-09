@@ -2,22 +2,21 @@
 
 ## Next Recommended
 
-R7.3 — Latest Report Integration.
+R7.4 — Auth StorageState Integration.
 
-## R7.3 Goal
+## R7.4 Goal
 
-- Polish latest report runtime integration after R7.2 scan service attach/save behavior.
-- Decide whether latest report response should expose top-level `runtimeScan`/`runtimeArtifactMeta` in addition to `report.runtimeScan`.
-- Keep static-only latest report behavior unchanged.
+- Add explicit, safe Auth StorageState support for runtime scans if approved.
+- Keep secrets/cookies out of public summaries and metadata.
+- Preserve local-only baseUrl and strict path-policy.
 
 ## Later Runtime Phases
 
-- R7.4 — Auth StorageState Integration.
+- R8 — Dashboard Runtime Visualization.
 
-## Non-Goals For R7.3 Unless Requested
+## Non-Goals For R7.4 Unless Requested
 
 - No UI work.
-- No Auth StorageState implementation.
 - No path-policy loosening.
 - No production graph rewrite.
 - No legacy graph migration.

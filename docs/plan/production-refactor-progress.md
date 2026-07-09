@@ -4026,3 +4026,77 @@ Tests/checks run:
 - `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
 - `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+
+## R7.3 — Latest Report Integration
+
+Status: completed.
+
+Audit before:
+- Latest report endpoint: `GET /api/report/latest` in `report.controller.ts`.
+- Latest report repository read path: `<projectRoot>/.lutest/latest-report.json` through `report.repository.ts`.
+- Latest report save path: `scan.repository.ts` writes scan report and latest report JSON.
+- Current `LatestReportResponse` returned full `ScanResponse` only, with optional runtime fields from R7.1/R7.2.
+- R7.2 saved runtime results inside `ScanResponse.runtimeScan`.
+- Production graph artifact path source: `production-graph-artifacts.ts`, `<projectRoot>/.lutest/graph/latest-production-graph.json`.
+- Stored scan/project data included absolute internal paths; public latest response needed sanitization.
+
+Files changed:
+- `packages/contracts/src/index.ts`
+- `packages/contracts/src/validators.self-check.ts`
+- `packages/contracts/dist/index.d.ts`
+- `packages/contracts/dist/index.js`
+- `apps/worker-node/src/modules/report/latest-report.mapper.ts`
+- `apps/worker-node/src/modules/report/latest-report.mapper.self-check.ts`
+- `apps/worker-node/src/modules/report/latest-report-integration.self-check.ts`
+- `apps/worker-node/src/modules/report/report.service.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added latest report public summary/ref contract fields while preserving `state/report` compatibility.
+- Added safe `ArtifactRef` contract and strict validator.
+- Added latest report mapper so controller/service does not build paths or traverse runtime results inline.
+- Latest response includes `generatedAt`, static summary, runtime summary, runtime issue summary, artifact refs, optional production graph ref, and safe selected-root metadata.
+- Latest response strips heavy `report.runtimeScan` to `null` and exposes dashboard counts in `runtimeScanSummary`.
+- Static-only latest report remains valid and has `runtimeScanSummary: null`.
+- Runtime latest report read-back validates from disk/repository and includes runtime issue totals by severity and type.
+- Public latest response sanitizes stored absolute paths to safe relative refs such as `.lutest/reports/...` and `.lutest/runtime/...`.
+
+What was not changed:
+- No R7.4 Auth StorageState.
+- No UI dashboard work.
+- No runtime/static scan rerun on latest report read.
+- No local-only baseUrl or path-policy loosening.
+- No artifact visualization endpoint.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/latest-report.mapper.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/report/latest-report-integration.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+
+Known limitations:
+- UI dashboard does not render latest runtime summary yet.
+- Full artifact load/resolve endpoint remains future work.
+- Auth StorageState remains future work.
+
+Next recommended phase:
+- R7.4 — Auth StorageState Integration

@@ -8,7 +8,7 @@
 
 - Auth storageState is not implemented; manual flows only use declared in-page steps without stored auth.
 
-- Runtime latest report read-back currently preserves runtime data inside `report.runtimeScan`; R7.3 should polish latest report integration/top-level meta behavior.
+- Latest report now exposes runtime summary/meta and safe artifact refs, but UI dashboard rendering for these fields remains future work.
 - No contrast issue detection yet.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 

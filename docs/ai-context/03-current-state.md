@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R7.2 — Scan Service Integration.
+R7.3 — Latest Report Integration.
 
 ## Current Status
 
@@ -27,6 +27,8 @@ R7.2 — Scan Service Integration.
 - `POST /api/actions/scan` keeps static-only behavior when `runtimeScan` is absent and does not call Playwright/browser preflight.
 - `POST /api/actions/scan` runs runtime scan when `runtimeScan.enabled` is true, maps public runtime request to internal runtime service input, persists runtime artifacts through the repository, and attaches validated public `ScanResponse.runtimeScan`.
 - Latest report storage now preserves `report.runtimeScan`; read-back can return the runtime result inside the report payload.
+- Latest report response is now dashboard source-of-truth after refresh: it includes `generatedAt`, static scan summary, runtime scan summary, runtime issue summary, safe artifact refs, optional production graph ref, and sanitized selected-root metadata.
+- Latest report response maps stored heavy `report.runtimeScan` to top-level summary/meta and returns `report.runtimeScan: null` to avoid duplicating full runtime artifacts in the dashboard payload.
 - Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
 - Runtime scan target model includes route targets plus state/flow placeholders.
 - Runtime scan records discovery mode as `all-routes`, `selected-routes`, or internal `custom-targets`.
@@ -63,6 +65,14 @@ R7.2 — Scan Service Integration.
 - `GraphResponse` contracts remain because the compatibility endpoint still uses them.
 
 ## Latest Verification Recorded
+
+From current R7.3 session:
+
+- R7.3 added public latest-report summary/artifact-ref contracts and strict validators.
+- `GET /api/report/latest` reads from disk/repository, does not rerun static or runtime scan, and maps to a lightweight dashboard response.
+- Artifact refs are relative/safe under selected project root; absolute roots are sanitized from public latest response.
+- Runtime issue summary includes total, by severity, and by type.
+- R7.3 did not add UI, Auth StorageState, or artifact visualization.
 
 From current R7.2 session:
 

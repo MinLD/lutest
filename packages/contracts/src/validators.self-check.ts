@@ -116,6 +116,39 @@ assert(validateScanResponse(scanResponse).ok, "scan response without runtime val
 assert(validateScanResponse({ ...scanResponse, runtimeScan: runtimeResult }).ok, "scan response with runtime valid");
 assert(validateLatestReportResponse({ state: "valid", report: scanResponse }).ok, "latest report without runtime valid");
 assert(validateLatestReportResponse({ state: "valid", report: scanResponse, runtimeScan: runtimeResult, runtimeArtifactMeta: runtimeMeta }).ok, "latest report with runtime valid");
+const latestRuntimeSummary = {
+  status: "warning",
+  targetCount: 1,
+  viewportCount: 1,
+  screenshotCount: 0,
+  issueCount: 3,
+  errorCount: 0,
+  issueSummary: {
+    total: 3,
+    bySeverity: { error: 1, warning: 2 },
+    byType: { "horizontal-overflow": 1, "small-click-target": 2 },
+  },
+  artifactRef: { kind: "runtime-scan", ref: ".lutest/runtime/latest-runtime-scan.json", label: "Runtime" },
+  meta: runtimeMeta,
+} as const;
+const latestWithSummary = {
+  state: "valid",
+  generatedAt: "2026-07-09T00:00:01.000Z",
+  project: { name: "lutest", selectedRootRef: ".", selectedRootLabel: "lutest" },
+  report: scanResponse,
+  staticScan: { status: "passed", issueCount: 0, errorCount: 0, warningCount: 0, infoCount: 0, sourceFileCount: 0, reportRef: { kind: "static-report", ref: ".lutest/reports/scan-1.json" } },
+  productionGraph: { artifactRef: { kind: "production-graph", ref: ".lutest/graph/latest-production-graph.json" } },
+  runtimeScanSummary: latestRuntimeSummary,
+  runtimeArtifactMeta: runtimeMeta,
+  artifactRefs: [{ kind: "runtime-scan", ref: ".lutest/runtime/latest-runtime-scan.json" }],
+} as const;
+assert(validateLatestReportResponse({ state: "missing", report: null }).ok, "latest missing valid");
+assert(validateLatestReportResponse(latestWithSummary).ok, "latest report summary valid");
+assert(!validateLatestReportResponse({ ...latestWithSummary, artifactRefs: [{ kind: "runtime-scan", ref: "/home/user/project/.lutest/runtime/latest-runtime-scan.json" }] }).ok, "absolute artifact ref rejected");
+assert(!validateLatestReportResponse({ ...latestWithSummary, project: { selectedRootRef: "/home/user/project" } }).ok, "absolute selectedRootRef rejected");
+assert(!validateLatestReportResponse({ ...latestWithSummary, runtimeScanSummary: { ...latestRuntimeSummary, issueCount: 2 } }).ok, "runtime issue count mismatch rejected");
+assert(!validateLatestReportResponse({ ...latestWithSummary, runtimeScanSummary: { ...latestRuntimeSummary, rawFillValue: "secret" } }).ok, "unknown dangerous runtime summary field rejected");
+
 
 same(validateProjectPathQuery({}), {
   ok: true,

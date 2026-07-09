@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateProductionGraphResponse = exports.validateProductionGraphEdge = exports.validateProductionGraphNode = exports.validateScanResponse = exports.validateLatestReportResponse = exports.validateRuntimeArtifactMeta = exports.validateRuntimeScanResult = exports.validateRuntimeLayoutIssue = exports.validateDomGeometry = exports.validateLatestReportQuery = exports.validateGraphQuery = exports.validateProjectPathQuery = exports.validateScanRequest = exports.validateRuntimeScanRequest = void 0;
+exports.validateProductionGraphResponse = exports.validateProductionGraphEdge = exports.validateProductionGraphNode = exports.validateScanResponse = exports.validateLatestReportResponse = exports.validateArtifactRef = exports.validateRuntimeArtifactMeta = exports.validateRuntimeScanResult = exports.validateRuntimeLayoutIssue = exports.validateDomGeometry = exports.validateLatestReportQuery = exports.validateGraphQuery = exports.validateProjectPathQuery = exports.validateScanRequest = exports.validateRuntimeScanRequest = void 0;
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const isString = (value) => typeof value === "string";
 const isNonEmptyString = (value) => isString(value) && value.trim().length > 0;
@@ -572,6 +572,97 @@ const validateRuntimeArtifactMeta = (value) => {
     return { ok: true, value: { scanId: value.scanId, savedAt: value.savedAt, schemaVersion: value.schemaVersion, artifactVersion, targetCount, viewportCount, screenshotCount, issueCount, errorCount } };
 };
 exports.validateRuntimeArtifactMeta = validateRuntimeArtifactMeta;
+const isArtifactRefKind = (value) => value === "static-report" || value === "production-graph" || value === "runtime-scan" || value === "runtime-scan-meta" || value === "screenshot";
+const isSafeArtifactRef = (value) => isNonEmptyString(value) && !value.includes("\0") && !value.includes("\\") && !value.includes("..") && !value.startsWith("/") && !/^[a-zA-Z]:/.test(value) && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);
+const validateArtifactRef = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("artifact ref must be object");
+    const keys = rejectUnknownKeys(value, ["kind", "ref", "label", "sizeBytes", "generatedAt"]);
+    if (!keys.ok)
+        return keys;
+    if (!isArtifactRefKind(value.kind) || !isSafeArtifactRef(value.ref))
+        return runtimeInvalid("artifact ref invalid");
+    if (!isOptionalString(value.label) || !isOptionalString(value.generatedAt))
+        return runtimeInvalid("artifact ref labels invalid");
+    if (value.sizeBytes !== undefined && !isCount(value.sizeBytes))
+        return runtimeInvalid("artifact ref sizeBytes invalid");
+    return { ok: true, value: { kind: value.kind, ref: value.ref, label: value.label, sizeBytes: value.sizeBytes, generatedAt: value.generatedAt } };
+};
+exports.validateArtifactRef = validateArtifactRef;
+const validateLatestStaticScanSummary = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("static scan summary must be object");
+    const keys = rejectUnknownKeys(value, ["status", "issueCount", "errorCount", "warningCount", "infoCount", "sourceFileCount", "reportRef"]);
+    if (!keys.ok)
+        return keys;
+    if (!isScanStatus(value.status) || !isCount(value.issueCount) || !isCount(value.errorCount) || !isCount(value.warningCount) || !isCount(value.infoCount) || !isCount(value.sourceFileCount))
+        return runtimeInvalid("static scan summary invalid");
+    const reportRef = value.reportRef === undefined ? undefined : (0, exports.validateArtifactRef)(value.reportRef);
+    if (reportRef && !reportRef.ok)
+        return reportRef;
+    return { ok: true, value: { status: value.status, issueCount: value.issueCount, errorCount: value.errorCount, warningCount: value.warningCount, infoCount: value.infoCount, sourceFileCount: value.sourceFileCount, reportRef: reportRef?.value } };
+};
+const validateIssueCountRecord = (value) => isRecord(value) && Object.values(value).every(isCount);
+const validateLatestRuntimeIssueSummary = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime issue summary must be object");
+    const keys = rejectUnknownKeys(value, ["total", "bySeverity", "byType"]);
+    if (!keys.ok)
+        return keys;
+    if (!isCount(value.total) || !validateIssueCountRecord(value.bySeverity) || !validateIssueCountRecord(value.byType))
+        return runtimeInvalid("runtime issue summary invalid");
+    const severityTotal = Object.values(value.bySeverity).reduce((sum, count) => sum + count, 0);
+    const typeTotal = Object.values(value.byType).reduce((sum, count) => sum + count, 0);
+    if (severityTotal !== value.total || typeTotal !== value.total)
+        return runtimeInvalid("runtime issue summary total mismatch");
+    return { ok: true, value: { total: value.total, bySeverity: value.bySeverity, byType: value.byType } };
+};
+const validateLatestRuntimeScanSummary = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime scan summary must be object");
+    const keys = rejectUnknownKeys(value, ["status", "targetCount", "viewportCount", "screenshotCount", "issueCount", "errorCount", "issueSummary", "artifactRef", "meta"]);
+    if (!keys.ok)
+        return keys;
+    if (!isScanStatus(value.status) || !isCount(value.targetCount) || !isCount(value.viewportCount) || !isCount(value.screenshotCount) || !isCount(value.issueCount) || !isCount(value.errorCount))
+        return runtimeInvalid("runtime scan summary invalid");
+    const issueSummary = validateLatestRuntimeIssueSummary(value.issueSummary);
+    if (!issueSummary.ok)
+        return issueSummary;
+    if (issueSummary.value.total !== value.issueCount)
+        return runtimeInvalid("runtime issue count mismatch");
+    const artifactRef = value.artifactRef === undefined ? undefined : (0, exports.validateArtifactRef)(value.artifactRef);
+    if (artifactRef && !artifactRef.ok)
+        return artifactRef;
+    const meta = value.meta === undefined ? undefined : (0, exports.validateRuntimeArtifactMeta)(value.meta);
+    if (meta && !meta.ok)
+        return meta;
+    return { ok: true, value: { status: value.status, targetCount: value.targetCount, viewportCount: value.viewportCount, screenshotCount: value.screenshotCount, issueCount: value.issueCount, errorCount: value.errorCount, issueSummary: issueSummary.value, artifactRef: artifactRef?.value, meta: meta?.value } };
+};
+const validateLatestProductionGraphSummary = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("production graph summary must be object");
+    const keys = rejectUnknownKeys(value, ["summary", "artifactRef"]);
+    if (!keys.ok)
+        return keys;
+    const artifactRef = value.artifactRef === undefined ? undefined : (0, exports.validateArtifactRef)(value.artifactRef);
+    if (artifactRef && !artifactRef.ok)
+        return artifactRef;
+    if (value.summary !== undefined && !isRecord(value.summary))
+        return runtimeInvalid("production graph summary invalid");
+    return { ok: true, value: { summary: value.summary, artifactRef: artifactRef?.value } };
+};
+const validateLatestReportProjectMeta = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("latest report project must be object");
+    const keys = rejectUnknownKeys(value, ["name", "selectedRootRef", "selectedRootLabel"]);
+    if (!keys.ok)
+        return keys;
+    if (!isOptionalString(value.name) || !isOptionalString(value.selectedRootLabel))
+        return runtimeInvalid("latest report project labels invalid");
+    if (value.selectedRootRef !== undefined && !isSafeArtifactRef(value.selectedRootRef))
+        return runtimeInvalid("latest report selectedRootRef invalid");
+    return { ok: true, value: { name: value.name, selectedRootRef: value.selectedRootRef, selectedRootLabel: value.selectedRootLabel } };
+};
 const validateLatestReportResponse = (value) => {
     if (!isRecord(value)) {
         return {
@@ -585,9 +676,36 @@ const validateLatestReportResponse = (value) => {
         return { ok: false, code: "SCHEMA_INVALID", message: "state is invalid" };
     }
     if (state === "valid") {
+        const keys = rejectUnknownKeys(value, ["state", "report", "generatedAt", "project", "staticScan", "productionGraph", "runtimeScanSummary", "artifactRefs", "runtimeScan", "runtimeArtifactMeta"]);
+        if (!keys.ok)
+            return keys;
         const report = (0, exports.validateScanResponse)(value.report);
         if (!report.ok)
             return report;
+        if (value.generatedAt !== undefined && !isNonEmptyString(value.generatedAt))
+            return runtimeInvalid("latest report generatedAt invalid");
+        const project = value.project === undefined ? undefined : validateLatestReportProjectMeta(value.project);
+        if (project && !project.ok)
+            return project;
+        const staticScan = value.staticScan === undefined ? undefined : validateLatestStaticScanSummary(value.staticScan);
+        if (staticScan && !staticScan.ok)
+            return staticScan;
+        const productionGraph = value.productionGraph === undefined || value.productionGraph === null ? undefined : validateLatestProductionGraphSummary(value.productionGraph);
+        if (productionGraph && !productionGraph.ok)
+            return productionGraph;
+        const runtimeScanSummary = value.runtimeScanSummary === undefined || value.runtimeScanSummary === null ? undefined : validateLatestRuntimeScanSummary(value.runtimeScanSummary);
+        if (runtimeScanSummary && !runtimeScanSummary.ok)
+            return runtimeScanSummary;
+        if (value.artifactRefs !== undefined && !Array.isArray(value.artifactRefs))
+            return runtimeInvalid("latest report artifactRefs invalid");
+        const artifactRefs = value.artifactRefs === undefined ? undefined : [];
+        if (artifactRefs)
+            for (const rawRef of value.artifactRefs) {
+                const ref = (0, exports.validateArtifactRef)(rawRef);
+                if (!ref.ok)
+                    return ref;
+                artifactRefs.push(ref.value);
+            }
         const runtimeScan = value.runtimeScan === undefined || value.runtimeScan === null ? undefined : (0, exports.validateRuntimeScanResult)(value.runtimeScan);
         if (runtimeScan && !runtimeScan.ok)
             return runtimeScan;
@@ -599,6 +717,12 @@ const validateLatestReportResponse = (value) => {
             value: {
                 state: "valid",
                 report: report.value,
+                ...(value.generatedAt !== undefined ? { generatedAt: value.generatedAt } : {}),
+                ...(project ? { project: project.value } : {}),
+                ...(staticScan ? { staticScan: staticScan.value } : {}),
+                ...(productionGraph ? { productionGraph: productionGraph.value } : value.productionGraph === null ? { productionGraph: null } : {}),
+                ...(runtimeScanSummary ? { runtimeScanSummary: runtimeScanSummary.value } : value.runtimeScanSummary === null ? { runtimeScanSummary: null } : {}),
+                ...(artifactRefs ? { artifactRefs } : {}),
                 ...(runtimeScan ? { runtimeScan: runtimeScan.value } : value.runtimeScan === null ? { runtimeScan: null } : {}),
                 ...(runtimeArtifactMeta ? { runtimeArtifactMeta: runtimeArtifactMeta.value } : value.runtimeArtifactMeta === null ? { runtimeArtifactMeta: null } : {}),
             },
@@ -611,6 +735,9 @@ const validateLatestReportResponse = (value) => {
             message: "report must be null when latest report is missing",
         };
     }
+    const keys = rejectUnknownKeys(value, ["state", "report", "runtimeScan", "runtimeArtifactMeta"]);
+    if (!keys.ok)
+        return keys;
     return { ok: true, value: { state: "missing", report: null, ...(value.runtimeScan === null ? { runtimeScan: null } : {}), ...(value.runtimeArtifactMeta === null ? { runtimeArtifactMeta: null } : {}) } };
 };
 exports.validateLatestReportResponse = validateLatestReportResponse;
