@@ -2,6 +2,8 @@
 
 ## Runtime Scan
 
+- Runtime artifact repository hardening is complete internally; public runtime contracts are still not exposed.
+
 - Layout issue detection is heuristic-only and does not include contrast, OCR, or AI analysis.
 
 - Auth storageState is not implemented; manual flows only use declared in-page steps without stored auth.

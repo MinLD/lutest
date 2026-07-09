@@ -14,6 +14,8 @@ export type RuntimeArtifactRepositoryContract = {
   resolvePaths(input: { projectRoot: string; scanId: string }): RuntimeArtifactRepositoryPaths;
   saveLatest?(result: RuntimeScanResult): Promise<void>;
   readLatest?(projectRoot: string): Promise<RuntimeScanResult | null>;
+  saveSnapshot?(result: RuntimeScanResult): Promise<void>;
+  readSnapshot?(projectRoot: string, scanId: string): Promise<RuntimeScanResult | null>;
 };
 
 export const resolveRuntimeArtifactRepositoryPaths = (input: {

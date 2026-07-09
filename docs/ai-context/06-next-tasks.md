@@ -2,25 +2,24 @@
 
 ## Next Recommended
 
-R6.8 — Runtime Artifact Repository Hardening.
+R7.1 — Public Runtime Contracts.
 
-## R6.8 Goal
+## R7.1 Goal
 
-- Harden runtime artifact repository now that DOM geometry, viewport matrix, manual flows, and layout issues all use the artifact shape.
-- Preserve strict path-policy and validated latest/snapshot writes.
-- Keep public API contracts unchanged unless explicitly scoped.
+- Define public runtime contracts after internal R6 runtime artifact shape is hardened.
+- Decide what parts of internal runtime artifacts are safe to expose publicly.
+- Keep path-policy and local-only baseUrl behavior strict.
 
 ## Later Runtime Phases
 
-- R7.1 — Public Runtime Contracts.
 - R7.2 — Scan Service Integration.
+- R7.3 — Latest Report Integration.
+- R7.4 — Auth StorageState Integration.
 
-## Non-Goals For R6.8 Unless Requested
+## Non-Goals For R7.1 Unless Requested
 
-- No public API contract exposure.
-- No `/api/actions/scan` integration.
 - No UI work.
-- No Auth StorageState.
+- No Auth StorageState implementation.
 - No path-policy loosening.
 - No production graph rewrite.
 - No legacy graph migration.

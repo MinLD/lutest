@@ -3789,3 +3789,69 @@ Known limitations:
 
 Next recommended phase:
 - R6.8 — Runtime Artifact Repository Hardening
+
+## R6.8 — Runtime Artifact Repository Hardening
+
+Status: completed.
+
+Audit before:
+- Latest runtime artifact path was `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`.
+- Metadata path was `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`.
+- Snapshot path was `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
+- Runtime result JSON writes were already concentrated in `runtime-scan-artifacts.ts`; Playwright service called `saveLatestRuntimeScan`.
+- Screenshot files are still written by Playwright service under repository-provided screenshots directory inside selected project root.
+- Metadata was separate but included more path/root fields than needed.
+
+Files changed:
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-artifact-contract.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added/standardized repository API semantics: `getRuntimeArtifactPaths`, `saveLatestRuntimeScan`, `readLatestRuntimeScan`, `saveRuntimeScanSnapshot`, and `readRuntimeScanSnapshot`.
+- Latest runtime JSON, metadata, and snapshot writes now use atomic temp-file writes followed by rename.
+- Repository validates artifacts before write and after read.
+- Missing latest/snapshot returns `null`; malformed JSON and schema-invalid JSON throw typed `RuntimeScanArtifactError` codes.
+- Snapshot save/read uses canonical `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
+- ScanId safety now rejects traversal, slashes, backslashes, absolute paths, Windows drive prefixes, null bytes, and `..`.
+- Path safety checks ensure all artifact paths stay under `<projectRoot>/.lutest/runtime`.
+- Metadata is separated from `RuntimeScanResult` and stores safe fields only: schemaVersion, artifactVersion, scanId, savedAt, generatedAt, targetCount, viewportCount, screenshotCount, issueCount, errorCount.
+
+What was not changed:
+- No R7 public runtime contracts.
+- No `/api/actions/scan` integration.
+- No `ScanRequest`, `ScanResponse`, or `LatestReportResponse` change.
+- No public runtime API contracts exposed.
+- No UI change.
+- No Auth StorageState.
+- No issue engine change.
+- No path-policy/baseUrl policy change.
+- No Playwright browser auto-install.
+- No legacy backend `/api/graph` removal.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+
+Known limitations:
+- Runtime artifacts remain internal until R7 public contracts.
+- Public API/UI integration remains future work.
+
+Next recommended phase:
+- R7.1 — Public Runtime Contracts

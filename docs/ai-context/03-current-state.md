@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.7 — Runtime Layout Issue Engine.
+R6.8 — Runtime Artifact Repository Hardening.
 
 ## Current Status
 
@@ -36,6 +36,9 @@ R6.7 — Runtime Layout Issue Engine.
 - Runtime layout issue detector runs from DOM geometry only, independent of Playwright browser APIs.
 - Runtime issues currently cover horizontal overflow, outside viewport, small click target, suspicious overlap, and zero-size visible element.
 - Contrast, OCR, and AI analysis are intentionally not implemented.
+- Runtime artifact repository has atomic latest/meta/snapshot writes and typed read errors.
+- Canonical runtime artifact paths remain `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`, `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`, and `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
+- Runtime metadata is separate from `RuntimeScanResult` and stores safe counts only.
 
 ## Production Graph Persistence Facts
 
@@ -54,7 +57,7 @@ R6.7 — Runtime Layout Issue Engine.
 
 ## Latest Verification Recorded
 
-From current R6.7 session:
+From current R6.8 session:
 
 - `npm run typecheck --workspaces --if-present` — passed.
 - `npm run build -w ui` — passed.
