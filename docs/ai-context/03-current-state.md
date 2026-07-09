@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R7.1 — Public Runtime Contracts.
+R7.2 — Scan Service Integration.
 
 ## Current Status
 
@@ -24,6 +24,9 @@ R7.1 — Public Runtime Contracts.
 - Public `RuntimeScanRequest.baseUrl` validates local HTTP(S) only: `localhost`, `127.0.0.1`, or `::1`; external, credential, `file:`, `data:`, and `javascript:` URLs are rejected.
 - Public contracts expose runtime result, target, viewport, DOM geometry, layout issue, artifact metadata, and runtime error shapes.
 - `ScanResponse.runtimeScan`, `LatestReportResponse.runtimeScan`, and `LatestReportResponse.runtimeArtifactMeta` are optional; old scan/latest behavior remains valid when absent.
+- `POST /api/actions/scan` keeps static-only behavior when `runtimeScan` is absent and does not call Playwright/browser preflight.
+- `POST /api/actions/scan` runs runtime scan when `runtimeScan.enabled` is true, maps public runtime request to internal runtime service input, persists runtime artifacts through the repository, and attaches validated public `ScanResponse.runtimeScan`.
+- Latest report storage now preserves `report.runtimeScan`; read-back can return the runtime result inside the report payload.
 - Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
 - Runtime scan target model includes route targets plus state/flow placeholders.
 - Runtime scan records discovery mode as `all-routes`, `selected-routes`, or internal `custom-targets`.
@@ -60,6 +63,14 @@ R7.1 — Public Runtime Contracts.
 - `GraphResponse` contracts remain because the compatibility endpoint still uses them.
 
 ## Latest Verification Recorded
+
+From current R7.2 session:
+
+- R7.2 integrated opt-in runtime scan execution into scan service.
+- Runtime config validation failures return `CONFIG_ERROR` or `BASE_URL_NOT_LOCAL` before static/runtime scan work starts.
+- Missing Chromium maps to `PLAYWRIGHT_BROWSER_MISSING` with remediation and no raw stack.
+- Per-target route failures map into public runtime target errors and do not fail the whole scan response.
+- R7.2 did not add UI, Auth StorageState, crawler, or dashboard/report visualization.
 
 From current R7.1 session:
 

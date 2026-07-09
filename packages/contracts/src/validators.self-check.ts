@@ -104,6 +104,8 @@ const runtimeResult = {
   errors: [],
 } as const;
 assert(validateRuntimeScanResult(runtimeResult).ok, "runtime result with dom/layout valid");
+assert(validateRuntimeScanResult({ ...runtimeResult, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#secret", redacted: true, valueSource: "direct" }] }] }).ok, "runtime result redacted fill target valid");
+assert(!validateRuntimeScanResult({ ...runtimeResult, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#secret", value: "raw-secret" }] }] }).ok, "runtime result raw fill target rejected");
 
 const runtimeMeta = { scanId: "scan-1", savedAt: "2026-07-09T00:00:01.000Z", schemaVersion: "1", artifactVersion: 1, targetCount: 1, viewportCount: 1, screenshotCount: 0, issueCount: 1, errorCount: 0 } as const;
 assert(validateRuntimeArtifactMeta(runtimeMeta).ok, "runtime artifact meta valid");

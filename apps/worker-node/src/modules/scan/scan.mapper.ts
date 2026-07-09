@@ -1,4 +1,4 @@
-import type { ScanIssue, ScanResponse } from "@lutest/contracts";
+import type { ProjectSummary, RuntimeScanResult, ScanIssue, ScanResponse } from "@lutest/contracts";
 
 const toScanStatus = (issues: ScanIssue[]): ScanResponse["status"] => {
   if (issues.some((issue) => issue.severity === "error")) return "failed";
@@ -7,7 +7,16 @@ const toScanStatus = (issues: ScanIssue[]): ScanResponse["status"] => {
 };
 export const scanMapper = {
   toScanStatus,
-  toScanResponse: (input: any): ScanResponse => ({
+  toScanResponse: (input: {
+    scanId: string;
+    startedAt: string;
+    finishedAt: string;
+    project: ProjectSummary;
+    sourceFileCount: number;
+    issues: ScanIssue[];
+    reportPath: string;
+    runtimeScan?: RuntimeScanResult;
+  }): ScanResponse => ({
     ...input,
     status: toScanStatus(input.issues),
   }),

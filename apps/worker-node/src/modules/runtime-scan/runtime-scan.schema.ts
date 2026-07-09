@@ -94,6 +94,11 @@ export type RuntimeViewportResult = {
   screenshotError?: string;
   domGeometry?: DomGeometry;
   layoutIssues: RuntimeLayoutIssue[];
+  error?: RuntimeScanError;
+  consoleMessages?: RuntimeConsoleMessage[];
+  pageErrors?: string[];
+  networkErrors?: RuntimeNetworkError[];
+  failedResponses?: RuntimeFailedResponse[];
 };
 
 export type RuntimeConsoleMessage = { type: string; text: string; location?: string };

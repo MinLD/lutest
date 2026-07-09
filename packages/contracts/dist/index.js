@@ -10,6 +10,15 @@ const isErrorCode = (value) => value === "INVALID_REQUEST" ||
     value === "INTERNAL_ERROR" ||
     value === "SCHEMA_INVALID" ||
     value === "PATH_NOT_ALLOWED" ||
+    value === "CONFIG_ERROR" ||
+    value === "BASE_URL_NOT_LOCAL" ||
+    value === "PLAYWRIGHT_BROWSER_MISSING" ||
+    value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" ||
+    value === "ROUTE_DISCOVERY_ERROR" ||
+    value === "TARGET_EXECUTION_ERROR" ||
+    value === "ROUTE_SCAN_ERROR" ||
+    value === "ARTIFACT_WRITE_ERROR" ||
+    value === "RUNTIME_SCAN_FAILED" ||
     value === "REPORT_MALFORMED" ||
     value === "REPORT_SCHEMA_INVALID" ||
     value === "REPORT_PERMISSION_DENIED";
@@ -45,7 +54,7 @@ const validateLocalRuntimeBaseUrl = (baseUrl) => {
 const isLocalRoute = (value) => isNonEmptyString(value) && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) && !value.startsWith("//") && !value.includes("\0");
 const isRuntimeDiscoveryMode = (value) => value === "all-routes" || value === "selected-routes" || value === "custom-targets";
 const isRuntimeLayoutIssueType = (value) => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element";
-const isRuntimeErrorCode = (value) => value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
+const isRuntimeErrorCode = (value) => value === "CONFIG_ERROR" || value === "PATH_NOT_ALLOWED" || value === "BASE_URL_NOT_LOCAL" || value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "ROUTE_DISCOVERY_ERROR" || value === "TARGET_EXECUTION_ERROR" || value === "ROUTE_SCAN_ERROR" || value === "ARTIFACT_WRITE_ERROR" || value === "RUNTIME_SCAN_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 const isSafeId = (value) => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
 const isSafeEnvName = (value) => isNonEmptyString(value) && /^[A-Z_][A-Z0-9_]*$/.test(value);
 const validateRuntimeFlowStep = (value) => {
@@ -84,6 +93,23 @@ const validateRuntimeFlowStep = (value) => {
         return isNonEmptyString(value.label) ? { ok: true, value: { kind: "screenshotMarker", label: value.label } } : { ok: false, code: "INVALID_REQUEST", message: "screenshotMarker.label is required" };
     return { ok: false, code: "INVALID_REQUEST", message: "runtime flow step kind is invalid" };
 };
+const validateRuntimeResultFlowStep = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime result flow step must be an object");
+    const stepKeys = rejectUnknownKeys(value, ["kind", "route", "selector", "allowDestructive", "redacted", "valueSource", "valueFromEnv", "timeoutMs", "label"]);
+    if (!stepKeys.ok)
+        return stepKeys;
+    if (value.kind === "fill") {
+        if (!isNonEmptyString(value.selector) || value.redacted !== true)
+            return runtimeInvalid("runtime result fill step must be redacted");
+        if (value.valueSource !== undefined && value.valueSource !== "direct" && value.valueSource !== "env")
+            return runtimeInvalid("runtime result fill valueSource invalid");
+        if (value.valueFromEnv !== undefined && !isSafeEnvName(value.valueFromEnv))
+            return runtimeInvalid("runtime result fill valueFromEnv invalid");
+        return { ok: true, value: { kind: "fill", selector: value.selector, redacted: true, valueSource: value.valueSource, valueFromEnv: value.valueFromEnv } };
+    }
+    return validateRuntimeFlowStep(value);
+};
 const validateRuntimeTarget = (value) => {
     if (!isRecord(value))
         return { ok: false, code: "INVALID_REQUEST", message: "runtime target must be an object" };
@@ -110,6 +136,31 @@ const validateRuntimeTarget = (value) => {
         return { ok: true, value: { id: value.id, kind: value.kind, route: value.route, name, steps } };
     }
     return { ok: false, code: "INVALID_REQUEST", message: "runtime target kind is invalid" };
+};
+const validateRuntimeResultTarget = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime result target must be an object");
+    const keys = rejectUnknownKeys(value, ["id", "kind", "route", "name", "steps"]);
+    if (!keys.ok)
+        return keys;
+    if (!isSafeId(value.id) || !isLocalRoute(value.route))
+        return runtimeInvalid("runtime result target identity invalid");
+    const name = isOptionalString(value.name) ? value.name : undefined;
+    if (value.kind === "route")
+        return { ok: true, value: { id: value.id, kind: "route", route: value.route, name } };
+    if (value.kind === "state" || value.kind === "flow") {
+        if (!Array.isArray(value.steps))
+            return runtimeInvalid("runtime result target steps must be array");
+        const steps = [];
+        for (const rawStep of value.steps) {
+            const step = validateRuntimeResultFlowStep(rawStep);
+            if (!step.ok)
+                return step;
+            steps.push(step.value);
+        }
+        return { ok: true, value: { id: value.id, kind: value.kind, route: value.route, name, steps } };
+    }
+    return runtimeInvalid("runtime result target kind invalid");
 };
 const validateRuntimeScanRequest = (value) => {
     if (!isRecord(value))
@@ -464,7 +515,7 @@ const validateRuntimeScanResult = (value) => {
         return runtimeInvalid("runtime scan result arrays invalid");
     const targets = [];
     for (const rawTarget of value.targets) {
-        const target = validateRuntimeTarget(rawTarget);
+        const target = validateRuntimeResultTarget(rawTarget);
         if (!target.ok)
             return target;
         targets.push(target.value);

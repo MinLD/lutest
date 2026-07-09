@@ -5,6 +5,8 @@ export type RuntimeScanRequest = {
   baseUrl: string;
   routes?: string[];
   targets?: RuntimeScanTarget[];
+  discoveryMode?: "all-routes" | "selected-routes" | "custom-targets";
+  viewportPreset?: "default";
   viewport?: RuntimeScanViewport;
   headless?: boolean;
   timeoutMs?: number;

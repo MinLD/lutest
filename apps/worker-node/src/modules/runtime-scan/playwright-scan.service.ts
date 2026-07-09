@@ -174,6 +174,10 @@ export const runPlaywrightRuntimeScan = async (
         let viewportScreenshotPath: string | undefined;
         let viewportScreenshotError: string | undefined;
         let domGeometry: DomGeometry | undefined;
+        const viewportConsoleMessages: RuntimeConsoleMessage[] = [];
+        const viewportPageErrors: string[] = [];
+        const viewportNetworkErrors: RuntimeNetworkError[] = [];
+        const viewportFailedResponses: RuntimeFailedResponse[] = [];
 
         try {
           context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
@@ -181,27 +185,36 @@ export const runPlaywrightRuntimeScan = async (
           page.on("console", (message) => {
             if (message.type() !== "warning" && message.type() !== "error") return;
             const location = message.location();
-            consoleMessages.push({
+            const consoleMessage = {
               type: message.type(),
               text: message.text(),
               location: location.url ? `${location.url}:${location.lineNumber}:${location.columnNumber}` : undefined,
-            });
+            };
+            viewportConsoleMessages.push(consoleMessage);
+            consoleMessages.push(consoleMessage);
           });
-          page.on("pageerror", (pageError) => pageErrors.push(pageError.message));
+          page.on("pageerror", (pageError) => {
+            viewportPageErrors.push(pageError.message);
+            pageErrors.push(pageError.message);
+          });
           page.on("requestfailed", (failedRequest) => {
-            networkErrors.push({
+            const networkError = {
               url: failedRequest.url(),
               method: failedRequest.method(),
               failureText: failedRequest.failure()?.errorText,
-            });
+            };
+            viewportNetworkErrors.push(networkError);
+            networkErrors.push(networkError);
           });
           page.on("response", (response) => {
             if (response.status() < 400) return;
-            failedResponses.push({
+            const failedResponse = {
               url: response.url(),
               status: response.status(),
               statusText: response.statusText(),
-            });
+            };
+            viewportFailedResponses.push(failedResponse);
+            failedResponses.push(failedResponse);
           });
 
           try {
@@ -256,6 +269,11 @@ export const runPlaywrightRuntimeScan = async (
           screenshotPath: viewportScreenshotPath,
           screenshotError: viewportScreenshotError,
           ...(domGeometry ? { domGeometry } : {}),
+          error: viewportError,
+          consoleMessages: viewportConsoleMessages,
+          pageErrors: viewportPageErrors,
+          networkErrors: viewportNetworkErrors,
+          failedResponses: viewportFailedResponses,
           layoutIssues: detectRuntimeLayoutIssues({
             scanTargetId: target.id,
             route,

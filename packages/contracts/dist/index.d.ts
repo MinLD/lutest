@@ -1,4 +1,4 @@
-export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED" | "REPORT_MALFORMED" | "REPORT_SCHEMA_INVALID" | "REPORT_PERMISSION_DENIED";
+export type ErrorCode = "INVALID_REQUEST" | "NOT_FOUND" | "INTERNAL_ERROR" | "SCHEMA_INVALID" | "PATH_NOT_ALLOWED" | "CONFIG_ERROR" | "BASE_URL_NOT_LOCAL" | "PLAYWRIGHT_BROWSER_MISSING" | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" | "ROUTE_DISCOVERY_ERROR" | "TARGET_EXECUTION_ERROR" | "ROUTE_SCAN_ERROR" | "ARTIFACT_WRITE_ERROR" | "RUNTIME_SCAN_FAILED" | "REPORT_MALFORMED" | "REPORT_SCHEMA_INVALID" | "REPORT_PERMISSION_DENIED";
 export interface ApiErrorResponse {
     error: {
         code: ErrorCode;
@@ -170,6 +170,15 @@ export type RuntimeFlowStep = {
     kind: "screenshotMarker";
     label: string;
 };
+export type RuntimeResultFlowStep = Exclude<RuntimeFlowStep, {
+    kind: "fill";
+}> | {
+    kind: "fill";
+    selector: string;
+    redacted: true;
+    valueSource?: "direct" | "env";
+    valueFromEnv?: string;
+};
 export type RuntimeScanTarget = {
     id: string;
     kind: "route";
@@ -187,6 +196,24 @@ export type RuntimeScanTarget = {
     route: string;
     name?: string;
     steps: RuntimeFlowStep[];
+};
+export type RuntimeResultTarget = {
+    id: string;
+    kind: "route";
+    route: string;
+    name?: string;
+} | {
+    id: string;
+    kind: "state";
+    route: string;
+    name?: string;
+    steps: RuntimeResultFlowStep[];
+} | {
+    id: string;
+    kind: "flow";
+    route: string;
+    name?: string;
+    steps: RuntimeResultFlowStep[];
 };
 export interface RuntimeScanRequest {
     enabled: true;
@@ -259,7 +286,7 @@ export interface RuntimeLayoutIssue {
         threshold: string;
     };
 }
-export type RuntimeErrorCode = "PLAYWRIGHT_BROWSER_MISSING" | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" | "RUNTIME_BASE_URL_NOT_ALLOWED" | "RUNTIME_SCAN_ARTIFACT_INVALID" | "RUNTIME_SCAN_ARTIFACT_MALFORMED" | "RUNTIME_FLOW_ENV_VALUE_MISSING" | "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" | "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
+export type RuntimeErrorCode = "CONFIG_ERROR" | "PATH_NOT_ALLOWED" | "BASE_URL_NOT_LOCAL" | "PLAYWRIGHT_BROWSER_MISSING" | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" | "ROUTE_DISCOVERY_ERROR" | "TARGET_EXECUTION_ERROR" | "ROUTE_SCAN_ERROR" | "ARTIFACT_WRITE_ERROR" | "RUNTIME_SCAN_FAILED" | "RUNTIME_BASE_URL_NOT_ALLOWED" | "RUNTIME_SCAN_ARTIFACT_INVALID" | "RUNTIME_SCAN_ARTIFACT_MALFORMED" | "RUNTIME_FLOW_ENV_VALUE_MISSING" | "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" | "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 export interface RuntimeScanError {
     code: RuntimeErrorCode;
     message: string;
@@ -306,7 +333,7 @@ export interface RuntimeScanResult {
     finishedAt: string;
     durationMs: number;
     baseUrl: string;
-    targets: RuntimeScanTarget[];
+    targets: RuntimeResultTarget[];
     targetResults: RuntimeTargetResult[];
     summary: {
         targetCount: number;

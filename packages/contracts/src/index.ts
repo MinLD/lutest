@@ -4,6 +4,15 @@ export type ErrorCode =
   | "INTERNAL_ERROR"
   | "SCHEMA_INVALID"
   | "PATH_NOT_ALLOWED"
+  | "CONFIG_ERROR"
+  | "BASE_URL_NOT_LOCAL"
+  | "PLAYWRIGHT_BROWSER_MISSING"
+  | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED"
+  | "ROUTE_DISCOVERY_ERROR"
+  | "TARGET_EXECUTION_ERROR"
+  | "ROUTE_SCAN_ERROR"
+  | "ARTIFACT_WRITE_ERROR"
+  | "RUNTIME_SCAN_FAILED"
   | "REPORT_MALFORMED"
   | "REPORT_SCHEMA_INVALID"
   | "REPORT_PERMISSION_DENIED";
@@ -211,10 +220,17 @@ export type RuntimeFlowStep =
   | { kind: "waitForSelector"; selector: string }
   | { kind: "waitForTimeout"; timeoutMs: number }
   | { kind: "screenshotMarker"; label: string };
+export type RuntimeResultFlowStep =
+  | Exclude<RuntimeFlowStep, { kind: "fill" }>
+  | { kind: "fill"; selector: string; redacted: true; valueSource?: "direct" | "env"; valueFromEnv?: string };
 export type RuntimeScanTarget =
   | { id: string; kind: "route"; route: string; name?: string }
   | { id: string; kind: "state"; route: string; name?: string; steps: RuntimeFlowStep[] }
   | { id: string; kind: "flow"; route: string; name?: string; steps: RuntimeFlowStep[] };
+export type RuntimeResultTarget =
+  | { id: string; kind: "route"; route: string; name?: string }
+  | { id: string; kind: "state"; route: string; name?: string; steps: RuntimeResultFlowStep[] }
+  | { id: string; kind: "flow"; route: string; name?: string; steps: RuntimeResultFlowStep[] };
 export interface RuntimeScanRequest {
   enabled: true;
   baseUrl: string;
@@ -265,8 +281,16 @@ export interface RuntimeLayoutIssue {
   };
 }
 export type RuntimeErrorCode =
+  | "CONFIG_ERROR"
+  | "PATH_NOT_ALLOWED"
+  | "BASE_URL_NOT_LOCAL"
   | "PLAYWRIGHT_BROWSER_MISSING"
   | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED"
+  | "ROUTE_DISCOVERY_ERROR"
+  | "TARGET_EXECUTION_ERROR"
+  | "ROUTE_SCAN_ERROR"
+  | "ARTIFACT_WRITE_ERROR"
+  | "RUNTIME_SCAN_FAILED"
   | "RUNTIME_BASE_URL_NOT_ALLOWED"
   | "RUNTIME_SCAN_ARTIFACT_INVALID"
   | "RUNTIME_SCAN_ARTIFACT_MALFORMED"
@@ -277,7 +301,7 @@ export interface RuntimeScanError { code: RuntimeErrorCode; message: string; tar
 export interface RuntimeViewportResult { viewport: RuntimeScanViewport; screenshotPath?: string; domGeometry?: DomGeometry; layoutIssues: RuntimeLayoutIssue[]; consoleErrors: string[]; pageErrors: string[]; networkErrors: string[]; failedResponses: string[]; errors: RuntimeScanError[] }
 export interface RuntimeExecutionStep { kind: RuntimeFlowStep["kind"]; selector?: string; status: "passed" | "failed"; durationMs: number; redacted?: boolean; valueSource?: "direct" | "env"; valueFromEnv?: string; code?: RuntimeErrorCode; message?: string }
 export interface RuntimeTargetResult { scanTargetId: string; kind: RuntimeTargetKind; route: string; name?: string; status: "passed" | "failed" | "warning"; viewportResults: RuntimeViewportResult[]; executionSteps?: RuntimeExecutionStep[]; errors: RuntimeScanError[] }
-export interface RuntimeScanResult { scanId: string; status: "passed" | "failed" | "warning"; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; targets: RuntimeScanTarget[]; targetResults: RuntimeTargetResult[]; summary: { targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount: number }; errors: RuntimeScanError[] }
+export interface RuntimeScanResult { scanId: string; status: "passed" | "failed" | "warning"; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; targets: RuntimeResultTarget[]; targetResults: RuntimeTargetResult[]; summary: { targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount: number }; errors: RuntimeScanError[] }
 export interface RuntimeArtifactMeta { scanId: string; savedAt: string; schemaVersion: string; artifactVersion?: number; targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount?: number }
 
 export interface ImportEdgeData {
@@ -327,6 +351,15 @@ const isErrorCode = (value: unknown): value is ErrorCode =>
   value === "INTERNAL_ERROR" ||
   value === "SCHEMA_INVALID" ||
   value === "PATH_NOT_ALLOWED" ||
+  value === "CONFIG_ERROR" ||
+  value === "BASE_URL_NOT_LOCAL" ||
+  value === "PLAYWRIGHT_BROWSER_MISSING" ||
+  value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" ||
+  value === "ROUTE_DISCOVERY_ERROR" ||
+  value === "TARGET_EXECUTION_ERROR" ||
+  value === "ROUTE_SCAN_ERROR" ||
+  value === "ARTIFACT_WRITE_ERROR" ||
+  value === "RUNTIME_SCAN_FAILED" ||
   value === "REPORT_MALFORMED" ||
   value === "REPORT_SCHEMA_INVALID" ||
   value === "REPORT_PERMISSION_DENIED";
@@ -370,7 +403,7 @@ const isLocalRoute = (value: unknown): value is string =>
   isNonEmptyString(value) && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) && !value.startsWith("//") && !value.includes("\0");
 const isRuntimeDiscoveryMode = (value: unknown): value is RuntimeDiscoveryMode => value === "all-routes" || value === "selected-routes" || value === "custom-targets";
 const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueType => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element";
-const isRuntimeErrorCode = (value: unknown): value is RuntimeErrorCode => value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
+const isRuntimeErrorCode = (value: unknown): value is RuntimeErrorCode => value === "CONFIG_ERROR" || value === "PATH_NOT_ALLOWED" || value === "BASE_URL_NOT_LOCAL" || value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "ROUTE_DISCOVERY_ERROR" || value === "TARGET_EXECUTION_ERROR" || value === "ROUTE_SCAN_ERROR" || value === "ARTIFACT_WRITE_ERROR" || value === "RUNTIME_SCAN_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 const isSafeId = (value: unknown): value is string => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
 const isSafeEnvName = (value: unknown): value is string => isNonEmptyString(value) && /^[A-Z_][A-Z0-9_]*$/.test(value);
 
@@ -399,6 +432,18 @@ const validateRuntimeFlowStep = (value: unknown): ValidationResult<RuntimeFlowSt
   return { ok: false, code: "INVALID_REQUEST", message: "runtime flow step kind is invalid" };
 };
 
+const validateRuntimeResultFlowStep = (value: unknown): ValidationResult<RuntimeResultFlowStep> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime result flow step must be an object");
+  const stepKeys = rejectUnknownKeys(value, ["kind", "route", "selector", "allowDestructive", "redacted", "valueSource", "valueFromEnv", "timeoutMs", "label"]); if (!stepKeys.ok) return stepKeys;
+  if (value.kind === "fill") {
+    if (!isNonEmptyString(value.selector) || value.redacted !== true) return runtimeInvalid("runtime result fill step must be redacted");
+    if (value.valueSource !== undefined && value.valueSource !== "direct" && value.valueSource !== "env") return runtimeInvalid("runtime result fill valueSource invalid");
+    if (value.valueFromEnv !== undefined && !isSafeEnvName(value.valueFromEnv)) return runtimeInvalid("runtime result fill valueFromEnv invalid");
+    return { ok: true, value: { kind: "fill", selector: value.selector, redacted: true, valueSource: value.valueSource, valueFromEnv: value.valueFromEnv } };
+  }
+  return validateRuntimeFlowStep(value) as ValidationResult<RuntimeResultFlowStep>;
+};
+
 const validateRuntimeTarget = (value: unknown): ValidationResult<RuntimeScanTarget> => {
   if (!isRecord(value)) return { ok: false, code: "INVALID_REQUEST", message: "runtime target must be an object" };
   const keys = rejectUnknownKeys(value, ["id", "kind", "route", "name", "steps"]); if (!keys.ok) return keys;
@@ -413,6 +458,21 @@ const validateRuntimeTarget = (value: unknown): ValidationResult<RuntimeScanTarg
     return { ok: true, value: { id: value.id, kind: value.kind, route: value.route, name, steps } };
   }
   return { ok: false, code: "INVALID_REQUEST", message: "runtime target kind is invalid" };
+};
+
+const validateRuntimeResultTarget = (value: unknown): ValidationResult<RuntimeResultTarget> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime result target must be an object");
+  const keys = rejectUnknownKeys(value, ["id", "kind", "route", "name", "steps"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.id) || !isLocalRoute(value.route)) return runtimeInvalid("runtime result target identity invalid");
+  const name = isOptionalString(value.name) ? value.name : undefined;
+  if (value.kind === "route") return { ok: true, value: { id: value.id, kind: "route", route: value.route, name } };
+  if (value.kind === "state" || value.kind === "flow") {
+    if (!Array.isArray(value.steps)) return runtimeInvalid("runtime result target steps must be array");
+    const steps: RuntimeResultFlowStep[] = [];
+    for (const rawStep of value.steps) { const step = validateRuntimeResultFlowStep(rawStep); if (!step.ok) return step; steps.push(step.value); }
+    return { ok: true, value: { id: value.id, kind: value.kind, route: value.route, name, steps } };
+  }
+  return runtimeInvalid("runtime result target kind invalid");
 };
 
 export const validateRuntimeScanRequest = (value: unknown): ValidationResult<RuntimeScanRequest> => {
@@ -717,7 +777,7 @@ export const validateRuntimeScanResult = (value: unknown): ValidationResult<Runt
   if (!isRecord(value) || !isNonEmptyString(value.scanId) || !isScanStatus(value.status) || !isNonEmptyString(value.startedAt) || !isNonEmptyString(value.finishedAt) || !isFiniteNumber(value.durationMs)) return runtimeInvalid("runtime scan result metadata invalid");
   const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl); if (!baseUrl.ok) return runtimeInvalid(baseUrl.message);
   if (!Array.isArray(value.targets) || !Array.isArray(value.targetResults) || !Array.isArray(value.errors) || !isRecord(value.summary)) return runtimeInvalid("runtime scan result arrays invalid");
-  const targets: RuntimeScanTarget[] = []; for (const rawTarget of value.targets) { const target = validateRuntimeTarget(rawTarget); if (!target.ok) return target; targets.push(target.value); }
+  const targets: RuntimeResultTarget[] = []; for (const rawTarget of value.targets) { const target = validateRuntimeResultTarget(rawTarget); if (!target.ok) return target; targets.push(target.value); }
   const targetResults: RuntimeTargetResult[] = []; for (const rawResult of value.targetResults) { const result = validateRuntimeTargetResult(rawResult); if (!result.ok) return result; targetResults.push(result.value); }
   const errors: RuntimeScanError[] = []; for (const rawError of value.errors) { const error = validateRuntimeError(rawError); if (!error.ok) return error; errors.push(error.value); }
   const { targetCount, viewportCount, screenshotCount, issueCount, errorCount } = value.summary;

@@ -3918,3 +3918,111 @@ Known limitations:
 
 Next recommended phase:
 - R7.2 — Scan Service Integration
+
+## R7.2 — Scan Service Integration
+
+Status: completed.
+
+Audit before:
+- Scan endpoint/controller lives in `apps/worker-node/src/modules/scan/scan.controller.ts`; `/api/actions/scan` is registered in `apps/worker-node/src/app.ts`.
+- Request validation already called `validateScanRequest(req.body)` in the controller.
+- Selected project root was resolved through `pathPolicyService.assertProjectRoot` in the controller and `pathService.resolveProjectPaths` in services.
+- Static scan flow lived in `scan.service.ts`: resolve paths, discover project, build/save graph, run rules, build `ScanResponse`, save report.
+- Latest report save happened in `scan.repository.ts`; latest report read happened in `report.repository.ts` and `report.service.ts`.
+- Runtime scan entrypoint was `runPlaywrightRuntimeScan` in `playwright-scan.service.ts`.
+- Runtime artifact repository was called by the runtime service through `saveLatestRuntimeScan`; scan service had no runtime integration yet.
+- Browser preflight was inside `playwright-scan.service.ts` via `assertPlaywrightBrowserPreflight`.
+
+Files changed:
+- `packages/contracts/src/index.ts`
+- `packages/contracts/dist/index.d.ts`
+- `packages/contracts/dist/index.js`
+- `apps/worker-node/src/modules/scan/scan.controller.ts`
+- `apps/worker-node/src/modules/scan/scan.service.ts`
+- `apps/worker-node/src/modules/scan/scan.mapper.ts`
+- `apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- `ScanRequest.runtimeScan` now triggers runtime scan execution only when `enabled: true` is present.
+- Static-only scans remain unchanged and do not call runtime scan/browser preflight.
+- Runtime config validation maps to `CONFIG_ERROR`; invalid local-only base URLs map to `BASE_URL_NOT_LOCAL` before scan work.
+- Public runtime requests map to internal runtime requests through `runtime-public-contract-adapter.ts`.
+- Runtime scan uses selected project root from static scan discovery and path-policy flow.
+- Runtime result maps back to public `RuntimeScanResult`, validates with public validator, and attaches as `ScanResponse.runtimeScan`.
+- Runtime artifacts remain persisted by runtime repository helpers; scan service does not directly write runtime JSON.
+- Latest report save/read preserves runtime result inside `report.runtimeScan`.
+- Missing Chromium maps to `PLAYWRIGHT_BROWSER_MISSING` with remediation and no raw stack.
+- Per-target route execution failures map to public `ROUTE_SCAN_ERROR` inside target errors and do not fail the whole scan response.
+- Contracts include R7.2 runtime/API error codes: `CONFIG_ERROR`, `BASE_URL_NOT_LOCAL`, `ROUTE_DISCOVERY_ERROR`, `TARGET_EXECUTION_ERROR`, `ROUTE_SCAN_ERROR`, `ARTIFACT_WRITE_ERROR`, and `RUNTIME_SCAN_FAILED`.
+
+What was not changed:
+- No UI runtime toggle.
+- No Auth StorageState.
+- No crawler/auto-click.
+- No local-only baseUrl loosening.
+- No path-policy loosening.
+- No direct runtime artifact writes outside repository.
+- No R8 dashboard/report visualization.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+
+Known limitations:
+- Latest report runtime integration is minimal and currently preserves runtime data inside `report.runtimeScan`; R7.3 should polish top-level latest report runtime/meta behavior.
+- UI has no runtime toggle.
+- Auth StorageState remains deferred.
+
+Next recommended phase:
+- R7.3 — Latest Report Integration
+
+### R7.2 final adapter/integration remediation
+
+Status: completed.
+
+What changed:
+- Runtime public/internal adapter now maps per-viewport console/page/network/failed-response data from viewport results instead of copying route-level buffers into every viewport.
+- Internal runtime viewport results now preserve per-viewport event arrays and viewport error data.
+- Public runtime target status and runtime summary error counts aggregate target errors, viewport errors, and failed execution steps without stale duplication.
+- Public request mapping preserves `discoveryMode` and `viewportPreset` semantics and does not mutate the original request.
+- Public runtime result target steps no longer echo fill `value`; fill result steps use `redacted`, `valueSource`, and safe `valueFromEnv` only.
+- Adapter validation failures now throw `RuntimePublicContractAdapterError` and scan service maps them through the R7.2 error model.
+- Integration self-check now asserts static-only scans do not create runtime artifacts.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-targets.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-viewports.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
