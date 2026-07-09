@@ -2,14 +2,14 @@
 
 ## Runtime Scan
 
-- Runtime artifact repository hardening is complete internally; public runtime contracts are still not exposed.
+- Public runtime contracts are exposed, but `/api/actions/scan` does not execute runtime scan yet.
 
 - Layout issue detection is heuristic-only and does not include contrast, OCR, or AI analysis.
 
 - Auth storageState is not implemented; manual flows only use declared in-page steps without stored auth.
 
-- Internal service/self-check exists, but it is not integrated into `/api/actions/scan` response shape yet.
-- No layout overlap/contrast issue detection yet.
+- Internal service/self-check exists, but it is not integrated into `/api/actions/scan` execution yet.
+- No contrast issue detection yet.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 
 ## Graph
@@ -33,4 +33,4 @@
 
 - This context package can become stale. Future AI sessions must verify against code and progress doc.
 
-- Runtime artifact repository is implemented for latest/meta/snapshot, but no public runtime artifact API is exposed yet.
+- Runtime artifact repository is implemented for latest/meta/snapshot, but no public runtime artifact API endpoint is exposed yet.

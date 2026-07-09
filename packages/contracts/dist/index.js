@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateProductionGraphResponse = exports.validateProductionGraphEdge = exports.validateProductionGraphNode = exports.validateScanResponse = exports.validateLatestReportResponse = exports.validateLatestReportQuery = exports.validateGraphQuery = exports.validateProjectPathQuery = exports.validateScanRequest = void 0;
+exports.validateProductionGraphResponse = exports.validateProductionGraphEdge = exports.validateProductionGraphNode = exports.validateScanResponse = exports.validateLatestReportResponse = exports.validateRuntimeArtifactMeta = exports.validateRuntimeScanResult = exports.validateRuntimeLayoutIssue = exports.validateDomGeometry = exports.validateLatestReportQuery = exports.validateGraphQuery = exports.validateProjectPathQuery = exports.validateScanRequest = exports.validateRuntimeScanRequest = void 0;
 const isRecord = (value) => typeof value === "object" && value !== null && !Array.isArray(value);
 const isString = (value) => typeof value === "string";
 const isNonEmptyString = (value) => isString(value) && value.trim().length > 0;
@@ -24,6 +24,125 @@ const isScanIssueSeverity = (value) => value === "info" || value === "warning" |
 const isLatestReportState = (value) => value === "missing" ||
     value === "valid";
 const isScanStatus = (value) => value === "passed" || value === "failed" || value === "warning";
+const isFiniteNumber = (value) => typeof value === "number" && Number.isFinite(value);
+const isOptionalString = (value) => value === undefined || isString(value);
+const runtimeInvalid = (message) => ({ ok: false, code: "SCHEMA_INVALID", message });
+const validateLocalRuntimeBaseUrl = (baseUrl) => {
+    if (!isNonEmptyString(baseUrl))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.baseUrl must be a non-empty string" };
+    let parsed;
+    try {
+        parsed = new URL(baseUrl);
+    }
+    catch {
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.baseUrl is invalid" };
+    }
+    if ((parsed.protocol !== "http:" && parsed.protocol !== "https:") || parsed.username || parsed.password || !["localhost", "127.0.0.1", "::1", "[::1]"].includes(parsed.hostname)) {
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.baseUrl must be a local HTTP(S) URL" };
+    }
+    return { ok: true, value: parsed.toString().replace(/\/$/, "") };
+};
+const isLocalRoute = (value) => isNonEmptyString(value) && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) && !value.startsWith("//") && !value.includes("\0");
+const isRuntimeDiscoveryMode = (value) => value === "all-routes" || value === "selected-routes" || value === "custom-targets";
+const isRuntimeLayoutIssueType = (value) => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element";
+const isRuntimeErrorCode = (value) => value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
+const isSafeId = (value) => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
+const isSafeEnvName = (value) => isNonEmptyString(value) && /^[A-Z_][A-Z0-9_]*$/.test(value);
+const validateRuntimeFlowStep = (value) => {
+    if (!isRecord(value))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtime flow step must be an object" };
+    const stepKeys = rejectUnknownKeys(value, ["kind", "route", "selector", "allowDestructive", "value", "valueFromEnv", "timeoutMs", "label"]);
+    if (!stepKeys.ok)
+        return stepKeys;
+    if (value.kind === "goto")
+        return isLocalRoute(value.route) ? { ok: true, value: { kind: "goto", route: value.route } } : { ok: false, code: "INVALID_REQUEST", message: "goto.route must be local" };
+    if (value.kind === "click") {
+        if (!isNonEmptyString(value.selector))
+            return { ok: false, code: "INVALID_REQUEST", message: "click.selector is required" };
+        if (/delete|remove|logout|log-out|signout|sign-out|submit|save|confirm|danger|destructive/i.test(value.selector) && value.allowDestructive !== true)
+            return { ok: false, code: "INVALID_REQUEST", message: "destructive click requires allowDestructive" };
+        return { ok: true, value: { kind: "click", selector: value.selector, allowDestructive: value.allowDestructive === true ? true : undefined } };
+    }
+    if (value.kind === "fill") {
+        if (!isNonEmptyString(value.selector))
+            return { ok: false, code: "INVALID_REQUEST", message: "fill.selector is required" };
+        if (value.value !== undefined && !isString(value.value))
+            return { ok: false, code: "INVALID_REQUEST", message: "fill.value must be a string" };
+        if (value.valueFromEnv !== undefined && !isSafeEnvName(value.valueFromEnv))
+            return { ok: false, code: "INVALID_REQUEST", message: "fill.valueFromEnv is invalid" };
+        if (value.value === undefined && value.valueFromEnv === undefined)
+            return { ok: false, code: "INVALID_REQUEST", message: "fill requires value or valueFromEnv" };
+        return { ok: true, value: { kind: "fill", selector: value.selector, value: value.value, valueFromEnv: value.valueFromEnv } };
+    }
+    if (value.kind === "waitForSelector")
+        return isNonEmptyString(value.selector) ? { ok: true, value: { kind: "waitForSelector", selector: value.selector } } : { ok: false, code: "INVALID_REQUEST", message: "waitForSelector.selector is required" };
+    if (value.kind === "waitForTimeout") {
+        const timeoutMs = value.timeoutMs;
+        return typeof timeoutMs === "number" && Number.isInteger(timeoutMs) && timeoutMs >= 0 && timeoutMs <= 10_000 ? { ok: true, value: { kind: "waitForTimeout", timeoutMs } } : { ok: false, code: "INVALID_REQUEST", message: "waitForTimeout.timeoutMs must be 0..10000" };
+    }
+    if (value.kind === "screenshotMarker")
+        return isNonEmptyString(value.label) ? { ok: true, value: { kind: "screenshotMarker", label: value.label } } : { ok: false, code: "INVALID_REQUEST", message: "screenshotMarker.label is required" };
+    return { ok: false, code: "INVALID_REQUEST", message: "runtime flow step kind is invalid" };
+};
+const validateRuntimeTarget = (value) => {
+    if (!isRecord(value))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtime target must be an object" };
+    const keys = rejectUnknownKeys(value, ["id", "kind", "route", "name", "steps"]);
+    if (!keys.ok)
+        return keys;
+    if (!isSafeId(value.id))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtime target id is invalid" };
+    if (!isLocalRoute(value.route))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtime target route must be local" };
+    const name = isOptionalString(value.name) ? value.name : undefined;
+    if (value.kind === "route")
+        return { ok: true, value: { id: value.id, kind: "route", route: value.route, name } };
+    if (value.kind === "state" || value.kind === "flow") {
+        if (!Array.isArray(value.steps))
+            return { ok: false, code: "INVALID_REQUEST", message: "runtime target steps must be an array" };
+        const steps = [];
+        for (const rawStep of value.steps) {
+            const step = validateRuntimeFlowStep(rawStep);
+            if (!step.ok)
+                return step;
+            steps.push(step.value);
+        }
+        return { ok: true, value: { id: value.id, kind: value.kind, route: value.route, name, steps } };
+    }
+    return { ok: false, code: "INVALID_REQUEST", message: "runtime target kind is invalid" };
+};
+const validateRuntimeScanRequest = (value) => {
+    if (!isRecord(value))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan must be an object" };
+    const keys = rejectUnknownKeys(value, ["enabled", "baseUrl", "routes", "targets", "discoveryMode", "viewportPreset"]);
+    if (!keys.ok)
+        return keys;
+    if (value.enabled !== true)
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.enabled must be true" };
+    const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl);
+    if (!baseUrl.ok)
+        return baseUrl;
+    const routes = value.routes === undefined ? undefined : Array.isArray(value.routes) && value.routes.every(isLocalRoute) ? value.routes : undefined;
+    if (value.routes !== undefined && routes === undefined)
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.routes must be local routes" };
+    const targets = value.targets === undefined ? undefined : [];
+    if (value.targets !== undefined) {
+        if (!Array.isArray(value.targets))
+            return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.targets must be an array" };
+        for (const rawTarget of value.targets) {
+            const target = validateRuntimeTarget(rawTarget);
+            if (!target.ok)
+                return target;
+            targets?.push(target.value);
+        }
+    }
+    if (value.discoveryMode !== undefined && !isRuntimeDiscoveryMode(value.discoveryMode))
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.discoveryMode is invalid" };
+    if (value.viewportPreset !== undefined && value.viewportPreset !== "default")
+        return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.viewportPreset is invalid" };
+    return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset } };
+};
+exports.validateRuntimeScanRequest = validateRuntimeScanRequest;
 const isProductionGraphNodeKind = (value) => value === "file" ||
     value === "page" ||
     value === "component" ||
@@ -58,7 +177,7 @@ const validateScanRequest = (value) => {
             message: "Request body must be an object",
         };
     }
-    const keys = rejectUnknownKeys(value, ["projectPath"]);
+    const keys = rejectUnknownKeys(value, ["projectPath", "runtimeScan"]);
     if (!keys.ok)
         return keys;
     const projectPath = value.projectPath;
@@ -69,9 +188,12 @@ const validateScanRequest = (value) => {
             message: "projectPath must be a non-empty string",
         };
     }
+    const runtimeScan = value.runtimeScan === undefined ? undefined : (0, exports.validateRuntimeScanRequest)(value.runtimeScan);
+    if (runtimeScan && !runtimeScan.ok)
+        return runtimeScan;
     return {
         ok: true,
-        value: { projectPath },
+        value: { projectPath, ...(runtimeScan ? { runtimeScan: runtimeScan.value } : {}) },
     };
 };
 exports.validateScanRequest = validateScanRequest;
@@ -189,6 +311,216 @@ const validateScanIssue = (value) => {
         },
     };
 };
+const validateRuntimeViewport = (value) => {
+    if (!isRecord(value) || !isFiniteNumber(value.width) || !isFiniteNumber(value.height))
+        return runtimeInvalid("runtime viewport is invalid");
+    return { ok: true, value: { width: value.width, height: value.height } };
+};
+const validateRuntimeRect = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime rect must be an object");
+    const { x, y, width, height, top, right, bottom, left } = value;
+    if (!isFiniteNumber(x))
+        return runtimeInvalid("runtime rect.x must be finite");
+    if (!isFiniteNumber(y))
+        return runtimeInvalid("runtime rect.y must be finite");
+    if (!isFiniteNumber(width))
+        return runtimeInvalid("runtime rect.width must be finite");
+    if (!isFiniteNumber(height))
+        return runtimeInvalid("runtime rect.height must be finite");
+    if (!isFiniteNumber(top))
+        return runtimeInvalid("runtime rect.top must be finite");
+    if (!isFiniteNumber(right))
+        return runtimeInvalid("runtime rect.right must be finite");
+    if (!isFiniteNumber(bottom))
+        return runtimeInvalid("runtime rect.bottom must be finite");
+    if (!isFiniteNumber(left))
+        return runtimeInvalid("runtime rect.left must be finite");
+    return { ok: true, value: { x, y, width, height, top, right, bottom, left } };
+};
+const validateDomElementGeometry = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("dom element must be object");
+    if (!isNonEmptyString(value.internalId) || !isNonEmptyString(value.tagName))
+        return runtimeInvalid("dom element identity invalid");
+    if (!isOptionalString(value.selectorHint) || !isOptionalString(value.textSnippet) || (isString(value.textSnippet) && value.textSnippet.length > 500))
+        return runtimeInvalid("dom element text/selector invalid");
+    const rect = validateRuntimeRect(value.rect);
+    if (!rect.ok)
+        return rect;
+    if (!isRecord(value.visibility) || !isString(value.visibility.display) || !isString(value.visibility.visibility) || !isFiniteNumber(value.visibility.opacity))
+        return runtimeInvalid("dom element visibility invalid");
+    if (typeof value.clickable !== "boolean" || !isFiniteNumber(value.order))
+        return runtimeInvalid("dom element clickable/order invalid");
+    return { ok: true, value: { internalId: value.internalId, tagName: value.tagName, selectorHint: value.selectorHint, id: isOptionalString(value.id) ? value.id : undefined, className: isOptionalString(value.className) ? value.className : undefined, role: isOptionalString(value.role) ? value.role : undefined, ariaLabel: isOptionalString(value.ariaLabel) ? value.ariaLabel : undefined, textSnippet: value.textSnippet, rect: rect.value, visibility: { display: value.visibility.display, visibility: value.visibility.visibility, opacity: value.visibility.opacity }, clickable: value.clickable, order: value.order } };
+};
+const validateDomGeometry = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("domGeometry must be object");
+    const viewport = validateRuntimeViewport(value.viewport);
+    if (!viewport.ok)
+        return viewport;
+    if (!isNonEmptyString(value.capturedAt) || !isCount(value.elementCount) || typeof value.truncated !== "boolean" || !Array.isArray(value.elements))
+        return runtimeInvalid("domGeometry metadata invalid");
+    const elements = [];
+    for (const rawElement of value.elements) {
+        const element = validateDomElementGeometry(rawElement);
+        if (!element.ok)
+            return element;
+        elements.push(element.value);
+    }
+    return { ok: true, value: { viewport: viewport.value, capturedAt: value.capturedAt, elementCount: value.elementCount, truncated: value.truncated, elements } };
+};
+exports.validateDomGeometry = validateDomGeometry;
+const validateRuntimeLayoutIssue = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("layout issue must be object");
+    if (!isNonEmptyString(value.id) || !isRuntimeLayoutIssueType(value.type) || !isScanIssueSeverity(value.severity) || !isNonEmptyString(value.message) || !isNonEmptyString(value.scanTargetId) || !isLocalRoute(value.route) || !isNonEmptyString(value.elementRef))
+        return runtimeInvalid("layout issue fields invalid");
+    const code = value.code;
+    if (code !== undefined && code !== value.type)
+        return runtimeInvalid("layout issue code must equal type");
+    const viewport = validateRuntimeViewport(value.viewport);
+    if (!viewport.ok)
+        return viewport;
+    if (!isRecord(value.evidence) || !isNonEmptyString(value.evidence.threshold))
+        return runtimeInvalid("layout issue evidence invalid");
+    const boundingBox = validateRuntimeRect(value.evidence.boundingBox);
+    if (!boundingBox.ok)
+        return boundingBox;
+    const evidenceViewport = validateRuntimeViewport(value.evidence.viewport);
+    if (!evidenceViewport.ok)
+        return evidenceViewport;
+    const relatedBoundingBox = value.evidence.relatedBoundingBox === undefined ? undefined : validateRuntimeRect(value.evidence.relatedBoundingBox);
+    if (relatedBoundingBox && !relatedBoundingBox.ok)
+        return relatedBoundingBox;
+    const overlapArea = value.evidence.overlapArea;
+    const overlapRatio = value.evidence.overlapRatio;
+    return { ok: true, value: { id: value.id, type: value.type, code: isRuntimeLayoutIssueType(code) ? code : undefined, severity: value.severity, message: value.message, scanTargetId: value.scanTargetId, route: value.route, viewport: viewport.value, elementRef: value.elementRef, evidence: { selectorHint: isOptionalString(value.evidence.selectorHint) ? value.evidence.selectorHint : undefined, boundingBox: boundingBox.value, relatedElementRef: isOptionalString(value.evidence.relatedElementRef) ? value.evidence.relatedElementRef : undefined, relatedSelectorHint: isOptionalString(value.evidence.relatedSelectorHint) ? value.evidence.relatedSelectorHint : undefined, relatedBoundingBox: relatedBoundingBox?.value, overlapArea: isFiniteNumber(overlapArea) ? overlapArea : undefined, overlapRatio: isFiniteNumber(overlapRatio) ? overlapRatio : undefined, viewport: evidenceViewport.value, screenshotPath: isOptionalString(value.evidence.screenshotPath) ? value.evidence.screenshotPath : undefined, threshold: value.evidence.threshold } } };
+};
+exports.validateRuntimeLayoutIssue = validateRuntimeLayoutIssue;
+const validateRuntimeError = (value) => {
+    if (!isRecord(value) || !isRuntimeErrorCode(value.code) || !isNonEmptyString(value.message))
+        return runtimeInvalid("runtime error invalid");
+    const viewport = value.viewport === undefined ? undefined : validateRuntimeViewport(value.viewport);
+    if (viewport && !viewport.ok)
+        return viewport;
+    const stepIndex = value.stepIndex;
+    return { ok: true, value: { code: value.code, message: value.message, targetId: isOptionalString(value.targetId) ? value.targetId : undefined, viewport: viewport?.value, stepIndex: typeof stepIndex === "number" && Number.isInteger(stepIndex) ? stepIndex : undefined } };
+};
+const validateRuntimeViewportResult = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime viewport result must be object");
+    const viewport = validateRuntimeViewport(value.viewport);
+    if (!viewport.ok)
+        return viewport;
+    const domGeometry = value.domGeometry === undefined ? undefined : (0, exports.validateDomGeometry)(value.domGeometry);
+    if (domGeometry && !domGeometry.ok)
+        return domGeometry;
+    if (!Array.isArray(value.layoutIssues) || !Array.isArray(value.consoleErrors) || !Array.isArray(value.pageErrors) || !Array.isArray(value.networkErrors) || !Array.isArray(value.failedResponses) || !Array.isArray(value.errors))
+        return runtimeInvalid("runtime viewport arrays invalid");
+    const layoutIssues = [];
+    for (const rawIssue of value.layoutIssues) {
+        const issue = (0, exports.validateRuntimeLayoutIssue)(rawIssue);
+        if (!issue.ok)
+            return issue;
+        layoutIssues.push(issue.value);
+    }
+    const errors = [];
+    for (const rawError of value.errors) {
+        const error = validateRuntimeError(rawError);
+        if (!error.ok)
+            return error;
+        errors.push(error.value);
+    }
+    return { ok: true, value: { viewport: viewport.value, screenshotPath: isOptionalString(value.screenshotPath) ? value.screenshotPath : undefined, domGeometry: domGeometry?.value, layoutIssues, consoleErrors: value.consoleErrors.filter(isString), pageErrors: value.pageErrors.filter(isString), networkErrors: value.networkErrors.filter(isString), failedResponses: value.failedResponses.filter(isString), errors } };
+};
+const validateRuntimeTargetResult = (value) => {
+    if (!isRecord(value) || !isNonEmptyString(value.scanTargetId) || (value.kind !== "route" && value.kind !== "state" && value.kind !== "flow") || !isLocalRoute(value.route) || !isScanStatus(value.status) || !Array.isArray(value.viewportResults) || !Array.isArray(value.errors))
+        return runtimeInvalid("runtime target result invalid");
+    const viewportResults = [];
+    for (const rawViewport of value.viewportResults) {
+        const viewport = validateRuntimeViewportResult(rawViewport);
+        if (!viewport.ok)
+            return viewport;
+        viewportResults.push(viewport.value);
+    }
+    const errors = [];
+    for (const rawError of value.errors) {
+        const error = validateRuntimeError(rawError);
+        if (!error.ok)
+            return error;
+        errors.push(error.value);
+    }
+    return { ok: true, value: { scanTargetId: value.scanTargetId, kind: value.kind, route: value.route, name: isOptionalString(value.name) ? value.name : undefined, status: value.status, viewportResults, executionSteps: Array.isArray(value.executionSteps) ? value.executionSteps : undefined, errors } };
+};
+const validateRuntimeScanResult = (value) => {
+    if (!isRecord(value) || !isNonEmptyString(value.scanId) || !isScanStatus(value.status) || !isNonEmptyString(value.startedAt) || !isNonEmptyString(value.finishedAt) || !isFiniteNumber(value.durationMs))
+        return runtimeInvalid("runtime scan result metadata invalid");
+    const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl);
+    if (!baseUrl.ok)
+        return runtimeInvalid(baseUrl.message);
+    if (!Array.isArray(value.targets) || !Array.isArray(value.targetResults) || !Array.isArray(value.errors) || !isRecord(value.summary))
+        return runtimeInvalid("runtime scan result arrays invalid");
+    const targets = [];
+    for (const rawTarget of value.targets) {
+        const target = validateRuntimeTarget(rawTarget);
+        if (!target.ok)
+            return target;
+        targets.push(target.value);
+    }
+    const targetResults = [];
+    for (const rawResult of value.targetResults) {
+        const result = validateRuntimeTargetResult(rawResult);
+        if (!result.ok)
+            return result;
+        targetResults.push(result.value);
+    }
+    const errors = [];
+    for (const rawError of value.errors) {
+        const error = validateRuntimeError(rawError);
+        if (!error.ok)
+            return error;
+        errors.push(error.value);
+    }
+    const { targetCount, viewportCount, screenshotCount, issueCount, errorCount } = value.summary;
+    if (!isCount(targetCount))
+        return runtimeInvalid("runtime summary.targetCount invalid");
+    if (!isCount(viewportCount))
+        return runtimeInvalid("runtime summary.viewportCount invalid");
+    if (!isCount(screenshotCount))
+        return runtimeInvalid("runtime summary.screenshotCount invalid");
+    if (!isCount(issueCount))
+        return runtimeInvalid("runtime summary.issueCount invalid");
+    if (!isCount(errorCount))
+        return runtimeInvalid("runtime summary.errorCount invalid");
+    return { ok: true, value: { scanId: value.scanId, status: value.status, startedAt: value.startedAt, finishedAt: value.finishedAt, durationMs: value.durationMs, baseUrl: baseUrl.value, targets, targetResults, summary: { targetCount, viewportCount, screenshotCount, issueCount, errorCount }, errors } };
+};
+exports.validateRuntimeScanResult = validateRuntimeScanResult;
+const validateRuntimeArtifactMeta = (value) => {
+    if (!isRecord(value))
+        return runtimeInvalid("runtime artifact meta must be object");
+    const keys = rejectUnknownKeys(value, ["scanId", "savedAt", "schemaVersion", "artifactVersion", "targetCount", "viewportCount", "screenshotCount", "issueCount", "errorCount"]);
+    if (!keys.ok)
+        return keys;
+    if (!isNonEmptyString(value.scanId) || !isNonEmptyString(value.savedAt) || !isNonEmptyString(value.schemaVersion))
+        return runtimeInvalid("runtime artifact meta strings invalid");
+    const { artifactVersion, targetCount, viewportCount, screenshotCount, issueCount, errorCount } = value;
+    if (!isCount(targetCount))
+        return runtimeInvalid("runtime artifact meta.targetCount invalid");
+    if (!isCount(viewportCount))
+        return runtimeInvalid("runtime artifact meta.viewportCount invalid");
+    if (!isCount(screenshotCount))
+        return runtimeInvalid("runtime artifact meta.screenshotCount invalid");
+    if (!isCount(issueCount))
+        return runtimeInvalid("runtime artifact meta.issueCount invalid");
+    if (artifactVersion !== undefined && !isCount(artifactVersion))
+        return runtimeInvalid("runtime artifact meta.artifactVersion invalid");
+    if (errorCount !== undefined && !isCount(errorCount))
+        return runtimeInvalid("runtime artifact meta.errorCount invalid");
+    return { ok: true, value: { scanId: value.scanId, savedAt: value.savedAt, schemaVersion: value.schemaVersion, artifactVersion, targetCount, viewportCount, screenshotCount, issueCount, errorCount } };
+};
+exports.validateRuntimeArtifactMeta = validateRuntimeArtifactMeta;
 const validateLatestReportResponse = (value) => {
     if (!isRecord(value)) {
         return {
@@ -205,9 +537,20 @@ const validateLatestReportResponse = (value) => {
         const report = (0, exports.validateScanResponse)(value.report);
         if (!report.ok)
             return report;
+        const runtimeScan = value.runtimeScan === undefined || value.runtimeScan === null ? undefined : (0, exports.validateRuntimeScanResult)(value.runtimeScan);
+        if (runtimeScan && !runtimeScan.ok)
+            return runtimeScan;
+        const runtimeArtifactMeta = value.runtimeArtifactMeta === undefined || value.runtimeArtifactMeta === null ? undefined : (0, exports.validateRuntimeArtifactMeta)(value.runtimeArtifactMeta);
+        if (runtimeArtifactMeta && !runtimeArtifactMeta.ok)
+            return runtimeArtifactMeta;
         return {
             ok: true,
-            value: { state: "valid", report: report.value },
+            value: {
+                state: "valid",
+                report: report.value,
+                ...(runtimeScan ? { runtimeScan: runtimeScan.value } : value.runtimeScan === null ? { runtimeScan: null } : {}),
+                ...(runtimeArtifactMeta ? { runtimeArtifactMeta: runtimeArtifactMeta.value } : value.runtimeArtifactMeta === null ? { runtimeArtifactMeta: null } : {}),
+            },
         };
     }
     if (value.report !== null) {
@@ -217,7 +560,7 @@ const validateLatestReportResponse = (value) => {
             message: "report must be null when latest report is missing",
         };
     }
-    return { ok: true, value: { state: "missing", report: null } };
+    return { ok: true, value: { state: "missing", report: null, ...(value.runtimeScan === null ? { runtimeScan: null } : {}), ...(value.runtimeArtifactMeta === null ? { runtimeArtifactMeta: null } : {}) } };
 };
 exports.validateLatestReportResponse = validateLatestReportResponse;
 const validateScanResponse = (value) => {
@@ -289,6 +632,9 @@ const validateScanResponse = (value) => {
             return issue;
         issues.push(issue.value);
     }
+    const runtimeScan = value.runtimeScan === undefined || value.runtimeScan === null ? undefined : (0, exports.validateRuntimeScanResult)(value.runtimeScan);
+    if (runtimeScan && !runtimeScan.ok)
+        return runtimeScan;
     return {
         ok: true,
         value: {
@@ -300,6 +646,7 @@ const validateScanResponse = (value) => {
             sourceFileCount: value.sourceFileCount,
             issues,
             reportPath,
+            ...(runtimeScan ? { runtimeScan: runtimeScan.value } : value.runtimeScan === null ? { runtimeScan: null } : {}),
         },
     };
 };

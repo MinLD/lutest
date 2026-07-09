@@ -3855,3 +3855,66 @@ Known limitations:
 
 Next recommended phase:
 - R7.1 — Public Runtime Contracts
+
+## R7.1 — Public Runtime Contracts
+
+Status: completed.
+
+Audit before:
+- Existing `ScanRequest` only exposed `projectPath`.
+- Existing `ScanResponse` exposed scan metadata, project summary, source file count, issues, and report path.
+- Existing `LatestReportResponse` exposed `missing` or `valid` report state only.
+- Internal runtime shape already covered targets, viewport results, DOM geometry, manual flow execution, layout issues, safe metadata, and artifact repository validation.
+- Public validators used manual strict validation helpers; R7.1 extended that pattern instead of adding loose pass-through schemas.
+
+Files changed:
+- `packages/contracts/src/index.ts`
+- `packages/contracts/src/validators.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+What changed:
+- Added public `RuntimeScanRequest`, `RuntimeScanResult`, `RuntimeScanTarget`, `RuntimeViewportResult`, `DomGeometry`, `DomElementGeometry`, `RuntimeLayoutIssue`, `RuntimeArtifactMeta`, and runtime error shape.
+- Added optional `ScanRequest.runtimeScan`, `ScanResponse.runtimeScan`, `LatestReportResponse.runtimeScan`, and `LatestReportResponse.runtimeArtifactMeta`.
+- `runtimeScan` is opt-in and requires `enabled: true`.
+- Runtime `baseUrl` is local-only HTTP(S): `localhost`, `127.0.0.1`, or `::1`.
+- External, credential, `file:`, `data:`, and `javascript:` URLs are rejected.
+- Runtime targets allow route/state/flow shapes; public validation rejects unknown target kinds and unknown step kinds.
+- Flow validation enforces fill value source, destructive click opt-in, and bounded `waitForTimeout`.
+- Public layout issue `code`, if present, must equal canonical `type`.
+- Runtime artifact metadata remains separate and safe; raw runtime result/DOM geometry are not accepted in metadata.
+
+What was not changed:
+- No R7.2 scan service execution integration.
+- No Playwright call from `/api/actions/scan`.
+- No latest report runtime artifact read integration.
+- No UI work.
+- No Auth StorageState.
+- No path-policy/baseUrl loosening.
+- No generated `.lutest` artifacts committed.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-manual-flow.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-browser-preflight.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts` — passed.
+
+Known limitations:
+- `/api/actions/scan` does not execute runtime scan yet.
+- Latest report does not include runtime artifact data yet.
+- Public runtime contracts are available, but UI has no runtime toggle.
+- Auth StorageState remains deferred to R7.4.
+
+Next recommended phase:
+- R7.2 — Scan Service Integration

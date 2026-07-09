@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R6.8 — Runtime Artifact Repository Hardening.
+R7.1 — Public Runtime Contracts.
 
 ## Current Status
 
@@ -20,6 +20,10 @@ R6.8 — Runtime Artifact Repository Hardening.
 - Runtime scan latest artifact path is `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`.
 - Runtime scan latest metadata path is `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`.
 - Runtime scan snapshot path is `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
+- Public contracts expose opt-in `RuntimeScanRequest` through optional `ScanRequest.runtimeScan`.
+- Public `RuntimeScanRequest.baseUrl` validates local HTTP(S) only: `localhost`, `127.0.0.1`, or `::1`; external, credential, `file:`, `data:`, and `javascript:` URLs are rejected.
+- Public contracts expose runtime result, target, viewport, DOM geometry, layout issue, artifact metadata, and runtime error shapes.
+- `ScanResponse.runtimeScan`, `LatestReportResponse.runtimeScan`, and `LatestReportResponse.runtimeArtifactMeta` are optional; old scan/latest behavior remains valid when absent.
 - Playwright runtime scan writes artifacts through `runtime-scan-artifacts.ts`, not direct service JSON writes.
 - Runtime scan target model includes route targets plus state/flow placeholders.
 - Runtime scan records discovery mode as `all-routes`, `selected-routes`, or internal `custom-targets`.
@@ -56,6 +60,13 @@ R6.8 — Runtime Artifact Repository Hardening.
 - `GraphResponse` contracts remain because the compatibility endpoint still uses them.
 
 ## Latest Verification Recorded
+
+From current R7.1 session:
+
+- R7.1 added public runtime contracts and validators only.
+- R7.1 did not execute runtime scan from `/api/actions/scan`.
+- R7.1 did not integrate latest report runtime artifact reads.
+- StorageState/auth remains deferred to R7.4.
 
 From current R6.8 session:
 

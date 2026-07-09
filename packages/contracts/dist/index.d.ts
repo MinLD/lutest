@@ -111,12 +111,17 @@ export type LatestReportState = "missing" | "valid";
 export type LatestReportResponse = {
     state: "missing";
     report: null;
+    runtimeScan?: null;
+    runtimeArtifactMeta?: null;
 } | {
     state: "valid";
     report: ScanResponse;
+    runtimeScan?: RuntimeScanResult | null;
+    runtimeArtifactMeta?: RuntimeArtifactMeta | null;
 };
 export interface ScanRequest {
     projectPath?: string;
+    runtimeScan?: RuntimeScanRequest;
 }
 export interface ProjectPathQuery {
     path?: string;
@@ -139,6 +144,189 @@ export interface ScanResponse {
     sourceFileCount: number;
     issues: ScanIssue[];
     reportPath: string;
+    runtimeScan?: RuntimeScanResult | null;
+}
+export type RuntimeDiscoveryMode = "all-routes" | "selected-routes" | "custom-targets";
+export type RuntimeTargetKind = "route" | "state" | "flow";
+export type RuntimeFlowStep = {
+    kind: "goto";
+    route: string;
+} | {
+    kind: "click";
+    selector: string;
+    allowDestructive?: boolean;
+} | {
+    kind: "fill";
+    selector: string;
+    value?: string;
+    valueFromEnv?: string;
+} | {
+    kind: "waitForSelector";
+    selector: string;
+} | {
+    kind: "waitForTimeout";
+    timeoutMs: number;
+} | {
+    kind: "screenshotMarker";
+    label: string;
+};
+export type RuntimeScanTarget = {
+    id: string;
+    kind: "route";
+    route: string;
+    name?: string;
+} | {
+    id: string;
+    kind: "state";
+    route: string;
+    name?: string;
+    steps: RuntimeFlowStep[];
+} | {
+    id: string;
+    kind: "flow";
+    route: string;
+    name?: string;
+    steps: RuntimeFlowStep[];
+};
+export interface RuntimeScanRequest {
+    enabled: true;
+    baseUrl: string;
+    routes?: string[];
+    targets?: RuntimeScanTarget[];
+    discoveryMode?: RuntimeDiscoveryMode;
+    viewportPreset?: "default";
+}
+export interface RuntimeScanViewport {
+    width: number;
+    height: number;
+}
+export interface RuntimeRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+}
+export interface DomElementGeometry {
+    internalId: string;
+    tagName: string;
+    selectorHint?: string;
+    id?: string;
+    className?: string;
+    role?: string;
+    ariaLabel?: string;
+    textSnippet?: string;
+    rect: RuntimeRect;
+    visibility: {
+        display: string;
+        visibility: string;
+        opacity: number;
+    };
+    clickable: boolean;
+    order: number;
+}
+export interface DomGeometry {
+    viewport: RuntimeScanViewport;
+    capturedAt: string;
+    elementCount: number;
+    truncated: boolean;
+    elements: DomElementGeometry[];
+}
+export type RuntimeLayoutIssueType = "horizontal-overflow" | "element-outside-viewport" | "small-click-target" | "suspicious-overlap" | "zero-size-visible-element";
+export interface RuntimeLayoutIssue {
+    id: string;
+    type: RuntimeLayoutIssueType;
+    code?: RuntimeLayoutIssueType;
+    severity: "info" | "warning" | "error";
+    message: string;
+    scanTargetId: string;
+    route: string;
+    viewport: RuntimeScanViewport;
+    elementRef: string;
+    evidence: {
+        selectorHint?: string;
+        boundingBox: RuntimeRect;
+        relatedElementRef?: string;
+        relatedSelectorHint?: string;
+        relatedBoundingBox?: RuntimeRect;
+        overlapArea?: number;
+        overlapRatio?: number;
+        viewport: RuntimeScanViewport;
+        screenshotPath?: string;
+        threshold: string;
+    };
+}
+export type RuntimeErrorCode = "PLAYWRIGHT_BROWSER_MISSING" | "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" | "RUNTIME_BASE_URL_NOT_ALLOWED" | "RUNTIME_SCAN_ARTIFACT_INVALID" | "RUNTIME_SCAN_ARTIFACT_MALFORMED" | "RUNTIME_FLOW_ENV_VALUE_MISSING" | "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" | "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
+export interface RuntimeScanError {
+    code: RuntimeErrorCode;
+    message: string;
+    targetId?: string;
+    viewport?: RuntimeScanViewport;
+    stepIndex?: number;
+}
+export interface RuntimeViewportResult {
+    viewport: RuntimeScanViewport;
+    screenshotPath?: string;
+    domGeometry?: DomGeometry;
+    layoutIssues: RuntimeLayoutIssue[];
+    consoleErrors: string[];
+    pageErrors: string[];
+    networkErrors: string[];
+    failedResponses: string[];
+    errors: RuntimeScanError[];
+}
+export interface RuntimeExecutionStep {
+    kind: RuntimeFlowStep["kind"];
+    selector?: string;
+    status: "passed" | "failed";
+    durationMs: number;
+    redacted?: boolean;
+    valueSource?: "direct" | "env";
+    valueFromEnv?: string;
+    code?: RuntimeErrorCode;
+    message?: string;
+}
+export interface RuntimeTargetResult {
+    scanTargetId: string;
+    kind: RuntimeTargetKind;
+    route: string;
+    name?: string;
+    status: "passed" | "failed" | "warning";
+    viewportResults: RuntimeViewportResult[];
+    executionSteps?: RuntimeExecutionStep[];
+    errors: RuntimeScanError[];
+}
+export interface RuntimeScanResult {
+    scanId: string;
+    status: "passed" | "failed" | "warning";
+    startedAt: string;
+    finishedAt: string;
+    durationMs: number;
+    baseUrl: string;
+    targets: RuntimeScanTarget[];
+    targetResults: RuntimeTargetResult[];
+    summary: {
+        targetCount: number;
+        viewportCount: number;
+        screenshotCount: number;
+        issueCount: number;
+        errorCount: number;
+    };
+    errors: RuntimeScanError[];
+}
+export interface RuntimeArtifactMeta {
+    scanId: string;
+    savedAt: string;
+    schemaVersion: string;
+    artifactVersion?: number;
+    targetCount: number;
+    viewportCount: number;
+    screenshotCount: number;
+    issueCount: number;
+    errorCount?: number;
 }
 export interface ImportEdgeData {
     importPath: string;
@@ -166,10 +354,15 @@ export type ValidationResult<T> = {
     message: string;
     details?: unknown;
 };
+export declare const validateRuntimeScanRequest: (value: unknown) => ValidationResult<RuntimeScanRequest>;
 export declare const validateScanRequest: (value: unknown) => ValidationResult<ScanRequest>;
 export declare const validateProjectPathQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
 export declare const validateGraphQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
 export declare const validateLatestReportQuery: (value: unknown) => ValidationResult<ProjectPathQuery>;
+export declare const validateDomGeometry: (value: unknown) => ValidationResult<DomGeometry>;
+export declare const validateRuntimeLayoutIssue: (value: unknown) => ValidationResult<RuntimeLayoutIssue>;
+export declare const validateRuntimeScanResult: (value: unknown) => ValidationResult<RuntimeScanResult>;
+export declare const validateRuntimeArtifactMeta: (value: unknown) => ValidationResult<RuntimeArtifactMeta>;
 export declare const validateLatestReportResponse: (value: unknown) => ValidationResult<LatestReportResponse>;
 export declare const validateScanResponse: (value: unknown) => ValidationResult<ScanResponse>;
 export declare const validateProductionGraphNode: (input: unknown) => ValidationResult<ProductionGraphNode>;
