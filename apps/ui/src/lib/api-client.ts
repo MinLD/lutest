@@ -3,11 +3,15 @@ import type {
   LatestReportResponse,
   ProductionGraphResponse,
   ProjectSummary,
+  RuntimeArtifactDetailResponse,
   ScanRequest,
   ScanResponse,
   StatusResponse,
 } from "@lutest/contracts";
-import { validateProductionGraphResponse } from "@lutest/contracts";
+import {
+  validateProductionGraphResponse,
+  validateRuntimeArtifactDetailResponse,
+} from "@lutest/contracts";
 
 const DEFAULT_WORKER_URL = "http://localhost:6532";
 
@@ -88,6 +92,13 @@ async function requestProductionGraph(path: string) {
   return validation.value;
 }
 
+async function requestRuntimeArtifactDetail(path: string): Promise<RuntimeArtifactDetailResponse> {
+  const response = await requestJson<unknown>(path);
+  const validation = validateRuntimeArtifactDetailResponse(response);
+  if (!validation.ok) throw new ApiClientError(validation.message);
+  return validation.value;
+}
+
 export const lutestApi = {
   getStatus() {
     return requestJson<StatusResponse>("/api/status");
@@ -114,6 +125,12 @@ export const lutestApi = {
   getLatestReport(projectPath?: string) {
     return requestJson<LatestReportResponse>(
       withProjectPath("/api/report/latest", projectPath),
+    );
+  },
+
+  getLatestRuntimeArtifactDetail(projectPath?: string) {
+    return requestRuntimeArtifactDetail(
+      withProjectPath("/api/report/runtime/latest", projectPath),
     );
   },
 

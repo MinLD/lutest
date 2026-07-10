@@ -4,6 +4,7 @@ import type {
   LatestReportResponse,
   ProductionGraphResponse,
   ProjectSummary,
+  RuntimeArtifactDetailResponse,
   ScanResponse,
   StatusResponse,
 } from "@lutest/contracts";
@@ -19,6 +20,7 @@ export type DashboardData = {
   productionGraph: ProductionGraphResponse | null;
   productionGraphView: ProductionFlowModel | null;
   latestReport: LatestReportResponse | null;
+  runtimeArtifactDetail: RuntimeArtifactDetailResponse | null;
   lastScan: ScanResponse | null;
 };
 
@@ -28,10 +30,13 @@ const emptyDashboardData: DashboardData = {
   productionGraph: null,
   productionGraphView: null,
   latestReport: null,
+  runtimeArtifactDetail: null,
   lastScan: null,
 };
 
 const DEFAULT_PROJECT_PATH = process.env.NEXT_PUBLIC_LUTEST_PROJECT_PATH;
+const DEFAULT_RUNTIME_BASE_URL =
+  process.env.NEXT_PUBLIC_LUTEST_RUNTIME_BASE_URL ?? "http://localhost:3000";
 const PATH_NOT_ALLOWED_MESSAGE = "Selected path is outside worker allowed root";
 
 async function loadGraph(projectPath: string | undefined) {
@@ -40,6 +45,19 @@ async function loadGraph(projectPath: string | undefined) {
     productionGraph,
     productionGraphView: adaptProductionGraphToFlowModel(productionGraph),
   };
+}
+
+async function loadRuntimeArtifactDetail(
+  latestReport: LatestReportResponse,
+  projectPath: string | undefined,
+): Promise<RuntimeArtifactDetailResponse | null> {
+  if (latestReport.state !== "valid" || !latestReport.runtimeScanSummary) return null;
+  try {
+    return await lutestApi.getLatestRuntimeArtifactDetail(projectPath);
+  } catch (cause) {
+    if (cause instanceof Error && "code" in cause && cause.code === "RUNTIME_ARTIFACT_NOT_FOUND") return null;
+    throw cause;
+  }
 }
 
 function errorMessage(cause: unknown) {
@@ -68,6 +86,7 @@ export function useDashboardData(
         loadGraph(selectedProjectPath),
         lutestApi.getLatestReport(selectedProjectPath),
       ]);
+      const runtimeArtifactDetail = await loadRuntimeArtifactDetail(latestReport, selectedProjectPath);
 
       setData((current) => ({
         ...current,
@@ -75,6 +94,7 @@ export function useDashboardData(
         project,
         ...graphData,
         latestReport,
+        runtimeArtifactDetail,
       }));
     } catch (cause) {
       setError(errorMessage(cause));
@@ -83,21 +103,33 @@ export function useDashboardData(
     }
   }, [projectPath]);
 
-  const runScan = useCallback(async () => {
+  const runScan = useCallback(async (withRuntime = false) => {
     setIsScanning(true);
     setError(null);
     try {
-      const scan = await lutestApi.runScan({ projectPath });
+      const scan = await lutestApi.runScan({
+        projectPath,
+        ...(withRuntime
+          ? {
+              runtimeScan: {
+                enabled: true,
+                baseUrl: DEFAULT_RUNTIME_BASE_URL,
+              },
+            }
+          : {}),
+      });
       const selectedProjectPath = projectPath ?? undefined;
       const [graphData, latestReport] = await Promise.all([
         loadGraph(selectedProjectPath),
         lutestApi.getLatestReport(selectedProjectPath),
       ]);
+      const runtimeArtifactDetail = await loadRuntimeArtifactDetail(latestReport, selectedProjectPath);
 
       setData((current) => ({
         ...current,
         ...graphData,
         latestReport,
+        runtimeArtifactDetail,
         lastScan: scan,
       }));
     } catch (cause) {
@@ -124,6 +156,7 @@ export function useDashboardData(
     error,
     reload: load,
     runScan,
+    runRuntimeScan: () => runScan(true),
   };
 }
 

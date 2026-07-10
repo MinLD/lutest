@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type {
   LatestReportResponse,
   ProjectSummary,
+  RuntimeArtifactDetailResponse,
   StatusResponse,
 } from "@lutest/contracts";
 import {
@@ -475,18 +476,35 @@ function GraphPage({
 
 function ReportsPage({
   latestReport,
+  runtimeArtifactDetail,
+  isScanning,
+  onRunRuntimeScan,
 }: {
   latestReport: LatestReportResponse | null;
+  runtimeArtifactDetail: RuntimeArtifactDetailResponse | null;
+  isScanning: boolean;
+  onRunRuntimeScan: () => void;
 }) {
   const report = latestReport?.state === "valid" ? latestReport.report : null;
   const issues = report?.issues ?? [];
   return (
     <section className="rounded-[1.35rem] bg-white p-4 shadow-[0_1px_0_#dbe7f5,0_18px_50px_rgba(36,63,103,0.06)] sm:p-7">
-      <PageTitle
-        icon={FileWarning}
-        title="Reports"
-        subtitle="Latest scan report and issue list."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageTitle
+          icon={FileWarning}
+          title="Reports"
+          subtitle="Latest scan report and issue list."
+        />
+        <button
+          type="button"
+          onClick={onRunRuntimeScan}
+          disabled={isScanning}
+          className="inline-flex items-center gap-2 rounded-xl bg-[#2563eb] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(37,99,235,0.2)] transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <PlayCircle className="size-4" />
+          {isScanning ? "Scanning runtime..." : "Run runtime scan"}
+        </button>
+      </div>
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         <MetricCard
           title="Scan"
@@ -508,7 +526,7 @@ function ReportsPage({
         <RuntimeSummaryCard latestReport={latestReport} />
       </div>
       <div className="mb-5">
-        <RuntimeReportPanel latestReport={latestReport} />
+        <RuntimeReportPanel latestReport={latestReport} runtimeArtifactDetail={runtimeArtifactDetail} />
       </div>
       <div className="space-y-3">
         {issues.length > 0 ? (
@@ -686,7 +704,7 @@ export function DashboardShell() {
   const [activePage, setActivePage] = useState<DashboardPage>(
     DEFAULT_DASHBOARD_PAGE,
   );
-  const { data, isLoading, isScanning, error, runScan } = useDashboardData();
+  const { data, isLoading, isScanning, error, runScan, runRuntimeScan } = useDashboardData();
   const page = useMemo(() => {
     switch (activePage) {
       case "endpoint":
@@ -700,7 +718,14 @@ export function DashboardShell() {
           />
         );
       case "reports":
-        return <ReportsPage latestReport={data.latestReport} />;
+        return (
+          <ReportsPage
+            latestReport={data.latestReport}
+            runtimeArtifactDetail={data.runtimeArtifactDetail}
+            isScanning={isScanning}
+            onRunRuntimeScan={runRuntimeScan}
+          />
+        );
       case "scans":
         return (
           <ScansPage
@@ -723,7 +748,7 @@ export function DashboardShell() {
           />
         );
     }
-  }, [activePage, data, isScanning, runScan]);
+  }, [activePage, data, isScanning, runScan, runRuntimeScan]);
 
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#fbfdff] text-[#111827]">

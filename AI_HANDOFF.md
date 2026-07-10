@@ -12,14 +12,18 @@ Repo-local context entrypoint for AI/code sessions.
 6. `docs/ai-context/05-known-issues.md`
 7. `docs/ai-context/06-next-tasks.md`
 8. `docs/ai-context/07-session-handoff.md`
-9. `docs/plan/production-refactor-progress.md` for phase details
+9. `docs/plan/lutest-production-completion-roadmap.md` for current roadmap
+10. `docs/plan/production-refactor-progress.md` for detailed phase history
+11. `docs/plan/promt.md` for handoff/coding rules
+
+Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL DOC`. Do not follow them as current roadmap instructions.
 
 ## Current Snapshot
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R8.2 — Runtime Report UI.
-- Next recommended phase: R8.3 — Runtime UI polish / next roadmap phase.
+- Latest completed phase recorded here: R8.4 — Runtime Artifact Detail API & Evidence Model Hardening.
+- Next recommended phase: R8.5 — Route / Target Selection Runtime Scan UI.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
 - Runtime scan artifacts now use hardened repository save/read, atomic latest/meta/snapshot writes, strict path safety, and separated safe metadata under `<projectRoot>/.lutest/runtime/`.
@@ -27,7 +31,9 @@ Repo-local context entrypoint for AI/code sessions.
 - `POST /api/actions/scan` now runs runtime scan only when `runtimeScan.enabled` is present, attaches `ScanResponse.runtimeScan`, persists runtime artifacts via repository, and saves runtime data in latest report payload.
 - `GET /api/report/latest` now maps stored reports into a dashboard-safe source-of-truth response with generatedAt, static summary, runtime summary/issue summary, safe artifact refs, and sanitized project metadata.
 - Auth storageState support is manual and opt-in: `/api/actions/auth/start`, `/api/actions/auth/clear`, `/api/auth/status`, and `runtimeScan.auth.useSavedState` without exposing raw cookies/tokens/storageState.
-- UI report page now includes R8.2 runtime audit views: targets/routes, viewports, filtered runtime issue list, issue detail panel, summary-only handling, safe screenshot ref display, and no full artifact fetch.
+- `GET /api/report/runtime/latest` reads the latest runtime artifact through the repository and maps it to a strict public-safe detail response without internal roots or filesystem paths.
+- `GET /api/report/runtime/screenshot?ref=<opaque>` serves PNG evidence only after selected-root path-policy, opaque-ref lookup, containment, realpath, extension, and file checks.
+- UI refresh now loads the safe runtime detail response when latest-report runtime summary exists; screenshot refs remain opaque and overlay rendering remains deferred.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

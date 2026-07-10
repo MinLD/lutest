@@ -15,7 +15,7 @@ export const getValidatedProjectPath = async (
   req: Request,
   res: Response,
   validateQuery: ProjectPathQueryValidator = validateProjectPathQuery,
-): Promise<string | undefined | null> => {
+): Promise<string | null> => {
   const validation = validateQuery(req.query);
   if (!validation.ok) {
     sendValidationError(res, validation);

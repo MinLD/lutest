@@ -34,7 +34,7 @@
 
 - This context package can become stale. Future AI sessions must verify against code and progress doc.
 
-- Runtime artifact repository is implemented for latest/meta/snapshot, but no public runtime artifact API endpoint is exposed yet.
+- Public runtime artifact detail and opaque screenshot endpoints exist; screenshot image rendering/overlay remains deferred.
 
 ## R8.2 — Runtime Report UI
 
@@ -61,3 +61,46 @@ Known limitations:
 
 Next recommended phase:
 - R8.3 — Runtime UI polish / next roadmap phase
+
+## R8.3 — Screenshot / Evidence Viewer
+
+Status: completed.
+
+Implemented:
+- Runtime report view model now extracts deduplicated screenshot artifacts by target/route/viewport.
+- Issue detail maps each runtime issue to evidence screenshot data using issue evidence screenshot first, then viewport screenshot fallback.
+- UI shows a Screenshots / evidence section with captured/missing state, issue counts, safe refs only, and no clickable raw filesystem links.
+- Issue detail panel now distinguishes missing screenshots from captured screenshots without safe preview links.
+- Unsafe screenshot paths/URLs are hidden: absolute Unix/Windows paths, traversal, `file:`, `data:`, `javascript:`, and external `http(s):` refs.
+
+Overlay decision:
+- Deferred. There is no safe screenshot-serving endpoint/URL contract in scope, so rendering image overlays would require unsafe local path links or a backend endpoint beyond the clean R8.3 UI-only path. Bounding box and related overlap evidence remain displayed as text.
+
+Tests run:
+- `npm run typecheck --workspaces --if-present`
+- `npm run build -w ui`
+- `npm run build -w @lutest/contracts`
+- `npm run build -w @lutest/worker-node`
+- `npx tsx ./apps/ui/src/lib/runtime-report-view-model.self-check.ts`
+- `npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts`
+- `npx tsx ./apps/ui/src/lib/dashboard-data-request.self-check.ts`
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts`
+
+Known limitations:
+- No screenshot image preview/overlay until a path-policy-safe artifact serving endpoint or safe public artifact URL exists.
+- No screenshot gallery, auth UI, autofix, OCR, or image analysis.
+
+Next recommended phase:
+- R8.4 — next roadmap phase
+
+## R8.4 — Runtime Artifact Detail API & Evidence Model Hardening
+
+Status: completed.
+
+Current limitations:
+- Screenshot endpoint serves safe PNG evidence, but current UI only consumes opaque refs/detail data; image preview and bounding-box overlay are later phases.
+- Detail endpoint reads latest runtime artifact only; historical scan selection is not exposed.
+- Route/target selection UI is not part of R8.4.
+
+Next recommended phase:
+- R8.5 — Route / Target Selection Runtime Scan UI

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { LatestReportResponse } from "@lutest/contracts";
+import type { LatestReportResponse, RuntimeArtifactDetailResponse } from "@lutest/contracts";
 import {
   defaultRuntimeFilters,
   filterRuntimeIssues,
@@ -98,6 +98,29 @@ function RuntimeViewports({ model }: { model: RuntimeReportViewModel }) {
   );
 }
 
+function RuntimeScreenshots({ model }: { model: RuntimeReportViewModel }) {
+  if (model.screenshotArtifacts.length === 0) return null;
+  return (
+    <div className="rounded-2xl border border-[#e5edf7] bg-[#fbfdff] p-4">
+      <p className="text-sm font-semibold text-[#111827]">Screenshots / evidence</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {model.screenshotArtifacts.slice(0, 12).map((artifact) => (
+          <div key={artifact.id} className="rounded-xl bg-white p-3 text-sm shadow-[0_1px_0_#dbe7f5]">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-mono font-semibold text-[#111827]">{artifact.viewportLabel}</p>
+              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${artifact.available ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#f2f4f7] text-[#667085]"}`}>{artifact.available ? "captured" : "missing"}</span>
+            </div>
+            <p className="mt-1 truncate text-[#667085]">{artifact.scanTargetId} · {artifact.route}</p>
+            <p className="mt-1 text-[#667085]">{artifact.issueCount} linked issues</p>
+            <p className="mt-1 truncate text-[#667085]">{artifact.safeRef ?? artifact.missingReason ?? (artifact.available ? "captured; no safe preview link" : "no screenshot available")}</p>
+          </div>
+        ))}
+      </div>
+      {model.screenshotArtifacts.length > 12 ? <p className="mt-2 text-sm text-[#667085]">Showing 12 of {model.screenshotArtifacts.length} screenshots.</p> : null}
+    </div>
+  );
+}
+
 function RuntimeIssueList({ issues, selectedId, onSelect }: { issues: RuntimeIssueView[]; selectedId?: string; onSelect: (issue: RuntimeIssueView) => void }) {
   if (issues.length === 0) return <p className="rounded-2xl bg-[#fbfdff] p-4 text-sm text-[#667085]">No runtime issues match these filters.</p>;
   return (
@@ -140,14 +163,19 @@ function RuntimeIssueDetail({ issue }: { issue: RuntimeIssueView | null }) {
         <div><dt className="font-semibold text-[#111827]">Evidence</dt><dd>{issue.threshold}</dd></div>
         {issue.relatedElementRef ? <div><dt className="font-semibold text-[#111827]">Related element</dt><dd className="break-words font-mono">{issue.relatedSelectorHint ?? issue.relatedElementRef}</dd></div> : null}
         {issue.overlapRatio !== undefined ? <div><dt className="font-semibold text-[#111827]">Overlap</dt><dd>{issue.overlapRatio} ratio{issue.overlapArea !== undefined ? ` · ${issue.overlapArea} px²` : ""}</dd></div> : null}
-        <div><dt className="font-semibold text-[#111827]">Screenshot</dt><dd>{issue.screenshotRef ?? "available only as safe artifact metadata or unavailable"}</dd></div>
+        <div>
+          <dt className="font-semibold text-[#111827]">Screenshot</dt>
+          <dd>
+            {issue.screenshotRef ?? issue.screenshotMissingReason ?? (issue.screenshotAvailable ? "Screenshot captured, but no safe preview link is available." : "No screenshot available for this issue.")}
+          </dd>
+        </div>
       </dl>
     </div>
   );
 }
 
-export function RuntimeReportPanel({ latestReport }: { latestReport: LatestReportResponse | null }) {
-  const model = useMemo(() => runtimeReportViewModel(latestReport), [latestReport]);
+export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { latestReport: LatestReportResponse | null; runtimeArtifactDetail: RuntimeArtifactDetailResponse | null }) {
+  const model = useMemo(() => runtimeReportViewModel(latestReport, runtimeArtifactDetail), [latestReport, runtimeArtifactDetail]);
   const [filters, setFilters] = useState<RuntimeReportFilters>(defaultRuntimeFilters);
   const [selectedIssueId, setSelectedIssueId] = useState<string | undefined>();
   const filteredIssues = useMemo(() => filterRuntimeIssues(model.issues, filters), [model.issues, filters]);
@@ -167,6 +195,7 @@ export function RuntimeReportPanel({ latestReport }: { latestReport: LatestRepor
       <RuntimeErrorList model={model} />
       <RuntimeTargets model={model} />
       <RuntimeViewports model={model} />
+      <RuntimeScreenshots model={model} />
       {model.hasFullIssueData ? (
         <div className="rounded-2xl border border-[#e5edf7] bg-white p-4">
           <div className="flex flex-wrap items-end justify-between gap-3">

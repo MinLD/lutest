@@ -20,6 +20,17 @@ const validProductionGraph = {
   },
 };
 
+const validRuntimeDetail = {
+  scanId: "scan-1",
+  status: "passed",
+  startedAt: "2026-07-10T00:00:00.000Z",
+  finishedAt: "2026-07-10T00:00:01.000Z",
+  durationMs: 1000,
+  baseUrl: "http://localhost:3000",
+  summary: { targetCount: 0, viewportCount: 0, screenshotCount: 0, issueCount: 0, errorCount: 0 },
+  targetResults: [],
+};
+
 async function main() {
   globalThis.fetch = (async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -41,6 +52,10 @@ async function main() {
       return Response.json(validProductionGraph);
     }
 
+    if (url.includes("/api/report/runtime/latest")) {
+      return Response.json(validRuntimeDetail);
+    }
+
     return Response.json({ ok: true });
   }) as typeof fetch;
 
@@ -52,6 +67,9 @@ async function main() {
 
   await lutestApi.getProductionGraph("D:\\Projects\\lutest");
   assert.match(requests.at(-1) ?? "", /\/api\/graph\/production\?path=D%3A%5CProjects%5Clutest$/);
+
+  await lutestApi.getLatestRuntimeArtifactDetail("D:\\Projects\\lutest");
+  assert.match(requests.at(-1) ?? "", /\/api\/report\/runtime\/latest\?path=D%3A%5CProjects%5Clutest$/);
 
   await assert.rejects(
     () => lutestApi.getGraph("outside"),

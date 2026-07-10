@@ -20,7 +20,12 @@ export type ErrorCode =
   | "AUTH_SESSION_TIMEOUT"
   | "REPORT_MALFORMED"
   | "REPORT_SCHEMA_INVALID"
-  | "REPORT_PERMISSION_DENIED";
+  | "REPORT_PERMISSION_DENIED"
+  | "RUNTIME_ARTIFACT_NOT_FOUND"
+  | "RUNTIME_ARTIFACT_MALFORMED"
+  | "RUNTIME_ARTIFACT_INVALID"
+  | "RUNTIME_ARTIFACT_READ_FAILED"
+  | "RUNTIME_SCREENSHOT_NOT_FOUND";
 
 export interface ApiErrorResponse {
   error: {
@@ -324,6 +329,28 @@ export interface RuntimeExecutionStep { kind: RuntimeFlowStep["kind"]; selector?
 export interface RuntimeTargetResult { scanTargetId: string; kind: RuntimeTargetKind; route: string; name?: string; status: "passed" | "failed" | "warning"; viewportResults: RuntimeViewportResult[]; executionSteps?: RuntimeExecutionStep[]; errors: RuntimeScanError[] }
 export interface RuntimeScanResult { scanId: string; status: "passed" | "failed" | "warning"; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; targets: RuntimeResultTarget[]; targetResults: RuntimeTargetResult[]; summary: { targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount: number }; errors: RuntimeScanError[] }
 export interface RuntimeArtifactMeta { scanId: string; savedAt: string; schemaVersion: string; artifactVersion?: number; targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount?: number }
+export type RuntimeScreenshotMissingReason = "not-captured" | "capture-failed" | "artifact-missing" | "artifact-invalid";
+export interface RuntimeArtifactScreenshotEvidence { available: boolean; ref?: string; missingReason?: RuntimeScreenshotMissingReason }
+export interface RuntimeArtifactIssueEvidence {
+  scanTargetId: string;
+  route: string;
+  stateId?: string;
+  stateLabel?: string;
+  viewport: RuntimeScanViewport;
+  selector?: string;
+  elementRef: string;
+  boundingBox: RuntimeRect;
+  relatedBoundingBox?: RuntimeRect;
+  screenshot: RuntimeArtifactScreenshotEvidence;
+  reason: string;
+  dedupKey: string;
+  stateDedupKey?: string;
+}
+export interface RuntimeArtifactIssueDetail { id: string; type: RuntimeLayoutIssueType; severity: RuntimeLayoutIssue["severity"]; message: string; evidence: RuntimeArtifactIssueEvidence }
+export interface RuntimeArtifactViewportDetail { viewport: RuntimeScanViewport; screenshot: RuntimeArtifactScreenshotEvidence; issues: RuntimeArtifactIssueDetail[] }
+export interface RuntimeArtifactTargetDetail { scanTargetId: string; kind: RuntimeTargetKind; route: string; stateId?: string; stateLabel?: string; status: RuntimeTargetResult["status"]; viewportResults: RuntimeArtifactViewportDetail[] }
+export interface RuntimeArtifactDetailResponse { scanId: string; status: RuntimeScanResult["status"]; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; summary: RuntimeScanResult["summary"]; targetResults: RuntimeArtifactTargetDetail[] }
+export interface RuntimeArtifactScreenshotQuery extends ProjectPathQuery { ref: string }
 
 export interface ImportEdgeData {
   importPath: string;
@@ -388,7 +415,12 @@ const isErrorCode = (value: unknown): value is ErrorCode =>
   value === "AUTH_SESSION_TIMEOUT" ||
   value === "REPORT_MALFORMED" ||
   value === "REPORT_SCHEMA_INVALID" ||
-  value === "REPORT_PERMISSION_DENIED";
+  value === "REPORT_PERMISSION_DENIED" ||
+  value === "RUNTIME_ARTIFACT_NOT_FOUND" ||
+  value === "RUNTIME_ARTIFACT_MALFORMED" ||
+  value === "RUNTIME_ARTIFACT_INVALID" ||
+  value === "RUNTIME_ARTIFACT_READ_FAILED" ||
+  value === "RUNTIME_SCREENSHOT_NOT_FOUND";
 
 const isScanIssueType = (value: unknown): value is ScanIssueType =>
   value === "console" ||
@@ -432,6 +464,16 @@ const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueTy
 const isRuntimeErrorCode = (value: unknown): value is RuntimeErrorCode => value === "CONFIG_ERROR" || value === "PATH_NOT_ALLOWED" || value === "BASE_URL_NOT_LOCAL" || value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "ROUTE_DISCOVERY_ERROR" || value === "TARGET_EXECUTION_ERROR" || value === "ROUTE_SCAN_ERROR" || value === "ARTIFACT_WRITE_ERROR" || value === "RUNTIME_SCAN_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 const isAuthErrorCode = (value: unknown): value is AuthErrorCode => value === "AUTH_STATE_MISSING" || value === "AUTH_STATE_INVALID" || value === "AUTH_STATE_WRITE_FAILED" || value === "AUTH_SESSION_START_FAILED" || value === "AUTH_SESSION_TIMEOUT";
 const isSafeId = (value: unknown): value is string => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
+const isSafeOpaqueScreenshotRef = (value: unknown): value is string => isNonEmptyString(value) && /^shot_[a-f0-9]{32}$/.test(value);
+const isRuntimeScreenshotMissingReason = (value: unknown): value is RuntimeScreenshotMissingReason => value === "not-captured" || value === "capture-failed" || value === "artifact-missing" || value === "artifact-invalid";
+const isPublicSafeDetailText = (value: unknown): value is string =>
+  isNonEmptyString(value) &&
+  !value.includes("\0") &&
+  !value.includes(".lutest") &&
+  !/(^|[\s"'(])\/(?:home|Users|tmp|var|root|mnt|workspace)\//.test(value) &&
+  !/(^|[\s"'(])[a-zA-Z]:[\\/]/.test(value) &&
+  !/\n\s*at\s+/i.test(value) &&
+  !/(?:cookie|token|password|storageState|localStorage|sessionStorage)\s*[:=]/i.test(value);
 const isSafeEnvName = (value: unknown): value is string => isNonEmptyString(value) && /^[A-Z_][A-Z0-9_]*$/.test(value);
 
 const validateRuntimeFlowStep = (value: unknown): ValidationResult<RuntimeFlowStep> => {
@@ -694,6 +736,20 @@ export const validateGraphQuery = validateProjectPathQuery;
 
 export const validateLatestReportQuery = validateProjectPathQuery;
 
+export const validateRuntimeArtifactDetailQuery = validateProjectPathQuery;
+
+export const validateRuntimeArtifactScreenshotQuery = (
+  value: unknown,
+): ValidationResult<RuntimeArtifactScreenshotQuery> => {
+  if (!isRecord(value)) return { ok: false, code: "INVALID_REQUEST", message: "Query must be an object" };
+  const keys = rejectUnknownKeys(value, ["path", "projectPath", "ref"]); if (!keys.ok) return keys;
+  if (value.path !== undefined && value.projectPath !== undefined) return { ok: false, code: "INVALID_REQUEST", message: "Use either path or projectPath, not both" };
+  const projectPath = value.path ?? value.projectPath;
+  if (Array.isArray(projectPath) || !isOptionalNonEmptyString(projectPath)) return { ok: false, code: "INVALID_REQUEST", message: "path query must be a single non-empty string" };
+  if (!isSafeOpaqueScreenshotRef(value.ref)) return { ok: false, code: "INVALID_REQUEST", message: "screenshot ref is invalid" };
+  return { ok: true, value: { path: projectPath, projectPath, ref: value.ref } };
+};
+
 const validateProjectSummary = (
   value: unknown,
 ): ValidationResult<ProjectSummary> => {
@@ -872,6 +928,112 @@ export const validateRuntimeScanResult = (value: unknown): ValidationResult<Runt
   if (!isCount(issueCount)) return runtimeInvalid("runtime summary.issueCount invalid");
   if (!isCount(errorCount)) return runtimeInvalid("runtime summary.errorCount invalid");
   return { ok: true, value: { scanId: value.scanId, status: value.status, startedAt: value.startedAt, finishedAt: value.finishedAt, durationMs: value.durationMs, baseUrl: baseUrl.value, targets, targetResults, summary: { targetCount, viewportCount, screenshotCount, issueCount, errorCount }, errors } };
+};
+
+export const validateRuntimeArtifactScreenshotEvidence = (value: unknown): ValidationResult<RuntimeArtifactScreenshotEvidence> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact screenshot must be object");
+  const keys = rejectUnknownKeys(value, ["available", "ref", "missingReason"]); if (!keys.ok) return keys;
+  if (typeof value.available !== "boolean") return runtimeInvalid("runtime artifact screenshot.available invalid");
+  if (value.available) {
+    if (!isSafeOpaqueScreenshotRef(value.ref) || value.missingReason !== undefined) return runtimeInvalid("available runtime screenshot must have opaque ref only");
+    return { ok: true, value: { available: true, ref: value.ref } };
+  }
+  if (value.ref !== undefined || !isRuntimeScreenshotMissingReason(value.missingReason)) return runtimeInvalid("missing runtime screenshot must have missingReason only");
+  return { ok: true, value: { available: false, missingReason: value.missingReason } };
+};
+
+const validateRuntimeArtifactIssueEvidence = (value: unknown): ValidationResult<RuntimeArtifactIssueEvidence> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact issue evidence must be object");
+  const keys = rejectUnknownKeys(value, ["scanTargetId", "route", "stateId", "stateLabel", "viewport", "selector", "elementRef", "boundingBox", "relatedBoundingBox", "screenshot", "reason", "dedupKey", "stateDedupKey"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.scanTargetId) || !isLocalRoute(value.route) || !isSafeId(value.elementRef) || !isSafeId(value.dedupKey)) return runtimeInvalid("runtime artifact issue evidence identity invalid");
+  if (value.stateId !== undefined && !isSafeId(value.stateId)) return runtimeInvalid("runtime artifact issue stateId invalid");
+  if (value.stateDedupKey !== undefined && !isSafeId(value.stateDedupKey)) return runtimeInvalid("runtime artifact issue stateDedupKey invalid");
+  if (value.stateLabel !== undefined && !isPublicSafeDetailText(value.stateLabel)) return runtimeInvalid("runtime artifact issue stateLabel invalid");
+  if (value.selector !== undefined && (!isNonEmptyString(value.selector) || value.selector.includes("\0") || value.selector.includes(".lutest") || /^[a-zA-Z]:[\\/]/.test(value.selector))) return runtimeInvalid("runtime artifact issue selector invalid");
+  if (!isPublicSafeDetailText(value.reason)) return runtimeInvalid("runtime artifact issue reason invalid");
+  const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
+  const boundingBox = validateRuntimeRect(value.boundingBox); if (!boundingBox.ok) return boundingBox;
+  const relatedBoundingBox = value.relatedBoundingBox === undefined ? undefined : validateRuntimeRect(value.relatedBoundingBox); if (relatedBoundingBox && !relatedBoundingBox.ok) return relatedBoundingBox;
+  const screenshot = validateRuntimeArtifactScreenshotEvidence(value.screenshot); if (!screenshot.ok) return screenshot;
+  return { ok: true, value: {
+    scanTargetId: value.scanTargetId,
+    route: value.route,
+    stateId: isSafeId(value.stateId) ? value.stateId : undefined,
+    stateLabel: isPublicSafeDetailText(value.stateLabel) ? value.stateLabel : undefined,
+    viewport: viewport.value,
+    selector: isNonEmptyString(value.selector) ? value.selector : undefined,
+    elementRef: value.elementRef,
+    boundingBox: boundingBox.value,
+    relatedBoundingBox: relatedBoundingBox?.value,
+    screenshot: screenshot.value,
+    reason: value.reason,
+    dedupKey: value.dedupKey,
+    stateDedupKey: isSafeId(value.stateDedupKey) ? value.stateDedupKey : undefined,
+  } };
+};
+
+const validateRuntimeArtifactIssueDetail = (value: unknown): ValidationResult<RuntimeArtifactIssueDetail> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact issue must be object");
+  const keys = rejectUnknownKeys(value, ["id", "type", "severity", "message", "evidence"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.id) || !isRuntimeLayoutIssueType(value.type) || !isScanIssueSeverity(value.severity) || !isPublicSafeDetailText(value.message)) return runtimeInvalid("runtime artifact issue fields invalid");
+  const evidence = validateRuntimeArtifactIssueEvidence(value.evidence); if (!evidence.ok) return evidence;
+  return { ok: true, value: { id: value.id, type: value.type, severity: value.severity, message: value.message, evidence: evidence.value } };
+};
+
+const validateRuntimeArtifactViewportDetail = (value: unknown): ValidationResult<RuntimeArtifactViewportDetail> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact viewport must be object");
+  const keys = rejectUnknownKeys(value, ["viewport", "screenshot", "issues"]); if (!keys.ok) return keys;
+  const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
+  const screenshot = validateRuntimeArtifactScreenshotEvidence(value.screenshot); if (!screenshot.ok) return screenshot;
+  if (!Array.isArray(value.issues)) return runtimeInvalid("runtime artifact viewport issues invalid");
+  const issues: RuntimeArtifactIssueDetail[] = [];
+  for (const rawIssue of value.issues) { const issue = validateRuntimeArtifactIssueDetail(rawIssue); if (!issue.ok) return issue; issues.push(issue.value); }
+  return { ok: true, value: { viewport: viewport.value, screenshot: screenshot.value, issues } };
+};
+
+const validateRuntimeArtifactTargetDetail = (value: unknown): ValidationResult<RuntimeArtifactTargetDetail> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact target must be object");
+  const keys = rejectUnknownKeys(value, ["scanTargetId", "kind", "route", "stateId", "stateLabel", "status", "viewportResults"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.scanTargetId) || (value.kind !== "route" && value.kind !== "state" && value.kind !== "flow") || !isLocalRoute(value.route) || !isScanStatus(value.status) || !Array.isArray(value.viewportResults)) return runtimeInvalid("runtime artifact target fields invalid");
+  if (value.stateId !== undefined && !isSafeId(value.stateId)) return runtimeInvalid("runtime artifact target stateId invalid");
+  if (value.stateLabel !== undefined && !isPublicSafeDetailText(value.stateLabel)) return runtimeInvalid("runtime artifact target stateLabel invalid");
+  const viewportResults: RuntimeArtifactViewportDetail[] = [];
+  for (const rawViewport of value.viewportResults) { const viewport = validateRuntimeArtifactViewportDetail(rawViewport); if (!viewport.ok) return viewport; viewportResults.push(viewport.value); }
+  return { ok: true, value: {
+    scanTargetId: value.scanTargetId,
+    kind: value.kind,
+    route: value.route,
+    stateId: isSafeId(value.stateId) ? value.stateId : undefined,
+    stateLabel: isPublicSafeDetailText(value.stateLabel) ? value.stateLabel : undefined,
+    status: value.status,
+    viewportResults,
+  } };
+};
+
+export const validateRuntimeArtifactDetailResponse = (value: unknown): ValidationResult<RuntimeArtifactDetailResponse> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact detail must be object");
+  const keys = rejectUnknownKeys(value, ["scanId", "status", "startedAt", "finishedAt", "durationMs", "baseUrl", "summary", "targetResults"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.scanId) || !isScanStatus(value.status) || !isNonEmptyString(value.startedAt) || !isNonEmptyString(value.finishedAt) || !isFiniteNumber(value.durationMs)) return runtimeInvalid("runtime artifact detail metadata invalid");
+  const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl); if (!baseUrl.ok) return runtimeInvalid(baseUrl.message);
+  if (!isRecord(value.summary) || !Array.isArray(value.targetResults)) return runtimeInvalid("runtime artifact detail collections invalid");
+  const targetResults: RuntimeArtifactTargetDetail[] = [];
+  for (const rawTarget of value.targetResults) { const target = validateRuntimeArtifactTargetDetail(rawTarget); if (!target.ok) return target; targetResults.push(target.value); }
+  const { targetCount, viewportCount, screenshotCount, issueCount, errorCount } = value.summary;
+  if (!isCount(targetCount) || !isCount(viewportCount) || !isCount(screenshotCount) || !isCount(issueCount) || !isCount(errorCount)) return runtimeInvalid("runtime artifact detail summary invalid");
+  const actualViewportCount = targetResults.reduce((sum, target) => sum + target.viewportResults.length, 0);
+  const actualScreenshotCount = targetResults.reduce((sum, target) => sum + target.viewportResults.filter((viewport) => viewport.screenshot.available).length, 0);
+  const actualIssueCount = targetResults.reduce((sum, target) => sum + target.viewportResults.reduce((inner, viewport) => inner + viewport.issues.length, 0), 0);
+  if (targetCount !== targetResults.length || viewportCount !== actualViewportCount || screenshotCount !== actualScreenshotCount || issueCount !== actualIssueCount) return runtimeInvalid("runtime artifact detail summary mismatch");
+  return { ok: true, value: {
+    scanId: value.scanId,
+    status: value.status,
+    startedAt: value.startedAt,
+    finishedAt: value.finishedAt,
+    durationMs: value.durationMs,
+    baseUrl: baseUrl.value,
+    summary: { targetCount, viewportCount, screenshotCount, issueCount, errorCount },
+    targetResults,
+  } };
 };
 
 export const validateRuntimeArtifactMeta = (value: unknown): ValidationResult<RuntimeArtifactMeta> => {

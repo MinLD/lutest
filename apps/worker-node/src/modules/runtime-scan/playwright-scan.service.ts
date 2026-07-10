@@ -111,7 +111,11 @@ export const runPlaywrightRuntimeScan = async (
   if (!policy.ok) throw new Error(policy.message);
 
   const projectRoot = policy.rootDir;
-  const limits = resolveRuntimeScanLimits({ routeTimeoutMs: request.timeoutMs });
+  const limits = resolveRuntimeScanLimits(
+    typeof request.timeoutMs === "number"
+      ? { routeTimeoutMs: request.timeoutMs }
+      : undefined,
+  );
   const discoveredRoutes = await discoverRuntimeScanRoutes({
     projectRoot,
     routes: request.routes,

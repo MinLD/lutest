@@ -7,6 +7,8 @@ import {
   validateLatestReportQuery,
   validateLatestReportResponse,
   validateProjectPathQuery,
+  validateRuntimeArtifactDetailResponse,
+  validateRuntimeArtifactScreenshotQuery,
   validateRuntimeArtifactMeta,
   validateRuntimeLayoutIssue,
   validateRuntimeScanRequest,
@@ -110,6 +112,55 @@ const runtimeResult = {
 assert(validateRuntimeScanResult(runtimeResult).ok, "runtime result with dom/layout valid");
 assert(validateRuntimeScanResult({ ...runtimeResult, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#secret", redacted: true, valueSource: "direct" }] }] }).ok, "runtime result redacted fill target valid");
 assert(!validateRuntimeScanResult({ ...runtimeResult, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#secret", value: "raw-secret" }] }] }).ok, "runtime result raw fill target rejected");
+
+const screenshotRef = "shot_0123456789abcdef0123456789abcdef";
+const runtimeDetail = {
+  scanId: "scan-1",
+  status: "warning",
+  startedAt: "2026-07-09T00:00:00.000Z",
+  finishedAt: "2026-07-09T00:00:01.000Z",
+  durationMs: 1000,
+  baseUrl: "http://localhost:3000",
+  summary: { targetCount: 1, viewportCount: 1, screenshotCount: 1, issueCount: 1, errorCount: 0 },
+  targetResults: [{
+    scanTargetId: "home",
+    kind: "route",
+    route: "/",
+    status: "warning",
+    viewportResults: [{
+      viewport,
+      screenshot: { available: true, ref: screenshotRef },
+      issues: [{
+        id: "issue-1",
+        type: "small-click-target",
+        severity: "warning",
+        message: "Small click target",
+        evidence: {
+          scanTargetId: "home",
+          route: "/",
+          viewport,
+          selector: "button",
+          elementRef: "el-1",
+          boundingBox: rect,
+          screenshot: { available: true, ref: screenshotRef },
+          reason: "minimum 44px",
+          dedupKey: "issue-1",
+        },
+      }],
+    }],
+  }],
+} as const;
+assert(validateRuntimeArtifactDetailResponse(runtimeDetail).ok, "runtime artifact detail valid");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, projectRoot: "/home/user/project" }).ok, "runtime artifact detail rejects internal root");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: "/home/user/project/screenshot.png" } }] }] }).ok, "runtime artifact detail rejects absolute screenshot ref");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: "../screenshot.png" } }] }] }).ok, "runtime artifact detail rejects traversal screenshot ref");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: ".lutest/runtime/screenshot.png" } }] }] }).ok, "runtime artifact detail rejects raw lutest screenshot ref");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], issues: [{ ...runtimeDetail.targetResults[0].viewportResults[0].issues[0], message: "Error\n at /home/user/app.ts:1" }] }] }] }).ok, "runtime artifact detail rejects raw stack/path");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], issues: [{ ...runtimeDetail.targetResults[0].viewportResults[0].issues[0], storageState: {} }] }] }] }).ok, "runtime artifact detail rejects secret fields");
+assert(validateRuntimeArtifactScreenshotQuery({ ref: screenshotRef }).ok, "runtime screenshot opaque ref query valid");
+assert(!validateRuntimeArtifactScreenshotQuery({ ref: "../screenshot.png" }).ok, "runtime screenshot traversal query rejected");
+assert(!validateRuntimeArtifactScreenshotQuery({ ref: "/home/user/screenshot.png" }).ok, "runtime screenshot absolute query rejected");
+assert(!validateRuntimeArtifactScreenshotQuery({ ref: screenshotRef, unknown: true }).ok, "runtime screenshot unknown query field rejected");
 
 const runtimeMeta = { scanId: "scan-1", savedAt: "2026-07-09T00:00:01.000Z", schemaVersion: "1", artifactVersion: 1, targetCount: 1, viewportCount: 1, screenshotCount: 0, issueCount: 1, errorCount: 0 } as const;
 assert(validateRuntimeArtifactMeta(runtimeMeta).ok, "runtime artifact meta valid");

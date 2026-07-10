@@ -45,6 +45,11 @@ const assertPathDenied = (result: JsonResponse, label: string): void => {
   );
 };
 
+const assertErrorCode = (result: JsonResponse, status: number, code: string, label: string): void => {
+  assert.equal(result.status, status, `${label} status`);
+  assert.equal((result.body as { error?: { code?: string } }).error?.code, code, `${label} error code`);
+};
+
 const listen = (app: ReturnType<typeof createApp>): Promise<{
   baseUrl: string;
   server: http.Server;
@@ -155,6 +160,33 @@ const runHttpAssertions = async (input: {
         `/api/report/latest?path=${encodeURIComponent(input.outsideRoot)}`,
       ),
       `${input.label} GET /api/report/latest outsideRoot`,
+    );
+    assertErrorCode(
+      await requestJson(baseUrl, `/api/report/runtime/latest?path=${encodeURIComponent(input.allowedRoot)}`),
+      404,
+      "RUNTIME_ARTIFACT_NOT_FOUND",
+      `${input.label} GET /api/report/runtime/latest missing`,
+    );
+    assertPathDenied(
+      await requestJson(baseUrl, `/api/report/runtime/latest?path=${encodeURIComponent(input.outsideRoot)}`),
+      `${input.label} GET /api/report/runtime/latest outsideRoot`,
+    );
+    const validScreenshotRef = "shot_0123456789abcdef0123456789abcdef";
+    assertPathDenied(
+      await requestJson(baseUrl, `/api/report/runtime/screenshot?path=${encodeURIComponent(input.outsideRoot)}&ref=${validScreenshotRef}`),
+      `${input.label} GET /api/report/runtime/screenshot outsideRoot`,
+    );
+    assertErrorCode(
+      await requestJson(baseUrl, `/api/report/runtime/screenshot?path=${encodeURIComponent(input.allowedRoot)}&ref=${encodeURIComponent("../screenshot.png")}`),
+      400,
+      "INVALID_REQUEST",
+      `${input.label} GET /api/report/runtime/screenshot traversal`,
+    );
+    assertErrorCode(
+      await requestJson(baseUrl, `/api/report/runtime/screenshot?path=${encodeURIComponent(input.allowedRoot)}&ref=${encodeURIComponent("/home/user/screenshot.png")}`),
+      400,
+      "INVALID_REQUEST",
+      `${input.label} GET /api/report/runtime/screenshot absolute`,
     );
 
     if (input.includeScan) {
