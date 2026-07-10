@@ -1,176 +1,169 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { LatestReportResponse, RuntimeArtifactDetailResponse } from "@lutest/contracts";
+import { AlertTriangle, Camera, Route as RouteIcon } from "lucide-react";
+import { RuntimeScreenshotEvidence } from "./runtime-screenshot-evidence";
 import {
   defaultRuntimeFilters,
   filterRuntimeIssues,
   runtimeReportViewModel,
-  viewportKey,
   type RuntimeIssueView,
   type RuntimeReportFilters,
   type RuntimeReportViewModel,
 } from "@/lib/runtime-report-view-model";
 
-type SelectFieldProps = {
-  label: string;
-  value: string;
-  options: string[];
-  onChange: (value: string) => void;
-};
+function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+  return (
+    <label className="grid gap-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#667085]">
+      {label}
+      <select
+        className="min-w-0 rounded-lg border border-[#dbe7f5] bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-[#111827] outline-none transition focus:border-[#93b4df] focus:ring-2 focus:ring-[#dbeafe]"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => <option key={option} value={option}>{option === "all" ? "All" : option}</option>)}
+      </select>
+    </label>
+  );
+}
 
 const statusClass = (status?: string) => {
-  if (status === "failed") return "bg-[#fee2e2] text-[#b42318]";
+  if (status === "failed" || status === "error") return "bg-[#fee2e2] text-[#b42318]";
   if (status === "warning") return "bg-[#fef3c7] text-[#a16207]";
   if (status === "passed") return "bg-[#dcfce7] text-[#15803d]";
   return "bg-[#e8f1ff] text-[#2563eb]";
 };
 
-function SelectField({ label, value, options, onChange }: SelectFieldProps) {
+function Metric({ icon, label, value, detail }: { icon: ReactNode; label: string; value: number; detail: string }) {
   return (
-    <label className="grid gap-1 text-xs font-bold uppercase tracking-[0.14em] text-[#667085]">
-      {label}
-      <select
-        className="rounded-xl border border-[#dbe7f5] bg-white px-3 py-2 text-sm font-semibold normal-case tracking-normal text-[#111827]"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
+    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-[#e5edf7] bg-white px-4 py-3">
+      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#eef5ff] text-[#2563eb]">{icon}</span>
+      <div className="min-w-0">
+        <p className="text-2xl font-bold tabular-nums tracking-[-0.04em] text-[#111827]">{value}</p>
+        <p className="truncate text-xs font-semibold text-[#405168]">{label}</p>
+        <p className="truncate text-[11px] text-[#7b8ba1]">{detail}</p>
+      </div>
+    </div>
+  );
+}
+
+function SeverityChart({ model }: { model: RuntimeReportViewModel }) {
+  const errorCount = model.issueCountsBySeverity.error ?? 0;
+  const warningCount = model.issueCountsBySeverity.warning ?? 0;
+  const infoCount = model.issueCountsBySeverity.info ?? 0;
+  const total = Math.max(1, errorCount + warningCount + infoCount);
+  const errorEnd = (errorCount / total) * 100;
+  const warningEnd = errorEnd + (warningCount / total) * 100;
+  const chartBackground = model.issueCount === 0
+    ? "#e5edf7"
+    : `conic-gradient(#dc2626 0 ${errorEnd}%, #d97706 ${errorEnd}% ${warningEnd}%, #2563eb ${warningEnd}% 100%)`;
+
+  return (
+    <div className="flex items-center gap-5 rounded-xl bg-white p-4">
+      <div
+        className="relative grid size-28 shrink-0 place-items-center rounded-full"
+        style={{ background: chartBackground }}
       >
-        {options.map((option) => (
-          <option key={option} value={option}>{option === "all" ? "All" : option}</option>
-        ))}
-      </select>
-    </label>
+        <div className="grid size-16 place-items-center rounded-full bg-white text-center">
+          <span className="text-xl font-bold tabular-nums text-[#111827]">{model.issueCount}</span>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 space-y-2 text-xs">
+        <p className="font-bold uppercase tracking-[0.12em] text-[#667085]">Severity</p>
+        <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-[#405168]"><span className="size-2 rounded-full bg-[#dc2626]" />Errors</span><strong className="tabular-nums text-[#111827]">{errorCount}</strong></div>
+        <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-[#405168]"><span className="size-2 rounded-full bg-[#d97706]" />Warnings</span><strong className="tabular-nums text-[#111827]">{warningCount}</strong></div>
+        <div className="flex items-center justify-between gap-3"><span className="flex items-center gap-2 text-[#405168]"><span className="size-2 rounded-full bg-[#2563eb]" />Info</span><strong className="tabular-nums text-[#111827]">{infoCount}</strong></div>
+      </div>
+    </div>
+  );
+}
+
+function IssueTypeChart({ model }: { model: RuntimeReportViewModel }) {
+  const issueTypes = Object.entries(model.issues.reduce<Record<string, number>>((counts, issue) => {
+    counts[issue.type] = (counts[issue.type] ?? 0) + 1;
+    return counts;
+  }, {})).sort((left, right) => right[1] - left[1]);
+  const maxCount = Math.max(1, ...issueTypes.map(([, count]) => count));
+
+  return (
+    <div className="rounded-xl bg-white p-4">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Issue types</p>
+      {issueTypes.length === 0 ? <p className="mt-3 text-sm text-[#667085]">No visible layout issues.</p> : (
+        <div className="mt-3 space-y-3">
+          {issueTypes.slice(0, 6).map(([type, count]) => (
+            <div key={type} className="grid grid-cols-[minmax(0,1fr)_2rem] items-center gap-3">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-[11px] font-semibold text-[#405168]">{type}</p>
+                <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[#edf2f7]">
+                  <div className="h-full rounded-full bg-[#4f7fbf]" style={{ width: `${Math.max(8, (count / maxCount) * 100)}%` }} />
+                </div>
+              </div>
+              <span className="text-right font-mono text-xs font-bold tabular-nums text-[#111827]">{count}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RuntimeOverview({ model }: { model: RuntimeReportViewModel }) {
+  const affectedRoutes = new Set(model.issues.map((issue) => issue.route)).size;
+  const previewCount = model.screenshotArtifacts.filter((artifact) => artifact.available && artifact.safeRef).length;
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#dbe7f5] bg-[#f8fbff]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5edf7] bg-white px-4 py-3">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-bold text-[#111827]">Runtime overview</p>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] ${statusClass(model.status)}`}>{model.status ?? "unknown"}</span>
+        </div>
+        <p className="text-xs text-[#667085]">Scan {model.scanId ?? "latest"} · {model.viewportCount} viewports</p>
+      </div>
+      <div className="grid gap-3 p-3 sm:grid-cols-3">
+        <Metric icon={<AlertTriangle size={18} />} label="Visible issues" value={model.issueCount} detail={`${model.errorCount} runtime errors`} />
+        <Metric icon={<RouteIcon size={18} />} label="Affected routes" value={affectedRoutes} detail={`${model.targetCount} targets scanned`} />
+        <Metric icon={<Camera size={18} />} label="Safe previews" value={previewCount} detail={`${model.screenshotCount} captured`} />
+      </div>
+      <div className="grid gap-3 border-t border-[#e5edf7] p-3 lg:grid-cols-[0.75fr_1.25fr]">
+        <SeverityChart model={model} />
+        <IssueTypeChart model={model} />
+      </div>
+    </section>
   );
 }
 
 function RuntimeErrorList({ model }: { model: RuntimeReportViewModel }) {
   if (model.errors.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-[#fee2e2] bg-[#fff7f7] p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#b42318]">Top runtime errors</p>
-      <div className="mt-2 space-y-2">
-        {model.errors.map((error, index) => (
-          <p key={`${error.code}-${index}`} className="text-sm text-[#7f1d1d]">
-            <span className="font-mono font-semibold">{error.code}</span>
-            <span className="mx-2 text-[#d92d20]">—</span>
-            {error.message}
-          </p>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RuntimeTargets({ model }: { model: RuntimeReportViewModel }) {
-  if (model.targets.length === 0) return null;
-  return (
-    <div className="rounded-2xl border border-[#e5edf7] bg-[#fbfdff] p-4">
-      <p className="text-sm font-semibold text-[#111827]">Targets/routes scanned</p>
-      <div className="mt-3 grid gap-2">
-        {model.targets.slice(0, 8).map((target) => (
-          <div key={target.id} className="grid gap-2 rounded-xl bg-white p-3 text-sm shadow-[0_1px_0_#dbe7f5] md:grid-cols-[1fr_1fr_auto_auto]">
-            <span className="font-mono text-[#111827]">{target.id}</span>
-            <span className="truncate text-[#667085]">{target.route}</span>
-            <span className={`w-fit rounded-full px-2 py-0.5 text-xs font-bold ${statusClass(target.status)}`}>{target.status}</span>
-            <span className="text-[#667085]">{target.issueCount} issues / {target.viewportCount} viewports</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RuntimeViewports({ model }: { model: RuntimeReportViewModel }) {
-  if (model.viewports.length === 0) return null;
-  return (
-    <div className="rounded-2xl border border-[#e5edf7] bg-[#fbfdff] p-4">
-      <p className="text-sm font-semibold text-[#111827]">Viewports scanned</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {model.viewports.slice(0, 12).map((viewport) => (
-          <div key={viewport.key} className="rounded-xl bg-white p-3 text-sm shadow-[0_1px_0_#dbe7f5]">
-            <p className="font-mono font-semibold text-[#111827]">{viewportKey(viewport.viewport)}</p>
-            <p className="mt-1 truncate text-[#667085]">{viewport.route}</p>
-            <p className="mt-1 text-[#667085]">{viewport.issueCount} issues · screenshot {viewport.screenshotAvailable ? "available" : "missing"}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function RuntimeScreenshots({ model }: { model: RuntimeReportViewModel }) {
-  if (model.screenshotArtifacts.length === 0) return null;
-  return (
-    <div className="rounded-2xl border border-[#e5edf7] bg-[#fbfdff] p-4">
-      <p className="text-sm font-semibold text-[#111827]">Screenshots / evidence</p>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {model.screenshotArtifacts.slice(0, 12).map((artifact) => (
-          <div key={artifact.id} className="rounded-xl bg-white p-3 text-sm shadow-[0_1px_0_#dbe7f5]">
-            <div className="flex items-center justify-between gap-2">
-              <p className="font-mono font-semibold text-[#111827]">{artifact.viewportLabel}</p>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${artifact.available ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#f2f4f7] text-[#667085]"}`}>{artifact.available ? "captured" : "missing"}</span>
-            </div>
-            <p className="mt-1 truncate text-[#667085]">{artifact.scanTargetId} · {artifact.route}</p>
-            <p className="mt-1 text-[#667085]">{artifact.issueCount} linked issues</p>
-            <p className="mt-1 truncate text-[#667085]">{artifact.safeRef ?? artifact.missingReason ?? (artifact.available ? "captured; no safe preview link" : "no screenshot available")}</p>
-          </div>
-        ))}
-      </div>
-      {model.screenshotArtifacts.length > 12 ? <p className="mt-2 text-sm text-[#667085]">Showing 12 of {model.screenshotArtifacts.length} screenshots.</p> : null}
-    </div>
-  );
-}
-
-function RuntimeIssueList({ issues, selectedId, onSelect }: { issues: RuntimeIssueView[]; selectedId?: string; onSelect: (issue: RuntimeIssueView) => void }) {
-  if (issues.length === 0) return <p className="rounded-2xl bg-[#fbfdff] p-4 text-sm text-[#667085]">No runtime issues match these filters.</p>;
-  return (
-    <div className="space-y-2">
-      {issues.slice(0, 100).map((issue) => (
-        <button
-          key={issue.id}
-          type="button"
-          onClick={() => onSelect(issue)}
-          className={`w-full rounded-2xl border p-4 text-left transition ${selectedId === issue.id ? "border-[#2563eb] bg-[#eff6ff]" : "border-[#e5edf7] bg-[#fbfdff] hover:bg-white"}`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-mono text-sm font-semibold text-[#111827]">{issue.type}</p>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(issue.severity === "error" ? "failed" : issue.severity === "warning" ? "warning" : "passed")}`}>{issue.severity}</span>
-          </div>
-          <p className="mt-2 text-sm text-[#405168]">{issue.message}</p>
-          <p className="mt-2 truncate text-xs font-semibold text-[#667085]">{issue.scanTargetId} · {issue.route} · {issue.viewportKey}</p>
-        </button>
+    <div className="rounded-xl border border-[#fee2e2] bg-[#fff7f7] px-4 py-3">
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#b42318]">Runtime errors</p>
+      {model.errors.slice(0, 3).map((error, index) => (
+        <p key={`${error.code}-${index}`} className="mt-1.5 text-sm text-[#7f1d1d]"><span className="font-mono font-semibold">{error.code}</span><span className="mx-2">—</span>{error.message}</p>
       ))}
-      {issues.length > 100 ? <p className="text-sm text-[#667085]">Showing 100 of {issues.length} runtime issues.</p> : null}
     </div>
   );
 }
 
-function RuntimeIssueDetail({ issue }: { issue: RuntimeIssueView | null }) {
-  if (!issue) return <div className="rounded-2xl border border-dashed border-[#dbe7f5] bg-[#fbfdff] p-4 text-sm text-[#667085]">Select a runtime issue to view details.</div>;
+function RuntimeIssueSelect({ issues, selectedId, onSelect }: { issues: RuntimeIssueView[]; selectedId?: string; onSelect: (issue: RuntimeIssueView) => void }) {
+  if (issues.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-[#e5edf7] bg-white p-4 shadow-[0_1px_0_#dbe7f5]">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-mono text-sm font-semibold text-[#111827]">{issue.type}</p>
-        <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusClass(issue.severity === "error" ? "failed" : issue.severity === "warning" ? "warning" : "passed")}`}>{issue.severity}</span>
-      </div>
-      <p className="mt-3 text-sm font-semibold text-[#405168]">{issue.message}</p>
-      <dl className="mt-4 grid gap-2 text-sm text-[#667085]">
-        <div><dt className="font-semibold text-[#111827]">Target</dt><dd className="font-mono">{issue.scanTargetId}</dd></div>
-        <div><dt className="font-semibold text-[#111827]">Route</dt><dd>{issue.route}</dd></div>
-        <div><dt className="font-semibold text-[#111827]">Viewport</dt><dd>{issue.viewport.width} × {issue.viewport.height}</dd></div>
-        <div><dt className="font-semibold text-[#111827]">Element</dt><dd className="break-words font-mono">{issue.selectorHint ?? issue.elementRef}</dd></div>
-        <div><dt className="font-semibold text-[#111827]">Bounding box</dt><dd>x {issue.boundingBox.x}, y {issue.boundingBox.y}, w {issue.boundingBox.width}, h {issue.boundingBox.height}</dd></div>
-        <div><dt className="font-semibold text-[#111827]">Evidence</dt><dd>{issue.threshold}</dd></div>
-        {issue.relatedElementRef ? <div><dt className="font-semibold text-[#111827]">Related element</dt><dd className="break-words font-mono">{issue.relatedSelectorHint ?? issue.relatedElementRef}</dd></div> : null}
-        {issue.overlapRatio !== undefined ? <div><dt className="font-semibold text-[#111827]">Overlap</dt><dd>{issue.overlapRatio} ratio{issue.overlapArea !== undefined ? ` · ${issue.overlapArea} px²` : ""}</dd></div> : null}
-        <div>
-          <dt className="font-semibold text-[#111827]">Screenshot</dt>
-          <dd>
-            {issue.screenshotRef ?? issue.screenshotMissingReason ?? (issue.screenshotAvailable ? "Screenshot captured, but no safe preview link is available." : "No screenshot available for this issue.")}
-          </dd>
-        </div>
-      </dl>
-    </div>
+    <label className="grid min-w-0 gap-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#667085]">
+      Inspect issue · {issues.length}
+      <select
+        className="min-w-0 rounded-xl border border-[#b9cee8] bg-white px-3 py-3 text-sm font-semibold normal-case tracking-normal text-[#111827] outline-none transition focus:border-[#5f8fc9] focus:ring-2 focus:ring-[#dbeafe]"
+        value={selectedId ?? issues[0]?.id}
+        onChange={(event) => {
+          const issue = issues.find((candidate) => candidate.id === event.target.value);
+          if (issue) onSelect(issue);
+        }}
+      >
+        {issues.map((issue, index) => (
+          <option key={issue.id} value={issue.id}>{index + 1}. [{issue.severity}] {issue.type} · {issue.route} · {issue.viewportKey} · {issue.selectorHint ?? issue.elementRef}</option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -178,7 +171,7 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
   const model = useMemo(() => runtimeReportViewModel(latestReport, runtimeArtifactDetail), [latestReport, runtimeArtifactDetail]);
   const [filters, setFilters] = useState<RuntimeReportFilters>(defaultRuntimeFilters);
   const [selectedIssueId, setSelectedIssueId] = useState<string | undefined>();
-  const filteredIssues = useMemo(() => filterRuntimeIssues(model.issues, filters), [model.issues, filters]);
+  const filteredIssues = useMemo(() => filterRuntimeIssues(model.issues, filters), [filters, model.issues]);
   const selectedIssue = filteredIssues.find((issue) => issue.id === selectedIssueId) ?? filteredIssues[0] ?? null;
   const targets = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.scanTargetId)))], [model.issues]);
   const routes = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.route)))], [model.issues]);
@@ -186,36 +179,37 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
   const severities = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.severity)))], [model.issues]);
 
   if (!model.runtimeEnabled) {
-    return <section className="rounded-[1.1rem] border border-dashed border-[#dbe7f5] bg-[#fbfdff] p-4 text-sm text-[#667085]">Runtime scan was not enabled for this report.</section>;
+    return <section className="rounded-xl border border-dashed border-[#dbe7f5] bg-[#fbfdff] p-4 text-sm text-[#667085]">Runtime scan was not enabled for this report.</section>;
   }
 
   return (
-    <section className="space-y-4">
-      {!model.hasFullIssueData ? <div className="rounded-2xl border border-[#fef3c7] bg-[#fffbeb] p-4 text-sm text-[#a16207]">Detailed runtime issues are not available in this report.</div> : null}
+    <section className="space-y-3">
+      <RuntimeOverview model={model} />
+      {!model.hasFullIssueData ? <div className="rounded-xl border border-[#fef3c7] bg-[#fffbeb] p-4 text-sm text-[#a16207]">Detailed runtime issues are not available in this report.</div> : null}
       <RuntimeErrorList model={model} />
-      <RuntimeTargets model={model} />
-      <RuntimeViewports model={model} />
-      <RuntimeScreenshots model={model} />
+
       {model.hasFullIssueData ? (
-        <div className="rounded-2xl border border-[#e5edf7] bg-white p-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-[#111827]">Runtime issues</p>
-              <p className="mt-1 text-sm text-[#667085]">Showing {filteredIssues.length} of {model.issues.length} issues.</p>
-            </div>
-            <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-4">
-              <SelectField label="Target" value={filters.targetId} options={targets} onChange={(targetId) => { setFilters((current) => ({ ...current, targetId })); setSelectedIssueId(undefined); }} />
-              <SelectField label="Route" value={filters.route} options={routes} onChange={(route) => { setFilters((current) => ({ ...current, route })); setSelectedIssueId(undefined); }} />
-              <SelectField label="Viewport" value={filters.viewport} options={viewports} onChange={(viewport) => { setFilters((current) => ({ ...current, viewport })); setSelectedIssueId(undefined); }} />
-              <SelectField label="Severity" value={filters.severity} options={severities} onChange={(severity) => { setFilters((current) => ({ ...current, severity })); setSelectedIssueId(undefined); }} />
-            </div>
-          </div>
-          {model.issues.length === 0 ? <p className="mt-4 rounded-2xl bg-[#fbfdff] p-4 text-sm text-[#667085]">No runtime layout issues found for this report.</p> : null}
-          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_24rem]">
-            <RuntimeIssueList issues={filteredIssues} selectedId={selectedIssue?.id} onSelect={(issue) => setSelectedIssueId(issue.id)} />
-            <RuntimeIssueDetail issue={selectedIssue} />
-          </div>
-        </div>
+        <section className="rounded-2xl border border-[#dbe7f5] bg-white p-3 sm:p-4">
+          {model.issues.length === 0 ? (
+            <p className="rounded-xl bg-[#f0fdf4] p-4 text-sm font-semibold text-[#15803d]">No visible runtime layout issues found.</p>
+          ) : (
+            <>
+              <div className="grid gap-2 rounded-xl bg-[#f8fbff] p-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] xl:items-end">
+                <SelectField label="Target" value={filters.targetId} options={targets} onChange={(targetId) => { setFilters((current) => ({ ...current, targetId })); setSelectedIssueId(undefined); }} />
+                <SelectField label="Route" value={filters.route} options={routes} onChange={(route) => { setFilters((current) => ({ ...current, route })); setSelectedIssueId(undefined); }} />
+                <SelectField label="Viewport" value={filters.viewport} options={viewports} onChange={(viewport) => { setFilters((current) => ({ ...current, viewport })); setSelectedIssueId(undefined); }} />
+                <SelectField label="Severity" value={filters.severity} options={severities} onChange={(severity) => { setFilters((current) => ({ ...current, severity })); setSelectedIssueId(undefined); }} />
+                <button type="button" onClick={() => { setFilters(defaultRuntimeFilters); setSelectedIssueId(undefined); }} className="rounded-lg border border-[#dbe7f5] bg-white px-3 py-2 text-sm font-semibold text-[#405168] hover:border-[#a9c2df]">Reset</button>
+              </div>
+              {filteredIssues.length === 0 ? <p className="mt-3 rounded-xl bg-[#fffbeb] p-4 text-sm text-[#a16207]">No runtime issues match these filters.</p> : (
+                <div className="mt-3">
+                  <RuntimeIssueSelect issues={filteredIssues} selectedId={selectedIssue?.id} onSelect={(issue) => setSelectedIssueId(issue.id)} />
+                </div>
+              )}
+              {selectedIssue ? <RuntimeScreenshotEvidence key={`${selectedIssue.id}:${selectedIssue.screenshotRef ?? selectedIssue.screenshotMissingReason ?? "missing"}`} issue={selectedIssue} /> : null}
+            </>
+          )}
+        </section>
       ) : null}
     </section>
   );

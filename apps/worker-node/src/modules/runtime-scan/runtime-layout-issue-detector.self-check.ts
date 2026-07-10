@@ -7,7 +7,7 @@ const viewport = { width: 320, height: 640 };
 const geometry: DomGeometry = {
   viewport,
   capturedAt: "2026-01-01T00:00:00.000Z",
-  elementCount: 5,
+  elementCount: 10,
   truncated: false,
   elements: [
     {
@@ -47,6 +47,33 @@ const geometry: DomGeometry = {
       order: 3,
     },
     {
+      internalId: "el:small-neighbor",
+      tagName: "BUTTON",
+      selectorHint: "#small-neighbor",
+      rect: { x: 42, y: 90, width: 20, height: 20, top: 90, right: 62, bottom: 110, left: 42 },
+      visibility: { display: "inline-block", visibility: "visible", opacity: 1 },
+      clickable: true,
+      order: 9,
+    },
+    {
+      internalId: "el:wcag-aa-size",
+      tagName: "BUTTON",
+      selectorHint: "#wcag-aa-size",
+      rect: { x: 220, y: 90, width: 30, height: 30, top: 90, right: 250, bottom: 120, left: 220 },
+      visibility: { display: "inline-block", visibility: "visible", opacity: 1 },
+      clickable: true,
+      order: 10,
+    },
+    {
+      internalId: "el:small-isolated",
+      tagName: "BUTTON",
+      selectorHint: "#small-isolated",
+      rect: { x: 250, y: 300, width: 20, height: 20, top: 300, right: 270, bottom: 320, left: 250 },
+      visibility: { display: "inline-block", visibility: "visible", opacity: 1 },
+      clickable: true,
+      order: 11,
+    },
+    {
       internalId: "el:overlap-a",
       tagName: "BUTTON",
       selectorHint: "#overlap-a",
@@ -73,6 +100,16 @@ const geometry: DomGeometry = {
       clickable: false,
       order: 6,
     },
+    {
+      internalId: "el:react-flow-viewport",
+      tagName: "DIV",
+      selectorHint: "div.react-flow__viewport.xyflow__viewport",
+      className: "react-flow__viewport xyflow__viewport",
+      rect: { x: -85, y: 639, width: 50, height: 105, top: 639, right: -35, bottom: 744, left: -85 },
+      visibility: { display: "block", visibility: "visible", opacity: 1 },
+      clickable: false,
+      order: 8,
+    },
   ],
 };
 
@@ -96,6 +133,10 @@ const main = () => {
   assert.equal(issues.find((issue) => issue.type === "horizontal-overflow")?.severity, "error");
   assert.equal(issues.some((issue) => issue.type === "element-outside-viewport" && issue.elementRef === "el:below-fold"), false);
   assert.equal(issues.some((issue) => issue.type === "element-outside-viewport" && issue.elementRef === "el:outside-left"), true);
+  assert.equal(issues.some((issue) => issue.elementRef === "el:react-flow-viewport"), false, "transformed React Flow viewport is layout infrastructure");
+  assert.equal(issues.some((issue) => issue.type === "small-click-target" && issue.elementRef === "el:wcag-aa-size"), false, "30px target meets WCAG AA size");
+  assert.equal(issues.some((issue) => issue.type === "small-click-target" && issue.elementRef === "el:small-isolated"), false, "undersized isolated target passes spacing exception");
+  assert.equal(issues.find((issue) => issue.type === "small-click-target")?.evidence.threshold, "24x24 CSS px or sufficient target spacing");
   const mobileViewport = { width: 390, height: 844 };
   const belowFoldIssues = detectRuntimeLayoutIssues({
     scanTargetId: "route:mobile",

@@ -1,6 +1,7 @@
 import type { DomElementGeometry, DomGeometry, RuntimeLayoutIssue, RuntimeScanViewport } from "./runtime-scan.schema";
 
-const MIN_CLICK_TARGET_SIZE = 44;
+const MIN_CLICK_TARGET_SIZE = 24;
+const MIN_CLICK_TARGET_RADIUS = MIN_CLICK_TARGET_SIZE / 2;
 const OVERFLOW_TOLERANCE_PX = 1;
 const OVERLAP_RATIO_THRESHOLD = 0.5;
 const MAX_OVERLAP_ELEMENTS = 200;
@@ -49,8 +50,39 @@ const overlapArea = (a: DomElementGeometry, b: DomElementGeometry): number => {
   return width * height;
 };
 
+const isTransformedCanvasInfrastructure = (element: DomElementGeometry): boolean => {
+  const classes = new Set(element.className?.split(/\s+/).filter(Boolean) ?? []);
+  return classes.has("react-flow__viewport") || classes.has("xyflow__viewport");
+};
+
+const center = (element: DomElementGeometry): { x: number; y: number } => ({
+  x: element.rect.left + element.rect.width / 2,
+  y: element.rect.top + element.rect.height / 2,
+});
+
+const distanceToRect = (point: { x: number; y: number }, element: DomElementGeometry): number => {
+  const horizontalDistance = Math.max(element.rect.left - point.x, 0, point.x - element.rect.right);
+  const verticalDistance = Math.max(element.rect.top - point.y, 0, point.y - element.rect.bottom);
+  return Math.hypot(horizontalDistance, verticalDistance);
+};
+
+const isUndersizedClickTarget = (element: DomElementGeometry): boolean =>
+  element.rect.width < MIN_CLICK_TARGET_SIZE || element.rect.height < MIN_CLICK_TARGET_SIZE;
+
+const hasInsufficientClickTargetSpacing = (element: DomElementGeometry, clickableElements: DomElementGeometry[]): boolean => {
+  const elementCenter = center(element);
+  return clickableElements.some((other) => {
+    if (other.internalId === element.internalId) return false;
+    if (distanceToRect(elementCenter, other) < MIN_CLICK_TARGET_RADIUS) return true;
+    if (!isUndersizedClickTarget(other)) return false;
+    const otherCenter = center(other);
+    return Math.hypot(elementCenter.x - otherCenter.x, elementCenter.y - otherCenter.y) < MIN_CLICK_TARGET_SIZE;
+  });
+};
+
 export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssue[] => {
-  const elements = input.domGeometry?.elements ?? [];
+  const elements = (input.domGeometry?.elements ?? []).filter((element) => !isTransformedCanvasInfrastructure(element));
+  const clickableElements = elements.filter((element) => element.clickable && area(element) > 0);
   const issues: RuntimeLayoutIssue[] = [];
 
   for (const element of elements) {
@@ -64,12 +96,13 @@ export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssu
     if (element.rect.right < -OVERFLOW_TOLERANCE_PX || element.rect.left > input.viewport.width + OVERFLOW_TOLERANCE_PX || element.rect.bottom < -OVERFLOW_TOLERANCE_PX) {
       issues.push(issue(input, element, "element-outside-viewport", "warning", "Element is fully outside the viewport in an unexpected direction.", `right >= -${OVERFLOW_TOLERANCE_PX}px, left <= viewport.width + ${OVERFLOW_TOLERANCE_PX}px, bottom >= -${OVERFLOW_TOLERANCE_PX}px`));
     }
-    if (element.clickable && (element.rect.width < MIN_CLICK_TARGET_SIZE || element.rect.height < MIN_CLICK_TARGET_SIZE)) {
-      issues.push(issue(input, element, "small-click-target", "warning", "Clickable target is smaller than the minimum comfortable touch size.", `${MIN_CLICK_TARGET_SIZE}x${MIN_CLICK_TARGET_SIZE}px`));
+    // ponytail: geometric scans cover WCAG target size and spacing; add semantic exceptions when DOM capture records inline/equivalent/essential metadata.
+    if (element.clickable && isUndersizedClickTarget(element) && hasInsufficientClickTargetSpacing(element, clickableElements)) {
+      issues.push(issue(input, element, "small-click-target", "warning", "Clickable target is below the WCAG 2.2 AA minimum size and lacks sufficient spacing.", `${MIN_CLICK_TARGET_SIZE}x${MIN_CLICK_TARGET_SIZE} CSS px or sufficient target spacing`));
     }
   }
 
-  const clickable = elements.filter((element) => element.clickable && area(element) > 0).slice(0, MAX_OVERLAP_ELEMENTS);
+  const clickable = clickableElements.slice(0, MAX_OVERLAP_ELEMENTS);
   for (let leftIndex = 0; leftIndex < clickable.length; leftIndex += 1) {
     for (let rightIndex = leftIndex + 1; rightIndex < clickable.length; rightIndex += 1) {
       const first = clickable[leftIndex];

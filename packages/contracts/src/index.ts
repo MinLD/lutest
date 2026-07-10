@@ -457,8 +457,19 @@ const validateLocalRuntimeBaseUrl = (baseUrl: unknown): ValidationResult<string>
   return { ok: true, value: parsed.toString().replace(/\/$/, "") };
 };
 
-const isLocalRoute = (value: unknown): value is string =>
-  isNonEmptyString(value) && !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value) && !value.startsWith("//") && !value.includes("\0");
+const isLocalRoute = (value: unknown): value is string => {
+  if (!isNonEmptyString(value) || !value.startsWith("/") || value.startsWith("//") || value.includes("\0") || value.includes("\\")) return false;
+  const rawPathPart = value.split(/[?#]/, 1)[0] ?? value;
+  let pathPart: string;
+  try {
+    pathPart = decodeURIComponent(rawPathPart);
+  } catch {
+    return false;
+  }
+  if (pathPart.includes("\0") || pathPart.includes("\\")) return false;
+  const segments = pathPart.split("/");
+  return !segments.some((segment) => segment === "." || segment === ".." || segment === ".lutest");
+};
 const isRuntimeDiscoveryMode = (value: unknown): value is RuntimeDiscoveryMode => value === "all-routes" || value === "selected-routes" || value === "custom-targets";
 const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueType => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element";
 const isRuntimeErrorCode = (value: unknown): value is RuntimeErrorCode => value === "CONFIG_ERROR" || value === "PATH_NOT_ALLOWED" || value === "BASE_URL_NOT_LOCAL" || value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "ROUTE_DISCOVERY_ERROR" || value === "TARGET_EXECUTION_ERROR" || value === "ROUTE_SCAN_ERROR" || value === "ARTIFACT_WRITE_ERROR" || value === "RUNTIME_SCAN_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
@@ -554,6 +565,9 @@ export const validateRuntimeScanRequest = (value: unknown): ValidationResult<Run
   const targets: RuntimeScanTarget[] | undefined = value.targets === undefined ? undefined : [];
   if (value.targets !== undefined) { if (!Array.isArray(value.targets)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.targets must be an array" }; for (const rawTarget of value.targets) { const target = validateRuntimeTarget(rawTarget); if (!target.ok) return target; targets?.push(target.value); } }
   if (value.discoveryMode !== undefined && !isRuntimeDiscoveryMode(value.discoveryMode)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.discoveryMode is invalid" };
+  if (value.discoveryMode === "selected-routes" && (!routes?.length || Boolean(targets?.length))) return { ok: false, code: "INVALID_REQUEST", message: "selected-routes requires one or more routes and no custom targets" };
+  if (value.discoveryMode === "all-routes" && (Boolean(routes?.length) || Boolean(targets?.length))) return { ok: false, code: "INVALID_REQUEST", message: "all-routes must not include routes or custom targets" };
+  if (value.discoveryMode === "custom-targets" && (!targets?.length || Boolean(routes?.length))) return { ok: false, code: "INVALID_REQUEST", message: "custom-targets requires one or more targets and no routes" };
   if (value.viewportPreset !== undefined && value.viewportPreset !== "default") return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.viewportPreset is invalid" };
   if (value.auth !== undefined) {
     if (!isRecord(value.auth)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth must be an object" };

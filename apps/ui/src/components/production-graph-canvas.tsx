@@ -23,7 +23,7 @@ import { ProductionGraphNode } from "./production-graph-node";
 
 const nodeTypes = { productionGraphNode: ProductionGraphNode };
 const defaultVisibleEdges: Record<ProductionGraphEdgeKind, boolean> = {
-  import: false,
+  import: true,
   render: true,
   call: true,
   http: true,

@@ -11,6 +11,7 @@ import type {
 import {
   validateProductionGraphResponse,
   validateRuntimeArtifactDetailResponse,
+  validateRuntimeArtifactScreenshotQuery,
 } from "@lutest/contracts";
 
 const DEFAULT_WORKER_URL = "http://localhost:6532";
@@ -62,6 +63,13 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+export function runtimeScreenshotUrl(ref: string | undefined): string | undefined {
+  const validation = validateRuntimeArtifactScreenshotQuery({ ref });
+  if (!validation.ok) return undefined;
+  const params = new URLSearchParams({ ref: validation.value.ref });
+  return `${getWorkerUrl()}/api/report/runtime/screenshot?${params.toString()}`;
 }
 
 function isApiErrorBody(input: unknown): input is {

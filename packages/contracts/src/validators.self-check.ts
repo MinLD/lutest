@@ -43,16 +43,30 @@ assert(
   "unknown scan field invalid",
 );
 
+const routeTarget = { id: "home", kind: "route", route: "/", name: "Home" } as const;
 const runtimeRequest = {
   enabled: true,
   baseUrl: "http://localhost:3000",
   routes: ["/"],
-  targets: [{ id: "home", kind: "route", route: "/", name: "Home" }],
   discoveryMode: "selected-routes",
+  viewportPreset: "default",
+} as const;
+const customRuntimeRequest = {
+  enabled: true,
+  baseUrl: "http://localhost:3000",
+  targets: [routeTarget],
+  discoveryMode: "custom-targets",
   viewportPreset: "default",
 } as const;
 
 assert(validateRuntimeScanRequest(runtimeRequest).ok, "runtime request local baseUrl valid");
+assert(validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "all-routes", viewportPreset: "default" }).ok, "runtime all-routes request valid");
+assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "all-routes", routes: ["/"] }).ok, "runtime all-routes rejects explicit routes");
+assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "selected-routes", routes: [] }).ok, "runtime selected-routes requires route");
+assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "selected-routes", routes: ["/../secret"] }).ok, "runtime route traversal rejected");
+assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "selected-routes", routes: ["/%2e%2e/secret"] }).ok, "runtime encoded traversal rejected");
+assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "selected-routes", routes: ["C:\\secret"] }).ok, "runtime absolute filesystem route rejected");
+assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "selected-routes", routes: ["/.lutest/runtime"] }).ok, "runtime generated artifact route rejected");
 assert(validateScanRequest({ runtimeScan: runtimeRequest }).ok, "scan request runtime opt-in valid");
 assert(!validateRuntimeScanRequest({ ...runtimeRequest, enabled: false }).ok, "runtime request must opt in");
 assert(!validateRuntimeScanRequest({ ...runtimeRequest, baseUrl: "https://example.com" }).ok, "external runtime baseUrl invalid");
@@ -60,12 +74,12 @@ assert(!validateRuntimeScanRequest({ ...runtimeRequest, baseUrl: "file:///tmp/in
 assert(!validateRuntimeScanRequest({ ...runtimeRequest, baseUrl: "data:text/html,x" }).ok, "data runtime baseUrl invalid");
 assert(!validateRuntimeScanRequest({ ...runtimeRequest, baseUrl: "javascript:alert(1)" }).ok, "javascript runtime baseUrl invalid");
 assert(!validateRuntimeScanRequest({ ...runtimeRequest, baseUrl: "http://user:pass@localhost:3000" }).ok, "credential runtime baseUrl invalid");
-assert(!validateRuntimeScanRequest({ ...runtimeRequest, targets: [{ id: "x", kind: "unknown", route: "/" }] }).ok, "invalid runtime target kind rejected");
-assert(validateRuntimeScanRequest({ ...runtimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#email", valueFromEnv: "LUTEST_EMAIL" }] }] }).ok, "flow target with env fill accepted");
-assert(!validateRuntimeScanRequest({ ...runtimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#email" }] }] }).ok, "fill missing value rejected");
-assert(!validateRuntimeScanRequest({ ...runtimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "click", selector: "button.delete" }] }] }).ok, "destructive click blocked");
-assert(validateRuntimeScanRequest({ ...runtimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "click", selector: "button.delete", allowDestructive: true }] }] }).ok, "destructive click explicit allow accepted");
-assert(!validateRuntimeScanRequest({ ...runtimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "waitForTimeout", timeoutMs: 10001 }] }] }).ok, "oversized wait rejected");
+assert(!validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "x", kind: "unknown", route: "/" }] }).ok, "invalid runtime target kind rejected");
+assert(validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#email", valueFromEnv: "LUTEST_EMAIL" }] }] }).ok, "flow target with env fill accepted");
+assert(!validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#email" }] }] }).ok, "fill missing value rejected");
+assert(!validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "click", selector: "button.delete" }] }] }).ok, "destructive click blocked");
+assert(validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "click", selector: "button.delete", allowDestructive: true }] }] }).ok, "destructive click explicit allow accepted");
+assert(!validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "waitForTimeout", timeoutMs: 10001 }] }] }).ok, "oversized wait rejected");
 
 const rect = { x: 0, y: 0, width: 100, height: 40, top: 0, right: 100, bottom: 40, left: 0 };
 const viewport = { width: 390, height: 844 };
@@ -92,7 +106,7 @@ const runtimeResult = {
   finishedAt: "2026-07-09T00:00:01.000Z",
   durationMs: 1000,
   baseUrl: "http://localhost:3000",
-  targets: runtimeRequest.targets,
+  targets: [routeTarget],
   targetResults: [{
     scanTargetId: "home",
     kind: "route",

@@ -5,6 +5,7 @@ import type {
   ProductionGraphResponse,
   ProjectSummary,
   RuntimeArtifactDetailResponse,
+  RuntimeScanRequest,
   ScanResponse,
   StatusResponse,
 } from "@lutest/contracts";
@@ -35,8 +36,6 @@ const emptyDashboardData: DashboardData = {
 };
 
 const DEFAULT_PROJECT_PATH = process.env.NEXT_PUBLIC_LUTEST_PROJECT_PATH;
-const DEFAULT_RUNTIME_BASE_URL =
-  process.env.NEXT_PUBLIC_LUTEST_RUNTIME_BASE_URL ?? "http://localhost:3000";
 const PATH_NOT_ALLOWED_MESSAGE = "Selected path is outside worker allowed root";
 
 async function loadGraph(projectPath: string | undefined) {
@@ -103,20 +102,13 @@ export function useDashboardData(
     }
   }, [projectPath]);
 
-  const runScan = useCallback(async (withRuntime = false) => {
+  const executeScan = useCallback(async (runtimeScan?: RuntimeScanRequest) => {
     setIsScanning(true);
     setError(null);
     try {
       const scan = await lutestApi.runScan({
         projectPath,
-        ...(withRuntime
-          ? {
-              runtimeScan: {
-                enabled: true,
-                baseUrl: DEFAULT_RUNTIME_BASE_URL,
-              },
-            }
-          : {}),
+        ...(runtimeScan ? { runtimeScan } : {}),
       });
       const selectedProjectPath = projectPath ?? undefined;
       const [graphData, latestReport] = await Promise.all([
@@ -144,6 +136,8 @@ export function useDashboardData(
       setIsScanning(false);
     }
   }, [projectPath]);
+  const runScan = useCallback(() => executeScan(), [executeScan]);
+  const runRuntimeScan = useCallback((runtimeScan: RuntimeScanRequest) => executeScan(runtimeScan), [executeScan]);
 
   useEffect(() => {
     void load();
@@ -156,7 +150,7 @@ export function useDashboardData(
     error,
     reload: load,
     runScan,
-    runRuntimeScan: () => runScan(true),
+    runRuntimeScan,
   };
 }
 
