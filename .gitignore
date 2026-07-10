@@ -1,52 +1,50 @@
-# ========================
-# 1. Node.js & Dependencies
-# ========================
+# Dependencies
 node_modules/
-npm-debug.log
-yarn-error.log
+**/node_modules/
 
-# ========================
-# 2. Build & Cache Output
-# ========================
-dist/
-.turbo/
-.next/
-build/
+# Build output
+**/dist/
+**/build/
+**/.next/
+**/out/
+**/coverage/
+**/.turbo/
+**/.cache/
+**/*.tsbuildinfo
 
-# ========================
-# 3. Go Binaries
-# ========================
-# Bỏ qua các file thực thi sau khi build Go
+# Lutest generated artifacts
+.lutest/
+**/.lutest/
+docs/report/
+
+# Environment / secrets
+.env
+.env.local
+.env.*
+!.env.example
+
+# Logs / temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tmp
+*.temp
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Go / compiled binaries
 /cmd/lutest/lutest
 /cmd/lutest/lutest.exe
 bin/
 obj/
 
-# ========================
-# 4. Environment Variables
-# ========================
-# Tuyệt đối không push file chứa mật khẩu/cấu hình local
-.env
-.env.*
-!.env.example
-
-# ========================
-# 5. OS & Editor Files
-# ========================
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-*.log
-
-
-AGENTS.md
-.agents
+# Local agent metadata
+.agents/
+.codex/
 skills-lock.json
-node_modules
-docs
-AGENTS.md
-AI_HANDOFF.md
-apps\worker-node\dist
-.lutest
-apps/ui/.lutest
