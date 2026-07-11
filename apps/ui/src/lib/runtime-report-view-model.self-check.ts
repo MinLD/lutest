@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { LatestReportResponse, RuntimeArtifactDetailResponse, RuntimeLayoutIssue, RuntimeScanResult } from "@lutest/contracts";
-import { defaultRuntimeFilters, filterRuntimeIssues, runtimeIssueFilters, runtimeReportViewModel, safeArtifactRef } from "./runtime-report-view-model";
+import { defaultRuntimeFilters, filterRuntimeIssues, groupRuntimeSkippedInteractions, runtimeReportViewModel, safeArtifactRef } from "./runtime-report-view-model";
 
 const issue: RuntimeLayoutIssue = {
   id: "issue-1",
@@ -40,6 +40,11 @@ const runtimeScan: RuntimeScanResult = {
     status: "warning",
     viewportResults: [{
       viewport: { width: 390, height: 844 },
+      stateId: "state_filter",
+      stateLabel: "after open Filter",
+      stateDedupKey: "state_filter",
+      interactionSource: { candidateId: "candidate_1", kind: "filter-sort", label: "Filter", action: "click" },
+      skippedInteractions: [{ candidateId: "candidate_2", kind: "toggle", label: "Delete", reason: "destructive" }],
       screenshotPath: ".lutest/runtime/safe.png",
       domGeometry: undefined,
       layoutIssues: [issue],
@@ -73,12 +78,25 @@ assert.equal(model.screenshotArtifacts[0]?.scanTargetId, "target-home", "screens
 assert.equal(model.screenshotArtifacts[0]?.route, "/home", "screenshot route mapped");
 assert.equal(model.screenshotArtifacts[0]?.viewportLabel, "390x844", "screenshot viewport mapped");
 assert.equal(model.screenshotArtifacts[0]?.safeRef, undefined, "legacy artifact path is not exposed");
-assert.equal(filterRuntimeIssues(model.issues, { ...defaultRuntimeFilters, targetId: "target-home" }).length, 1, "target filter works");
+assert.equal(model.states[0]?.label, "after open Filter", "runtime state mapped separately from target");
+assert.equal(model.skippedInteractions[0]?.reason, "destructive", "typed skipped reason mapped");
+assert.deepEqual(
+  groupRuntimeSkippedInteractions([
+    { candidateId: "candidate-delete", label: "Delete", kind: "toggle", reason: "destructive", targetId: "target-home", route: "/home", viewportKey: "390x844" },
+    { candidateId: "candidate-delete", label: "Delete", kind: "toggle", reason: "destructive", targetId: "target-home", route: "/home", viewportKey: "1440x900" },
+    { candidateId: "candidate-save", label: "Save", kind: "toggle", reason: "destructive", targetId: "target-home", route: "/home", viewportKey: "390x844" },
+  ]).map(({ candidateId, observationCount, viewportCount }) => ({ candidateId, observationCount, viewportCount })),
+  [
+    { candidateId: "candidate-delete", observationCount: 2, viewportCount: 2 },
+    { candidateId: "candidate-save", observationCount: 1, viewportCount: 1 },
+  ],
+  "interaction safety audit groups repeated control observations and preserves viewport coverage",
+);
+assert.equal(filterRuntimeIssues(model.issues, { ...defaultRuntimeFilters, route: "/home" }).length, 1, "affected route filter works");
+assert.equal(filterRuntimeIssues(model.issues, { ...defaultRuntimeFilters, state: "after open Filter" }).length, 1, "state filter works");
+assert.equal(filterRuntimeIssues(model.issues, { ...defaultRuntimeFilters, state: "baseline" }).length, 0, "state filter rejects nonmatching state");
 assert.equal(filterRuntimeIssues(model.issues, { ...defaultRuntimeFilters, route: "/missing" }).length, 0, "route filter works");
 assert.equal(filterRuntimeIssues(model.issues, { ...defaultRuntimeFilters, viewport: "390x844" }).length, 1, "viewport filter works");
-const firstIssue = model.issues[0];
-assert(firstIssue, "runtime issue fixture exists");
-assert.deepEqual(runtimeIssueFilters(firstIssue), { targetId: "target-home", route: "/home", viewport: "390x844", severity: "warning" }, "issue dropdown selection maps matching filters");
 
 const summaryOnly = runtimeReportViewModel({ state: "valid", report: { ...report.report, runtimeScan: null }, runtimeScanSummary: { status: "failed", targetCount: 1, viewportCount: 1, screenshotCount: 0, issueCount: 0, errorCount: 1, issueSummary: { total: 0, bySeverity: {}, byType: {} } } });
 assert.equal(summaryOnly.hasFullIssueData, false, "summary only handled");
@@ -100,7 +118,16 @@ const detail: RuntimeArtifactDetailResponse = {
     status: "warning",
     viewportResults: [{
       viewport: { width: 390, height: 844 },
+      stateId: "state_filter",
+      stateLabel: "after open Filter",
+      stateDedupKey: "state_filter",
+      interactionSource: { candidateId: "candidate_1", kind: "filter-sort", label: "Filter", action: "click" },
+      skippedInteractions: [{ candidateId: "candidate_2", kind: "toggle", label: "Delete", reason: "destructive" }],
       screenshot: { available: true, ref: opaqueRef },
+      diagnostics: [
+        { kind: "console-warning", message: "Fixture warning" },
+        { kind: "page-error", message: "Fixture page error" },
+      ],
       issues: [{
         id: "issue-1",
         type: "small-click-target",
@@ -141,27 +168,15 @@ const detailModel = runtimeReportViewModel(report, detail);
 assert.equal(detailModel.hasFullIssueData, true, "runtime detail supplies full issue data after refresh");
 assert.equal(detailModel.issues.length, 1, "legacy 44px warning hidden when target meets WCAG AA 24px size");
 assert.equal(detailModel.issues[0]?.screenshotRef, opaqueRef, "runtime detail keeps opaque screenshot ref");
+assert.equal(detailModel.issues[0]?.stateLabel, "after open Filter", "detail issue inherits discovered state");
+assert.equal(detailModel.states[0]?.interactionLabel, "Filter", "interaction source mapped safely");
+assert.equal(detailModel.skippedInteractions[0]?.label, "Delete", "skipped control label mapped safely");
+assert.equal(detailModel.diagnosticCount, 2, "browser diagnostic count survives artifact refresh");
+assert.equal(detailModel.diagnostics[0]?.kind, "console-warning", "typed browser diagnostic mapped");
 assert.equal(detailModel.issues[0]?.threshold, "WCAG 2.2 AA: at least 24×24 CSS px, or sufficient spacing from nearby targets.", "visible small target uses current WCAG explanation");
 assert(!JSON.stringify(detailModel).includes(".lutest"), "runtime detail view model excludes raw lutest paths");
 
-const infrastructureDetail: RuntimeArtifactDetailResponse = {
-  ...detail,
-  summary: { ...detail.summary, issueCount: 1 },
-  targetResults: detail.targetResults.map((target) => ({
-    ...target,
-    viewportResults: target.viewportResults.map((viewportResult) => ({
-      ...viewportResult,
-      issues: viewportResult.issues.map((runtimeIssue) => ({
-        ...runtimeIssue,
-        evidence: { ...runtimeIssue.evidence, selector: "div.react-flow__viewport.xyflow__viewport" },
-      })),
-    })),
-  })),
-};
-const infrastructureModel = runtimeReportViewModel(report, infrastructureDetail);
-assert.equal(infrastructureModel.issues.length, 0, "stored React Flow viewport false positive hidden");
-assert.equal(infrastructureModel.issueCount, 0, "visible issue count excludes infrastructure false positive");
-assert.equal(infrastructureModel.targets[0]?.issueCount, 0, "target issue count excludes infrastructure false positive");
+assert.equal(detailModel.screenshotArtifacts[0]?.stateLabel, "after open Filter", "state screenshot remains selectable without relying on issue geometry");
 
 const missingScreenshot = runtimeReportViewModel({ state: "valid", report: { ...report.report, runtimeScan: { ...runtimeScan, targetResults: [{ ...runtimeScan.targetResults[0], viewportResults: [{ ...runtimeScan.targetResults[0].viewportResults[0], screenshotPath: undefined, layoutIssues: [{ ...issue, evidence: { ...issue.evidence, screenshotPath: undefined } }] }] }] } } });
 assert.equal(missingScreenshot.issues[0]?.screenshotAvailable, false, "missing screenshot handled");

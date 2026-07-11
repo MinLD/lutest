@@ -7,10 +7,36 @@ export type RuntimeScanLimits = {
   maxTargets: number;
   maxElementsPerViewport: number;
   maxTextSnippetLength: number;
-  maxScreenshots: number;
   routeTimeoutMs: number;
   scanTimeoutMs: number;
+  maxInteractionsPerRoute: number;
+  maxStatesPerRoute: number;
+  interactionDiscoveryTimeoutMs: number;
   ignoredTags: string[];
+};
+
+export type RuntimeInteractionControlKind = "tab" | "dropdown" | "modal-trigger" | "accordion" | "drawer" | "menu" | "toggle" | "filter-sort";
+export type RuntimeInteractionSkipReason =
+  | "disabled"
+  | "requires-input"
+  | "destructive"
+  | "unsafe-candidate"
+  | "not-visible"
+  | "route-change-risk"
+  | "limit-reached"
+  | "duplicate-state"
+  | "unsupported-control";
+export type RuntimeInteractionSource = {
+  candidateId: string;
+  kind: RuntimeInteractionControlKind;
+  label: string;
+  action: "click";
+};
+export type RuntimeSkippedInteraction = {
+  candidateId: string;
+  kind?: RuntimeInteractionControlKind;
+  label?: string;
+  reason: RuntimeInteractionSkipReason;
 };
 
 export type RuntimeScanError = {
@@ -36,6 +62,7 @@ export type RuntimeDiscoveryMode = "all-routes" | "selected-routes" | "custom-ta
 
 export type DomElementGeometry = {
   internalId: string;
+  parentInternalId?: string;
   tagName: string;
   selectorHint?: string;
   id?: string;
@@ -45,6 +72,10 @@ export type DomElementGeometry = {
   textSnippet?: string;
   rect: { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number };
   visibility: { display: string; visibility: string; opacity: number };
+  viewportBoundary?: {
+    horizontal: "viewport" | "clipped-ancestor" | "scrollable-ancestor";
+    vertical: "viewport" | "clipped-ancestor" | "scrollable-ancestor";
+  };
   clickable: boolean;
   order: number;
 };
@@ -90,6 +121,11 @@ export type RuntimeLayoutIssue = {
 
 export type RuntimeViewportResult = {
   viewport: RuntimeScanViewport;
+  stateId?: string;
+  stateLabel?: string;
+  stateDedupKey?: string;
+  interactionSource?: RuntimeInteractionSource;
+  skippedInteractions?: RuntimeSkippedInteraction[];
   screenshotPath?: string;
   screenshotError?: string;
   domGeometry?: DomGeometry;
@@ -223,7 +259,7 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
   if (!Array.isArray(value.errors)) throw new Error("Runtime scan artifact errors must be array");
   for (const target of value.targets) assertRuntimeTargetSafe(target);
   if (!isObject(value.limits)) throw new Error("Runtime scan artifact limits must be object");
-  for (const key of ["maxRoutes", "maxTargets", "maxElementsPerViewport", "maxTextSnippetLength", "maxScreenshots", "routeTimeoutMs", "scanTimeoutMs"]) {
+  for (const key of ["maxRoutes", "maxTargets", "maxElementsPerViewport", "maxTextSnippetLength", "routeTimeoutMs", "scanTimeoutMs", "maxInteractionsPerRoute", "maxStatesPerRoute", "interactionDiscoveryTimeoutMs"]) {
     if (!isNumber(value.limits[key])) throw new Error(`Runtime scan limit ${key} must be number`);
   }
   if (!Array.isArray(value.limits.ignoredTags)) throw new Error("Runtime scan ignoredTags must be array");
@@ -234,6 +270,9 @@ export const validateRuntimeScanResult = (value: unknown): RuntimeScanResult => 
     if (!Array.isArray(route.viewportResults)) throw new Error("Runtime scan viewportResults must be array");
     for (const viewportResult of route.viewportResults) {
       if (!isObject(viewportResult)) throw new Error("Runtime scan viewport result must be object");
+      const stateFieldCount = [viewportResult.stateId, viewportResult.stateLabel, viewportResult.stateDedupKey].filter(isString).length;
+      if (stateFieldCount !== 0 && stateFieldCount !== 3) throw new Error("Runtime scan viewport state identity invalid");
+      if (viewportResult.skippedInteractions !== undefined && !Array.isArray(viewportResult.skippedInteractions)) throw new Error("Runtime scan skippedInteractions must be array");
       if ("domGeometry" in viewportResult) {
         if (!isObject(viewportResult.domGeometry)) throw new Error("Runtime scan domGeometry must be object");
         if (!Array.isArray(viewportResult.domGeometry.elements)) throw new Error("Runtime scan domGeometry elements must be array");

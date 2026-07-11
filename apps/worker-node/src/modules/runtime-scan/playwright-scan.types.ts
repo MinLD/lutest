@@ -12,6 +12,12 @@ export type RuntimeScanRequest = {
   viewport?: RuntimeScanViewport;
   headless?: boolean;
   timeoutMs?: number;
+  interactionDiscovery?: {
+    enabled: true;
+    maxInteractionsPerRoute?: number;
+    maxStatesPerRoute?: number;
+    timeoutMs?: number;
+  };
 };
 
 export type {
@@ -22,6 +28,10 @@ export type {
   RuntimeFailedResponse,
   RuntimeFlowTarget,
   RuntimeFlowStep,
+  RuntimeInteractionControlKind,
+  RuntimeInteractionSkipReason,
+  RuntimeInteractionSource,
+  RuntimeSkippedInteraction,
   RuntimeDiscoveryMode,
   RuntimeLayoutIssue,
   RuntimeNetworkError,

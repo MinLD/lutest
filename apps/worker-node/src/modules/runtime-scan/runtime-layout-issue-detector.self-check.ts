@@ -101,12 +101,13 @@ const geometry: DomGeometry = {
       order: 6,
     },
     {
-      internalId: "el:react-flow-viewport",
+      internalId: "el:clipped-canvas-plane",
       tagName: "DIV",
-      selectorHint: "div.react-flow__viewport.xyflow__viewport",
-      className: "react-flow__viewport xyflow__viewport",
+      selectorHint: "div.canvas-plane",
+      className: "canvas-plane",
       rect: { x: -85, y: 639, width: 50, height: 105, top: 639, right: -35, bottom: 744, left: -85 },
       visibility: { display: "block", visibility: "visible", opacity: 1 },
+      viewportBoundary: { horizontal: "clipped-ancestor", vertical: "clipped-ancestor" },
       clickable: false,
       order: 8,
     },
@@ -133,7 +134,8 @@ const main = () => {
   assert.equal(issues.find((issue) => issue.type === "horizontal-overflow")?.severity, "error");
   assert.equal(issues.some((issue) => issue.type === "element-outside-viewport" && issue.elementRef === "el:below-fold"), false);
   assert.equal(issues.some((issue) => issue.type === "element-outside-viewport" && issue.elementRef === "el:outside-left"), true);
-  assert.equal(issues.some((issue) => issue.elementRef === "el:react-flow-viewport"), false, "transformed React Flow viewport is layout infrastructure");
+  assert.equal(issues.some((issue) => issue.type === "horizontal-overflow" && issue.elementRef === "el:outside-left"), false, "fully outside element is not double-reported as overflow");
+  assert.equal(issues.some((issue) => issue.elementRef === "el:clipped-canvas-plane"), false, "elements managed by a clipped coordinate space do not use viewport boundaries");
   assert.equal(issues.some((issue) => issue.type === "small-click-target" && issue.elementRef === "el:wcag-aa-size"), false, "30px target meets WCAG AA size");
   assert.equal(issues.some((issue) => issue.type === "small-click-target" && issue.elementRef === "el:small-isolated"), false, "undersized isolated target passes spacing exception");
   assert.equal(issues.find((issue) => issue.type === "small-click-target")?.evidence.threshold, "24x24 CSS px or sufficient target spacing");
@@ -165,6 +167,40 @@ const main = () => {
   assert.equal(overlap?.evidence.relatedBoundingBox?.width, 80);
   assert((overlap?.evidence.overlapArea ?? 0) > 0);
   assert((overlap?.evidence.overlapRatio ?? 0) >= 0.5);
+  const nestedOverflowIssues = detectRuntimeLayoutIssues({
+    scanTargetId: "route:nested",
+    route: "/nested",
+    viewport,
+    domGeometry: {
+      viewport,
+      capturedAt: "2026-01-01T00:00:00.000Z",
+      elementCount: 2,
+      truncated: false,
+      elements: [
+        {
+          internalId: "el:form",
+          tagName: "FORM",
+          selectorHint: "form",
+          rect: { x: 20, y: 100, width: 340, height: 60, top: 100, right: 360, bottom: 160, left: 20 },
+          visibility: { display: "flex", visibility: "visible", opacity: 1 },
+          clickable: false,
+          order: 1,
+        },
+        {
+          internalId: "el:submit",
+          parentInternalId: "el:form",
+          tagName: "BUTTON",
+          selectorHint: "button",
+          rect: { x: 300, y: 100, width: 60, height: 60, top: 100, right: 360, bottom: 160, left: 300 },
+          visibility: { display: "block", visibility: "visible", opacity: 1 },
+          clickable: true,
+          order: 2,
+        },
+      ],
+    },
+  });
+  assert.equal(nestedOverflowIssues.some((issue) => issue.elementRef === "el:form"), false, "overflow ancestor sharing the same edge is deduped");
+  assert.equal(nestedOverflowIssues.some((issue) => issue.elementRef === "el:submit"), true, "leaf overflow evidence is retained");
   assert.equal(detectRuntimeLayoutIssues({ scanTargetId: "route:1", route: "/", viewport }).length, 0);
   console.log("runtime layout issue detector self-check passed");
 };

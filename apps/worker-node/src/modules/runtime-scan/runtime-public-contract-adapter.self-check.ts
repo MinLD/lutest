@@ -37,7 +37,7 @@ const baseResult = (): RuntimeScanResult => ({
     executionSteps: [{ kind: "fill", selector: "#secret", status: "failed", durationMs: 1, redacted: true, valueSource: "direct", code: "MANUAL_FLOW_STEP_FAILED", message: "fill failed" }],
     durationMs: 1,
   }],
-  limits: { maxRoutes: 20, maxTargets: 20, maxElementsPerViewport: 500, maxTextSnippetLength: 120, maxScreenshots: 60, routeTimeoutMs: 30_000, scanTimeoutMs: 120_000, ignoredTags: ["SCRIPT", "STYLE"] },
+  limits: { maxRoutes: 20, maxTargets: 20, maxElementsPerViewport: 500, maxTextSnippetLength: 120, routeTimeoutMs: 30_000, scanTimeoutMs: 120_000, maxInteractionsPerRoute: 8, maxStatesPerRoute: 6, interactionDiscoveryTimeoutMs: 10_000, ignoredTags: ["SCRIPT", "STYLE"] },
   errors: [],
   summary: { routeCount: 1, targetCount: 1, consoleMessageCount: 2, pageErrorCount: 1, networkErrorCount: 1, failedResponseCount: 1, screenshotCount: 0, errorCount: 0 },
   artifacts: { rootDir: "/tmp/project/.lutest/runtime", screenshotsDir: "/tmp/project/.lutest/runtime/screenshots/runtime_adapter_check", resultPath: "/tmp/project/.lutest/runtime/latest-runtime-scan.json" },
@@ -66,6 +66,26 @@ assert.equal(JSON.stringify(mapped).includes('"value"'), false);
 assert.equal(JSON.stringify(mapped).includes('"redacted":true'), true);
 assert.equal(mapped.targetResults[0]?.viewportResults[2]?.errors[0]?.code, "ROUTE_SCAN_ERROR");
 assert.equal(mapped.targetResults[0]?.executionSteps?.[0]?.code, "TARGET_EXECUTION_ERROR");
+
+const diagnosticsOnly = baseResult();
+const diagnosticsRoute = diagnosticsOnly.routes[0];
+assert(diagnosticsRoute);
+diagnosticsRoute.executionSteps = [];
+diagnosticsRoute.viewportResults = [{
+  viewport,
+  layoutIssues: [],
+  consoleMessages: [
+    { type: "warning", text: "authored warning" },
+    { type: "error", text: "Failed to load resource: net::ERR_CONNECTION_REFUSED", location: "http://localhost:3000/api:0:0" },
+  ],
+  pageErrors: [],
+  networkErrors: [{ url: "http://localhost:3000/api", method: "GET", failureText: "connection refused" }],
+  failedResponses: [],
+}];
+const diagnosticsMapped = mapInternalRuntimeScanResult(diagnosticsOnly);
+assert.equal(diagnosticsMapped.status, "warning", "browser diagnostics produce warning status without scanner failure");
+assert.equal(diagnosticsMapped.targetResults[0]?.status, "warning", "diagnostic target produces warning status");
+assert.deepEqual(diagnosticsMapped.targetResults[0]?.viewportResults[0]?.consoleErrors, ["authored warning"], "network resource console duplicate removed");
 
 assert.equal(mapRuntimeIntegrationErrorCode("RUNTIME_BASE_URL_NOT_ALLOWED"), "BASE_URL_NOT_LOCAL");
 assert.equal(mapRuntimeIntegrationErrorCode("PATH_NOT_ALLOWED"), "PATH_NOT_ALLOWED");

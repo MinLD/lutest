@@ -2,7 +2,7 @@
   "name": "@lutest/worker-node",
   "version": "1.0.0",
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "node --watch --env-file-if-exists=../../.env --import tsx src/main.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit"
   },

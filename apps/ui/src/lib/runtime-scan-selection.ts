@@ -15,6 +15,7 @@ export type RuntimeScanSelectionInput = {
   baseUrl: string;
   availableRoutes: string[];
   selectedRoutes: string[];
+  interactionDiscoveryEnabled?: boolean;
 };
 
 export type RuntimeScanSelectionResult =
@@ -66,6 +67,7 @@ export const buildRuntimeScanSelectionRequest = (
     baseUrl: input.baseUrl.trim(),
     discoveryMode: input.mode,
     viewportPreset: "default",
+    ...(input.interactionDiscoveryEnabled ? { interactionDiscovery: { enabled: true as const } } : {}),
     ...(input.mode === "selected-routes" ? { routes: selectedRoutes } : {}),
   };
   const validation = validateRuntimeScanRequest(candidate);

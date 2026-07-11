@@ -2,18 +2,21 @@
 
 ## Next Recommended
 
-R8.5 — Route / Target Selection Runtime Scan UI.
+R8.8 — Visual Readability / OKLCH Contrast Engine.
 
-## R8.5 Goal
+## R8.7 Status
 
-- Add explicit runtime route/target selection controls.
-- Keep static scan behavior unchanged when runtime scan is disabled.
-- Preserve local-only baseUrl and strict path-policy behavior.
+- Completed: bounded opt-in safe interaction discovery, typed skips, state/issue dedup, public-safe state evidence, Scans opt-in checkbox, Reports State filter and skipped-control summary.
+- Hardened: full safe-state coverage across every default viewport, screenshot evidence for every bounded state, public-safe browser diagnostics after refresh, and accurate UI coverage/failure metrics.
+
+## R8.8 Goal
+
+- Capture public-safe foreground/background color evidence.
+- Detect deterministic low-readability text cases without hidden/transparent false positives.
+- Render selector, color swatches, threshold, route/state, and viewport evidence.
 
 ## Later Runtime Phases
 
-- R8.6 — Screenshot Overlay Evidence UI.
-- R8.7 — Safe Interaction Discovery.
 - R8.8 — Visual Readability / OKLCH Contrast Engine.
 
 ## Non-Goals For R8.1 Unless Requested
@@ -92,3 +95,27 @@ Implemented:
 
 Next recommended phase:
 - R8.5 — Route / Target Selection Runtime Scan UI
+
+## R8.5 — Route / Target Selection Runtime Scan UI
+
+Status: completed.
+
+Implemented:
+- Explicit selected-routes/all-routes controls with no automatic selection or scan.
+- Safe production graph/latest-runtime route mapping, validation, and deduplication.
+- Exact existing runtime scan payload construction and invalid-selection API blocking.
+
+Next recommended phase:
+- R8.6 — Screenshot Overlay Evidence UI
+
+## R8.6 — Screenshot Overlay Evidence UI
+
+Status: completed.
+
+Implemented:
+- Opaque-ref screenshot URL generation and selected issue preview.
+- Responsive primary/related bounding-box overlay using natural image dimensions.
+- Missing/loading/error fallbacks and strict rejection of raw/invalid screenshot refs.
+
+Next recommended phase:
+- R8.8 — Visual Readability / OKLCH Contrast Engine

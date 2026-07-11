@@ -60,6 +60,7 @@ if (selected.ok) assert.deepEqual(selected.request, {
   discoveryMode: "selected-routes",
   viewportPreset: "default",
   auth: undefined,
+  interactionDiscovery: undefined,
 });
 
 const allRoutes = buildRuntimeScanSelectionRequest({
@@ -77,7 +78,18 @@ if (allRoutes.ok) assert.deepEqual(allRoutes.request, {
   discoveryMode: "all-routes",
   viewportPreset: "default",
   auth: undefined,
+  interactionDiscovery: undefined,
 });
+
+const safeDiscovery = buildRuntimeScanSelectionRequest({
+  mode: "selected-routes",
+  baseUrl: "http://localhost:3000",
+  availableRoutes: ["/"],
+  selectedRoutes: ["/"],
+  interactionDiscoveryEnabled: true,
+});
+assert.equal(safeDiscovery.ok, true);
+if (safeDiscovery.ok) assert.equal(safeDiscovery.request.interactionDiscovery?.enabled, true);
 
 let callCount = 0;
 let submitted: RuntimeScanRequest | undefined;

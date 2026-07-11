@@ -2,31 +2,30 @@
 
 ## Phase Completed
 
-R8.4 — Runtime Artifact Detail API & Evidence Model Hardening.
+R8.7 — Safe Interaction Discovery.
 
 ## Summary
 
-R8.4 added repository-backed runtime detail reads and opaque screenshot serving. Public JSON is mapped to a strict evidence contract and excludes internal project roots, artifact paths, screenshot filesystem paths, raw runtime errors, auth/storage data, and raw stack. UI refresh loads full safe detail without rerunning runtime scan.
+R8.7 adds strict opt-in, bounded safe interaction discovery to route runtime scans. Scans exposes the opt-in checkbox; Reports keeps targets as routes while showing discovered state labels, State filtering, and typed skipped-control reasons.
 
 ## Changed Files From Latest Phase
 
 - `packages/contracts/src/index.ts`
 - `packages/contracts/src/validators.self-check.ts`
-- `packages/contracts/dist/index.d.ts`
-- `packages/contracts/dist/index.js`
+- `apps/worker-node/src/modules/runtime-scan/runtime-interaction-discovery.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-interaction-discovery.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
+- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan-limits.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.ts`
 - `apps/worker-node/src/modules/report/runtime-artifact-detail.service.ts`
-- `apps/worker-node/src/modules/report/runtime-artifact-detail.self-check.ts`
-- `apps/worker-node/src/modules/report/report.controller.ts`
-- `apps/worker-node/src/modules/report/report.routes.ts`
-- `apps/worker-node/src/shared/http/validated-project-path.ts`
-- `apps/worker-node/src/shared/services/path-policy.http-self-check.ts`
-- `apps/ui/src/lib/api-client.ts`
-- `apps/ui/src/lib/use-dashboard-data.ts`
+- `apps/ui/src/components/runtime/runtime-scan-controls.tsx`
+- `apps/ui/src/components/runtime/runtime-report-panel.tsx`
+- `apps/ui/src/lib/runtime-scan-selection.ts`
+- `apps/ui/src/lib/runtime-scan-selection.self-check.ts`
 - `apps/ui/src/lib/runtime-report-view-model.ts`
 - `apps/ui/src/lib/runtime-report-view-model.self-check.ts`
-- `apps/ui/src/lib/dashboard-data-request.self-check.ts`
-- `apps/ui/src/components/runtime/runtime-report-panel.tsx`
-- `apps/ui/src/components/dashboard-shell.tsx`
 - `AI_HANDOFF.md`
 - `docs/ai-context/03-current-state.md`
 - `docs/ai-context/05-known-issues.md`
@@ -36,27 +35,28 @@ R8.4 added repository-backed runtime detail reads and opaque screenshot serving.
 
 ## What Changed
 
-- Added strict runtime detail/evidence response, screenshot evidence, opaque-ref query contracts, validators, and typed API errors.
-- Added `GET /api/report/runtime/latest` and `GET /api/report/runtime/screenshot?ref=<opaque>`.
-- Screenshot serving enforces selected-root path-policy, opaque lookup, lexical containment, realpath containment, `.png` extension, and regular-file checks.
-- Added typed missing/malformed/invalid/read/screenshot-not-found errors without raw internal details.
-- Dashboard refresh loads full safe runtime detail and maps opaque screenshot refs/missing reasons into the existing report view model.
+- Added strict `interactionDiscovery` request config and route-wide interaction/state/time limits.
+- Added semantic candidate classification for tabs, dropdowns, dialogs, accordions, drawers, menus, toggles, and filter/sort triggers.
+- Added typed skipped reasons for disabled, required-input, destructive, unsafe, hidden, route-risk, limit, duplicate, and unsupported candidates.
+- Added baseline/discovered state labels, public-safe interaction source, SHA-256 state signatures, and issue deduplication.
+- Removed internal screenshot paths/raw geometry from public scan output and redacted sensitive diagnostics.
+- Added explicit Scans discovery opt-in, Reports State filtering, and compact skipped-control reason visibility.
 
 ## Verification
 
 - Required workspace typecheck and contracts/worker/UI builds passed.
 - Required contracts, runtime artifact, latest-report mapper/integration, and path-policy HTTP self-checks passed.
-- R8.4 runtime artifact detail service/HTTP self-check passed.
-- Related UI view-model/request/navigation/graph self-checks passed.
+- R8.7 deterministic Playwright interaction discovery self-check passed.
+- Runtime schema/layout detector/public adapter/runtime detail/playwright regressions passed.
 
 ## Current Limitations
 
-- No screenshot image rendering or overlay in R8.4.
-- No route/target selection UI in R8.4.
+- Discovery is one safe click deep from a reloaded baseline; no chained flow crawler exists.
+- No configured flow/state target catalog, auth UI, contrast engine, form fill, submit, navigation, or destructive action was added.
 
 ## Next Recommended Phase
 
-R8.5 — Route / Target Selection Runtime Scan UI.
+R8.8 — Visual Readability / OKLCH Contrast Engine.
 
 ## Historical R7.4 Notes
 
@@ -155,3 +155,21 @@ Known limitations:
 
 Next recommended phase:
 - R8.4 — next roadmap phase
+
+## Runtime evidence correctness addendum
+
+- Chromium screenshot capture uses a viewport-width CDP clip with full vertical document height; horizontal overflow no longer expands the PNG width.
+- Detector precedence emits `element-outside-viewport` without a duplicate `horizontal-overflow` for the same fully outside element.
+- DOM lineage supports deduping ancestor/descendant overflow that shares the same physical edge.
+- Reports focuses each full-height screenshot around the selected issue, crops legacy expanded-width images, marks zero-size/offscreen evidence, and keeps detailed text below the image.
+- Production fixture asserts exact screenshot width, clean interaction baseline geometry, outside-viewport precedence, and all R8.7 interaction states.
+- Current next recommended phase remains R8.8 — Visual Readability / OKLCH Contrast Engine.
+
+### R8.7 coverage and diagnostics hardening
+
+- Default route interaction budget now derives from configured state capacity and viewport count; mobile/tablet discovery no longer exhausts desktop coverage.
+- Removed the independent screenshot count cap. Existing target/state/time bounds remain mandatory and every captured state receives screenshot evidence.
+- Runtime artifact detail exposes strict typed browser diagnostics with redaction and resource-console deduplication; no raw path, storage/auth value, or stack is returned.
+- Reports separates browser diagnostics from scanner failures and shows unique states, discovered snapshots, and viewport coverage explicitly.
+- Production fixture requires all four safe states at 390, 768, and 1440 widths, exact 27 intended issues, and screenshot evidence for every captured state.
+- Next recommended phase remains R8.8 — Visual Readability / OKLCH Contrast Engine.

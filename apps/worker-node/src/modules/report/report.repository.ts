@@ -17,6 +17,41 @@ export type LatestReportReadResult =
   | { kind: "permission-denied"; error: string }
   | { kind: "unknown-error"; error: string };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const withoutScreenshotPath = (value: Record<string, unknown>): Record<string, unknown> => {
+  const { screenshotPath: _screenshotPath, ...safe } = value;
+  return safe;
+};
+
+const sanitizeLegacyRuntimeViewport = (value: unknown): unknown => {
+  if (!isRecord(value)) return value;
+  const safe = withoutScreenshotPath(value);
+  if (!Array.isArray(value.layoutIssues)) return safe;
+  return {
+    ...safe,
+    layoutIssues: value.layoutIssues.map((issue) => {
+      if (!isRecord(issue) || !isRecord(issue.evidence)) return issue;
+      return { ...issue, evidence: withoutScreenshotPath(issue.evidence) };
+    }),
+  };
+};
+
+const sanitizeLegacyLatestReport = (value: unknown): unknown => {
+  if (!isRecord(value) || !isRecord(value.runtimeScan) || !Array.isArray(value.runtimeScan.targetResults)) return value;
+  return {
+    ...value,
+    runtimeScan: {
+      ...value.runtimeScan,
+      targetResults: value.runtimeScan.targetResults.map((target) => {
+        if (!isRecord(target) || !Array.isArray(target.viewportResults)) return target;
+        return { ...target, viewportResults: target.viewportResults.map(sanitizeLegacyRuntimeViewport) };
+      }),
+    },
+  };
+};
+
 const findLatest = async (
   input: FindLatestReportInput,
 ): Promise<LatestReportReadResult> => {
@@ -41,7 +76,7 @@ const findLatest = async (
     return { kind: "unknown-error", error: result.error };
   }
 
-  const validation = validateScanResponse(result.data);
+  const validation = validateScanResponse(sanitizeLegacyLatestReport(result.data));
   if (!validation.ok) {
     return {
       kind: "schema-invalid",

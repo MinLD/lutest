@@ -63,7 +63,7 @@ const makeRuntimeResult = (projectRoot: string, input: { error?: boolean; rawFil
       executionSteps: [{ kind: "fill", selector: "#secret", status: "passed", durationMs: 1, redacted: true, valueSource: "env", valueFromEnv: "LUTEST_SECRET" }],
       durationMs: 1,
     }],
-    limits: { maxRoutes: 20, maxTargets: 20, maxElementsPerViewport: 500, maxTextSnippetLength: 120, maxScreenshots: 60, routeTimeoutMs: 30_000, scanTimeoutMs: 120_000, ignoredTags: ["SCRIPT", "STYLE"] },
+    limits: { maxRoutes: 20, maxTargets: 20, maxElementsPerViewport: 500, maxTextSnippetLength: 120, routeTimeoutMs: 30_000, scanTimeoutMs: 120_000, maxInteractionsPerRoute: 8, maxStatesPerRoute: 6, interactionDiscoveryTimeoutMs: 10_000, ignoredTags: ["SCRIPT", "STYLE"] },
     errors: input.error ? [{ code: "ROUTE_LOAD_FAILED", message: "Route failed", targetId: "flow", route: "/" }] : [],
     summary: { routeCount: 1, targetCount: 1, consoleMessageCount: 0, pageErrorCount: 0, networkErrorCount: 0, failedResponseCount: 0, screenshotCount: 0, errorCount: input.error ? 1 : 0 },
     artifacts: { rootDir: artifactPaths.rootDir, screenshotsDir: artifactPaths.screenshotsDir, resultPath: artifactPaths.latestResultPath },

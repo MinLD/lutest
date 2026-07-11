@@ -1,0 +1,32 @@
+[
+  {
+    "route": "/layout",
+    "title": "Layout geometry",
+    "expected": ["horizontal-overflow", "element-outside-viewport", "small-click-target", "suspicious-overlap", "zero-size-visible-element"],
+    "negativeControls": ["clipped transformed canvas", "below-fold content", "isolated 30px target"]
+  },
+  {
+    "route": "/interactions",
+    "title": "Safe SPA interactions",
+    "expected": ["tab state", "dropdown state", "accordion state", "modal state", "typed skipped controls"],
+    "negativeControls": ["delete", "submit", "disabled", "required-input", "route navigation"]
+  },
+  {
+    "route": "/diagnostics",
+    "title": "Browser diagnostics and real API",
+    "expected": ["console warning/error", "page error", "failed HTTP response", "network request failure"],
+    "negativeControls": ["successful real API response"]
+  },
+  {
+    "route": "/readability",
+    "title": "Future R8.8 readability",
+    "expected": ["future-low-contrast", "future-inherited-color", "future-dark-theme-contrast", "future-transparent-background"],
+    "negativeControls": ["high contrast text"]
+  },
+  {
+    "route": "/static-rules",
+    "title": "Static rules",
+    "expected": ["large-file", "console", "todo"],
+    "negativeControls": []
+  }
+]

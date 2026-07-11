@@ -5,9 +5,11 @@ export const DEFAULT_RUNTIME_SCAN_LIMITS: RuntimeScanLimits = {
   maxTargets: 25,
   maxElementsPerViewport: 1_000,
   maxTextSnippetLength: 160,
-  maxScreenshots: 25,
   routeTimeoutMs: Number(process.env.WORKER_TIMEOUT ?? 15_000),
   scanTimeoutMs: 120_000,
+  maxInteractionsPerRoute: 8,
+  maxStatesPerRoute: 6,
+  interactionDiscoveryTimeoutMs: 10_000,
   ignoredTags: ["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "META", "LINK"],
 };
 

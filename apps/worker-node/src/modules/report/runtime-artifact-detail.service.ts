@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import {
   validateRuntimeArtifactDetailResponse,
+  type RuntimeArtifactDiagnostic,
   type RuntimeArtifactDetailResponse,
   type RuntimeArtifactScreenshotEvidence,
   type RuntimeArtifactTargetDetail,
@@ -22,6 +23,34 @@ import type {
 
 const SCREENSHOT_REF_PREFIX = "shot_";
 const SCREENSHOT_REF_HEX_LENGTH = 32;
+
+const publicDiagnostic = (value: string, fallback: string): string =>
+  /(?:cookie|token|password|storageState|localStorage|sessionStorage)\s*[:=]|\n\s*at\s+|(?:^|\s)\/(?:home|Users|tmp|var|root|mnt|workspace)\//i.test(value)
+    ? fallback
+    : value.slice(0, 500);
+
+const viewportDiagnostics = (viewport: RuntimeViewportResult): RuntimeArtifactDiagnostic[] => {
+  const failedResourceUrls = [
+    ...(viewport.networkErrors ?? []).map((error) => error.url),
+    ...(viewport.failedResponses ?? []).map((response) => response.url),
+  ];
+  const consoleDiagnostics = (viewport.consoleMessages ?? [])
+    .filter((message) => !(
+      /^Failed to load resource:/i.test(message.text)
+      && message.location
+      && failedResourceUrls.some((url) => message.location?.startsWith(`${url}:`))
+    ))
+    .map((message): RuntimeArtifactDiagnostic => ({
+      kind: message.type === "warning" ? "console-warning" : "console-error",
+      message: publicDiagnostic(message.text, "Runtime console diagnostic redacted."),
+    }));
+  return [
+    ...consoleDiagnostics,
+    ...(viewport.pageErrors ?? []).map((message): RuntimeArtifactDiagnostic => ({ kind: "page-error", message: publicDiagnostic(message, "Runtime page diagnostic redacted.") })),
+    ...(viewport.networkErrors ?? []).map((error): RuntimeArtifactDiagnostic => ({ kind: "network-error", message: publicDiagnostic(error.failureText ?? "Network request failed.", "Runtime network diagnostic redacted.") })),
+    ...(viewport.failedResponses ?? []).map((response): RuntimeArtifactDiagnostic => ({ kind: "failed-response", message: `${response.status} response` })),
+  ];
+};
 
 const isInside = (parent: string, candidate: string): boolean => {
   const relative = path.relative(parent, candidate);
@@ -92,7 +121,7 @@ const screenshotEvidence = async (input: {
 const targetStatus = (route: RuntimeRouteResult): RuntimeArtifactTargetDetail["status"] => {
   const failed = Boolean(route.error) || route.viewportResults.some((viewport) => Boolean(viewport.error)) || (route.executionSteps ?? []).some((step) => step.status === "failed");
   if (failed) return "failed";
-  if (route.viewportResults.some((viewport) => viewport.layoutIssues.length > 0)) return "warning";
+  if (route.viewportResults.some((viewport) => viewport.layoutIssues.length > 0 || viewportDiagnostics(viewport).length > 0)) return "warning";
   return "passed";
 };
 
@@ -119,7 +148,11 @@ const issueDetail = async (input: {
         captureFailed: Boolean(input.viewport.screenshotError),
       })
     : input.fallbackScreenshot;
-  const state = stateFields(input.route);
+  const state = {
+    stateId: input.viewport.stateId ?? stateFields(input.route).stateId ?? "state_baseline",
+    stateLabel: input.viewport.stateLabel ?? stateFields(input.route).stateLabel ?? "baseline",
+    stateDedupKey: input.viewport.stateDedupKey ?? input.viewport.stateId ?? stateFields(input.route).stateId ?? "state_baseline",
+  };
   return {
     id: input.issue.id,
     type: input.issue.type,
@@ -137,7 +170,7 @@ const issueDetail = async (input: {
       screenshot: issueScreenshot,
       reason: input.issue.evidence.threshold,
       dedupKey: input.issue.id,
-      stateDedupKey: state.stateId,
+      stateDedupKey: state.stateDedupKey,
     },
   };
 };
@@ -162,7 +195,17 @@ const mapTarget = async (input: {
       issue,
       fallbackScreenshot: screenshot,
     })));
-    return { viewport: viewport.viewport, screenshot, issues };
+    return {
+      viewport: viewport.viewport,
+      stateId: viewport.stateId ?? stateFields(input.route).stateId ?? "state_baseline",
+      stateLabel: viewport.stateLabel ?? stateFields(input.route).stateLabel ?? "baseline",
+      stateDedupKey: viewport.stateDedupKey ?? viewport.stateId ?? stateFields(input.route).stateId ?? "state_baseline",
+      interactionSource: viewport.interactionSource,
+      skippedInteractions: viewport.skippedInteractions ?? [],
+      screenshot,
+      diagnostics: viewportDiagnostics(viewport),
+      issues,
+    };
   }));
   return {
     scanTargetId: input.route.targetId,
@@ -176,13 +219,14 @@ const mapTarget = async (input: {
 
 const mapDetail = async (projectRoot: string, artifact: RuntimeScanResult): Promise<RuntimeArtifactDetailResponse> => {
   const targetResults = await Promise.all(artifact.routes.map((route) => mapTarget({ projectRoot, scanId: artifact.scanId, route })));
-  const viewportCount = targetResults.reduce((sum, target) => sum + target.viewportResults.length, 0);
+  const viewportCount = new Set(targetResults.flatMap((target) => target.viewportResults.map((viewport) => `${target.scanTargetId}:${viewport.viewport.width}x${viewport.viewport.height}`))).size;
   const screenshotCount = targetResults.reduce((sum, target) => sum + target.viewportResults.filter((viewport) => viewport.screenshot.available).length, 0);
   const issueCount = targetResults.reduce((sum, target) => sum + target.viewportResults.reduce((inner, viewport) => inner + viewport.issues.length, 0), 0);
+  const diagnosticCount = targetResults.reduce((sum, target) => sum + target.viewportResults.reduce((inner, viewport) => inner + viewport.diagnostics.length, 0), 0);
   const failedTargets = targetResults.filter((target) => target.status === "failed").length;
   const status = artifact.errors.length > 0 || (targetResults.length > 0 && failedTargets === targetResults.length)
     ? "failed"
-    : failedTargets > 0 || issueCount > 0
+    : failedTargets > 0 || issueCount > 0 || diagnosticCount > 0
       ? "warning"
       : "passed";
   const detail: RuntimeArtifactDetailResponse = {

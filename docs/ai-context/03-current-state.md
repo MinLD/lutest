@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R8.4 — Runtime Artifact Detail API & Evidence Model Hardening.
+R8.7 — Safe Interaction Discovery.
 
 ## Current Status
 
@@ -204,3 +204,77 @@ Known limitations:
 
 Next recommended phase:
 - R8.5 — Route / Target Selection Runtime Scan UI
+
+## R8.5 — Route / Target Selection Runtime Scan UI
+
+Status: completed.
+
+Implemented:
+- Reports UI maps selectable page routes from the production graph with a safe latest-runtime detail fallback.
+- Routes are validated and deduplicated before rendering; no raw graph/internal path data is passed into the control component.
+- Runtime scan requires an explicit selected-routes or all-routes mode and never runs on page open or refresh.
+- Selected-routes requests send the existing strict `RuntimeScanRequest` shape; missing, unknown, traversal, absolute filesystem, backslash, and `.lutest` routes are rejected before API invocation.
+- Static scan remains available and unchanged; successful scans continue reloading graph, latest report, and R8.4 runtime detail.
+
+Known limitations:
+- No configured flow/state target catalog is publicly available, so R8.5 exposes route targets only and does not invent a new backend API.
+- Screenshot image rendering and bounding-box overlay remain R8.6.
+
+Next recommended phase:
+- R8.6 — Screenshot Overlay Evidence UI
+
+## R8.6 — Screenshot Overlay Evidence UI
+
+Status: completed.
+
+Implemented:
+- Selected runtime issues render screenshot evidence through `GET /api/report/runtime/screenshot?ref=<opaque>` only.
+- Runtime capture locks screenshot width to the audited viewport while retaining full vertical document height, so horizontal overflow remains visibly outside the viewport instead of expanding the evidence image.
+- Primary and related bounding boxes render over an issue-focused viewport crop; legacy expanded-width screenshots are cropped rather than compressed.
+- Image loading/error and all four public missing reasons render explicit fallback states; textual evidence remains available.
+- Legacy raw screenshot paths are no longer accepted by the UI view model as safe refs.
+- An all-issues dropdown selects any issue, synchronizes filters, and updates screenshot evidence immediately without scrolling to the issue list.
+- Screenshot annotations use a compact opposite-side label with a long leader arrow; full details render below the image instead of covering the target.
+- Zero-size evidence gets a point marker; fully outside evidence gets a directional edge marker.
+- Runtime layout detection ignores React Flow/XYFlow transformed viewport infrastructure to avoid pan/zoom false positives.
+- Runtime report view-model also suppresses those selectors from already-stored artifacts, so users do not need a new scan merely to hide the known false positive.
+- Annotation cards use a larger offset and longer, thicker arrow for clearer target association.
+- Fully outside elements are no longer double-reported as horizontal overflow, and ancestor/descendant overflow sharing one boundary keeps the leaf evidence only.
+
+Security:
+- URL generation accepts only `shot_<32-hex>` refs and never builds public URLs from absolute or `.lutest` paths.
+- Backend screenshot validation, selected-root path-policy, and local-only runtime base URL behavior remain unchanged.
+
+Known limitations:
+- Overlay is evidence-only UI; no runtime browser interaction or new capture is triggered.
+- Interaction/state discovery remains R8.7.
+
+Next recommended phase:
+- R8.8 — Visual Readability / OKLCH Contrast Engine
+
+## R8.7 Coverage And Diagnostics Hardening
+
+- Default interaction capacity derives from configured state capacity and viewport count, so earlier viewports cannot starve desktop discovery.
+- Every captured bounded state receives screenshot evidence; the redundant independent screenshot cap was removed while target/state/time bounds remain enforced.
+- Latest runtime detail includes strict typed public-safe browser diagnostics with resource-console deduplication.
+- Reports separates browser diagnostics from scanner failures and shows unique states, snapshot count, and viewport coverage.
+- Live fixture result: 27 intended issues, 30 screenshots, 15 typed diagnostics, zero missing screenshots, zero scanner failures.
+
+## R8.7 — Safe Interaction Discovery
+
+Status: completed.
+
+Implemented:
+- Added strict opt-in `interactionDiscovery` request config with bounded interaction/state/time limits.
+- Runtime route scans capture a baseline plus public-safe discovered state snapshots after allowlisted semantic clicks.
+- Disabled, required-input, destructive, unknown, hidden, navigation-risk, unsupported, duplicate, and limit-reached candidates retain typed skipped reasons.
+- State signatures hash normalized visible geometry/text summaries; repeated states and repeated layout issues are deduplicated.
+- Public runtime responses omit internal screenshot paths/raw geometry and redact sensitive diagnostics; latest runtime detail maps state/source/skipped metadata through the existing safe screenshot model.
+- Scans UI can opt into discovery without changing the route request shape; Reports exposes discovered state labels and skipped reasons separately from route targets.
+
+Safety ceiling:
+- One safe click from a reloaded route baseline only.
+- No input fill, submit/reset, auth/login automation, route navigation, payment, save, delete, logout, confirm, or destructive action.
+
+Next recommended phase:
+- R8.8 — Visual Readability / OKLCH Contrast Engine

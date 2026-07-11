@@ -7,6 +7,7 @@ import { RuntimeScreenshotEvidence } from "./runtime-screenshot-evidence";
 import {
   defaultRuntimeFilters,
   filterRuntimeIssues,
+  groupRuntimeSkippedInteractions,
   runtimeReportViewModel,
   type RuntimeIssueView,
   type RuntimeReportFilters,
@@ -122,7 +123,7 @@ function RuntimeOverview({ model }: { model: RuntimeReportViewModel }) {
         <p className="text-xs text-[#667085]">Scan {model.scanId ?? "latest"} · {model.viewportCount} viewports</p>
       </div>
       <div className="grid gap-3 p-3 sm:grid-cols-3">
-        <Metric icon={<AlertTriangle size={18} />} label="Visible issues" value={model.issueCount} detail={`${model.errorCount} runtime errors`} />
+        <Metric icon={<AlertTriangle size={18} />} label="Visible issues" value={model.issueCount} detail={`${model.diagnosticCount} browser diagnostics · ${model.errorCount} scanner failures`} />
         <Metric icon={<RouteIcon size={18} />} label="Affected routes" value={affectedRoutes} detail={`${model.targetCount} targets scanned`} />
         <Metric icon={<Camera size={18} />} label="Safe previews" value={previewCount} detail={`${model.screenshotCount} captured`} />
       </div>
@@ -138,7 +139,7 @@ function RuntimeErrorList({ model }: { model: RuntimeReportViewModel }) {
   if (model.errors.length === 0) return null;
   return (
     <div className="rounded-xl border border-[#fee2e2] bg-[#fff7f7] px-4 py-3">
-      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#b42318]">Runtime errors</p>
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#b42318]">Scanner failures</p>
       {model.errors.slice(0, 3).map((error, index) => (
         <p key={`${error.code}-${index}`} className="mt-1.5 text-sm text-[#7f1d1d]"><span className="font-mono font-semibold">{error.code}</span><span className="mx-2">—</span>{error.message}</p>
       ))}
@@ -160,10 +161,77 @@ function RuntimeIssueSelect({ issues, selectedId, onSelect }: { issues: RuntimeI
         }}
       >
         {issues.map((issue, index) => (
-          <option key={issue.id} value={issue.id}>{index + 1}. [{issue.severity}] {issue.type} · {issue.route} · {issue.viewportKey} · {issue.selectorHint ?? issue.elementRef}</option>
+          <option key={issue.id} value={issue.id}>{index + 1}. [{issue.severity}] {issue.type} · {issue.route} · {issue.stateLabel} · {issue.viewportKey} · {issue.selectorHint ?? issue.elementRef}</option>
         ))}
       </select>
     </label>
+  );
+}
+
+function InteractionDiscoverySummary({ model }: { model: RuntimeReportViewModel }) {
+  const stateLabels = Array.from(new Set(model.states.map((state) => state.label)));
+  const discoveredStates = model.states.filter((state) => state.label !== "baseline");
+  const discoveredViewportCount = new Set(discoveredStates.map((state) => state.viewportKey)).size;
+  const viewportPresetCount = new Set(model.states.map((state) => state.viewportKey)).size;
+  const groupedSkipped = groupRuntimeSkippedInteractions(model.skippedInteractions);
+  const skippedByReason = Object.entries(groupedSkipped.reduce<Record<string, number>>((counts, skipped) => {
+    counts[skipped.reason] = (counts[skipped.reason] ?? 0) + 1;
+    return counts;
+  }, {})).sort((left, right) => right[1] - left[1]);
+  if (stateLabels.length <= 1 && model.skippedInteractions.length === 0) return null;
+  return (
+    <div className="mt-3 rounded-xl border border-[#dbe7f5] bg-[#fbfdff] px-3 py-3 text-sm text-[#405168]">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-[#111827]">Unique states: {Math.max(0, stateLabels.length - (stateLabels.includes("baseline") ? 1 : 0))}</span>
+        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">snapshots · {discoveredStates.length}</span>
+        <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">viewport coverage · {discoveredViewportCount}/{viewportPresetCount}</span>
+        {groupedSkipped.length > 0 ? <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">safe skips · {groupedSkipped.length} controls</span> : null}
+        {skippedByReason.map(([reason, count]) => <span key={reason} className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">{reason} · {count}</span>)}
+      </div>
+      {groupedSkipped.length > 0 ? (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-xs font-semibold text-[#2563eb]">Interaction safety audit</summary>
+          <p className="mt-2 text-xs text-[#667085]">Controls detected but intentionally not clicked. Repeated observations are grouped across states and viewports.</p>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {groupedSkipped.map((skipped) => (
+              <div key={`${skipped.route}:${skipped.candidateId}:${skipped.reason}`} className="rounded-lg border border-[#e5edf7] bg-white px-3 py-2 text-xs">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate font-semibold text-[#344054]">{skipped.label ?? skipped.candidateId}</p>
+                  {skipped.observationCount > 1 ? <span className="shrink-0 rounded-full bg-[#eef5ff] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#2563eb]">×{skipped.observationCount}</span> : null}
+                </div>
+                <p className="mt-0.5 text-[#7b8ba1]">{skipped.route} · {skipped.reason}{skipped.kind ? ` · ${skipped.kind}` : ""} · {skipped.viewportCount} viewport{skipped.viewportCount === 1 ? "" : "s"}</p>
+              </div>
+            ))}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+function BrowserDiagnostics({ model }: { model: RuntimeReportViewModel }) {
+  if (model.diagnostics.length === 0) return null;
+  const grouped = Array.from(model.diagnostics.reduce<Map<string, { kind: string; message: string; count: number }>>((groups, diagnostic) => {
+    const key = `${diagnostic.kind}:${diagnostic.message}`;
+    const current = groups.get(key);
+    groups.set(key, current ? { ...current, count: current.count + 1 } : { kind: diagnostic.kind, message: diagnostic.message, count: 1 });
+    return groups;
+  }, new Map()).values());
+  return (
+    <section className="rounded-xl border border-[#fde7b0] bg-[#fffaf0] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#9a6700]">Browser diagnostics</p>
+        <span className="rounded-full bg-white px-2 py-1 text-xs font-bold tabular-nums text-[#9a6700]">{model.diagnosticCount} events</span>
+      </div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {grouped.map((diagnostic) => (
+          <div key={`${diagnostic.kind}:${diagnostic.message}`} className="rounded-lg border border-[#f5dfaa] bg-white px-3 py-2 text-xs">
+            <p className="font-mono font-semibold text-[#9a6700]">{diagnostic.kind}{diagnostic.count > 1 ? ` · ×${diagnostic.count}` : ""}</p>
+            <p className="mt-1 break-words text-[#5f4b22]">{diagnostic.message}</p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -173,8 +241,8 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
   const [selectedIssueId, setSelectedIssueId] = useState<string | undefined>();
   const filteredIssues = useMemo(() => filterRuntimeIssues(model.issues, filters), [filters, model.issues]);
   const selectedIssue = filteredIssues.find((issue) => issue.id === selectedIssueId) ?? filteredIssues[0] ?? null;
-  const targets = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.scanTargetId)))], [model.issues]);
   const routes = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.route)))], [model.issues]);
+  const states = useMemo(() => ["all", ...Array.from(new Set(model.states.map((state) => state.label)))], [model.states]);
   const viewports = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.viewportKey)))], [model.issues]);
   const severities = useMemo(() => ["all", ...Array.from(new Set(model.issues.map((issue) => issue.severity)))], [model.issues]);
 
@@ -187,16 +255,18 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
       <RuntimeOverview model={model} />
       {!model.hasFullIssueData ? <div className="rounded-xl border border-[#fef3c7] bg-[#fffbeb] p-4 text-sm text-[#a16207]">Detailed runtime issues are not available in this report.</div> : null}
       <RuntimeErrorList model={model} />
+      <BrowserDiagnostics model={model} />
 
       {model.hasFullIssueData ? (
         <section className="rounded-2xl border border-[#dbe7f5] bg-white p-3 sm:p-4">
+          <InteractionDiscoverySummary model={model} />
           {model.issues.length === 0 ? (
             <p className="rounded-xl bg-[#f0fdf4] p-4 text-sm font-semibold text-[#15803d]">No visible runtime layout issues found.</p>
           ) : (
             <>
-              <div className="grid gap-2 rounded-xl bg-[#f8fbff] p-3 sm:grid-cols-2 xl:grid-cols-[1fr_1fr_1fr_1fr_auto] xl:items-end">
-                <SelectField label="Target" value={filters.targetId} options={targets} onChange={(targetId) => { setFilters((current) => ({ ...current, targetId })); setSelectedIssueId(undefined); }} />
-                <SelectField label="Route" value={filters.route} options={routes} onChange={(route) => { setFilters((current) => ({ ...current, route })); setSelectedIssueId(undefined); }} />
+              <div className="mt-3 grid gap-3 rounded-xl bg-[#f8fbff] p-3 sm:grid-cols-2 xl:grid-cols-[minmax(12rem,1.25fr)_1fr_1fr_1fr_auto] xl:items-end">
+                <SelectField label="Affected route" value={filters.route} options={routes} onChange={(route) => { setFilters((current) => ({ ...current, route })); setSelectedIssueId(undefined); }} />
+                <SelectField label="State" value={filters.state} options={states} onChange={(state) => { setFilters((current) => ({ ...current, state })); setSelectedIssueId(undefined); }} />
                 <SelectField label="Viewport" value={filters.viewport} options={viewports} onChange={(viewport) => { setFilters((current) => ({ ...current, viewport })); setSelectedIssueId(undefined); }} />
                 <SelectField label="Severity" value={filters.severity} options={severities} onChange={(severity) => { setFilters((current) => ({ ...current, severity })); setSelectedIssueId(undefined); }} />
                 <button type="button" onClick={() => { setFilters(defaultRuntimeFilters); setSelectedIssueId(undefined); }} className="rounded-lg border border-[#dbe7f5] bg-white px-3 py-2 text-sm font-semibold text-[#405168] hover:border-[#a9c2df]">Reset</button>
@@ -206,7 +276,11 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
                   <RuntimeIssueSelect issues={filteredIssues} selectedId={selectedIssue?.id} onSelect={(issue) => setSelectedIssueId(issue.id)} />
                 </div>
               )}
-              {selectedIssue ? <RuntimeScreenshotEvidence key={`${selectedIssue.id}:${selectedIssue.screenshotRef ?? selectedIssue.screenshotMissingReason ?? "missing"}`} issue={selectedIssue} /> : null}
+              {selectedIssue ? (
+                <div className="mt-4">
+                  <RuntimeScreenshotEvidence key={`${selectedIssue.id}:${selectedIssue.screenshotRef ?? selectedIssue.screenshotMissingReason ?? "missing"}`} issue={selectedIssue} />
+                </div>
+              ) : null}
             </>
           )}
         </section>

@@ -56,6 +56,14 @@ const main = async () => {
     await fs.writeFile(runtimePaths.latestResultPath, "{}", "utf-8");
     await fs.writeFile(runtimePaths.metaPath, "{}", "utf-8");
     await scanRepository.saveReport({ cwd: process.cwd(), projectPath: root, report: scan(root, true) });
+    const legacyReport = scan(root, true);
+    const legacyViewport = legacyReport.runtimeScan?.targetResults[0]?.viewportResults[0];
+    assert(legacyViewport);
+    legacyViewport.screenshotPath = path.join(root, ".lutest", "runtime", "legacy.png");
+    const legacyIssue = legacyViewport.layoutIssues[0];
+    assert(legacyIssue);
+    legacyIssue.evidence.screenshotPath = path.join(root, ".lutest", "runtime", "legacy.png");
+    await fs.writeFile(path.join(root, ".lutest", "latest-report.json"), JSON.stringify(legacyReport), "utf-8");
     const runtimeLatest = await reportService.getLatestReport({ cwd: process.cwd(), projectPath: root });
     assert(validateLatestReportResponse(runtimeLatest).ok, "runtime latest read-back validates");
     assert.equal(runtimeLatest.state, "valid");
@@ -65,6 +73,7 @@ const main = async () => {
     assert.equal(runtimeLatest.report.runtimeScan, null);
     assert.ok(runtimeLatest.artifactRefs?.some((ref) => ref.kind === "runtime-scan"));
     assert.equal(JSON.stringify(runtimeLatest).includes(root), false, "latest response must not expose absolute root");
+    assert.equal(JSON.stringify(runtimeLatest).includes("screenshotPath"), false, "legacy screenshot paths must be removed before public validation");
   } finally {
     if (previous === undefined) delete process.env.LUTEST_PROJECT_PATH;
     else process.env.LUTEST_PROJECT_PATH = previous;

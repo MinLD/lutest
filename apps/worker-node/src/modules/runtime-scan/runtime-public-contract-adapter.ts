@@ -46,6 +46,7 @@ export const mapPublicRuntimeScanRequest = (input: {
   discoveryMode: input.request.discoveryMode,
   viewportPreset: input.request.viewportPreset ?? "default",
   auth: input.request.auth,
+  interactionDiscovery: input.request.interactionDiscovery,
 });
 
 export const mapRuntimeIntegrationErrorCode = (code: string | undefined): RuntimeErrorCode => {
@@ -71,7 +72,26 @@ const mapError = (error: { code?: string; message?: string; targetId?: string } 
 const mapErrorCode = mapRuntimeIntegrationErrorCode;
 
 const targetName = (target: InternalRuntimeScanTarget): string | undefined =>
-  target.kind === "state" || target.kind === "flow" ? target.name : undefined;
+  target.kind === "state" || target.kind === "flow" ? publicDiagnostic(target.name, "Runtime state") : undefined;
+
+const publicDiagnostic = (value: string, fallback: string): string =>
+  /(?:cookie|token|password|storageState|localStorage|sessionStorage)\s*[:=]|\n\s*at\s+|(?:^|\s)\/(?:home|Users|tmp|var|root|mnt|workspace)\//i.test(value)
+    ? fallback
+    : value.slice(0, 500);
+
+const consoleMessagesWithoutNetworkDuplicates = (
+  viewport: InternalRuntimeScanResult["routes"][number]["viewportResults"][number],
+) => {
+  const failedResourceUrls = [
+    ...(viewport.networkErrors ?? []).map((error) => error.url),
+    ...(viewport.failedResponses ?? []).map((response) => response.url),
+  ];
+  return (viewport.consoleMessages ?? []).filter((message) => !(
+    /^Failed to load resource:/i.test(message.text)
+    && message.location
+    && failedResourceUrls.some((url) => message.location?.startsWith(`${url}:`))
+  ));
+};
 
 export const mapInternalRuntimeScanResult = (result: InternalRuntimeScanResult): PublicRuntimeScanResult => {
   const targetResults: PublicRuntimeTargetResult[] = result.routes.map((routeResult) => {
@@ -84,21 +104,28 @@ export const mapInternalRuntimeScanResult = (result: InternalRuntimeScanResult):
     const hasStepError = stepErrors.length > 0;
     const hasTargetError = Boolean(routeError) || hasViewportError || hasStepError;
     const hasLayoutIssues = routeResult.viewportResults.some((viewport) => viewport.layoutIssues.length > 0);
+    const hasDiagnostics = routeResult.viewportResults.some((viewport) => consoleMessagesWithoutNetworkDuplicates(viewport).length > 0 || (viewport.pageErrors?.length ?? 0) > 0 || (viewport.networkErrors?.length ?? 0) > 0 || (viewport.failedResponses?.length ?? 0) > 0);
     return {
       scanTargetId: routeResult.targetId,
       kind: routeResult.target.kind,
       route: routeResult.route,
       name: targetName(routeResult.target),
-      status: hasTargetError ? "failed" : hasLayoutIssues ? "warning" : "passed",
+      status: hasTargetError ? "failed" : hasLayoutIssues || hasDiagnostics ? "warning" : "passed",
       viewportResults: routeResult.viewportResults.map((viewport) => ({
         viewport: viewport.viewport,
-        screenshotPath: viewport.screenshotPath,
-        domGeometry: viewport.domGeometry,
-        layoutIssues: viewport.layoutIssues,
-        consoleErrors: (viewport.consoleMessages ?? []).map((message) => message.text),
-        pageErrors: [...(viewport.pageErrors ?? [])],
-        networkErrors: (viewport.networkErrors ?? []).map((error) => error.failureText ?? `${error.method} ${error.url}`),
-        failedResponses: (viewport.failedResponses ?? []).map((response) => `${response.status} ${response.url}`),
+        stateId: viewport.stateId,
+        stateLabel: viewport.stateLabel,
+        stateDedupKey: viewport.stateDedupKey,
+        interactionSource: viewport.interactionSource,
+        skippedInteractions: viewport.skippedInteractions,
+        layoutIssues: viewport.layoutIssues.map((issue) => ({
+          ...issue,
+          evidence: { ...issue.evidence, screenshotPath: undefined },
+        })),
+        consoleErrors: consoleMessagesWithoutNetworkDuplicates(viewport).map((message) => publicDiagnostic(message.text, "Runtime console diagnostic redacted.")),
+        pageErrors: (viewport.pageErrors ?? []).map((message) => publicDiagnostic(message, "Runtime page diagnostic redacted.")),
+        networkErrors: (viewport.networkErrors ?? []).map((error) => publicDiagnostic(error.failureText ?? "Network request failed.", "Runtime network diagnostic redacted.")),
+        failedResponses: (viewport.failedResponses ?? []).map((response) => `${response.status} response`),
         errors: [viewport.error ? mapError(viewport.error) : undefined].filter((error): error is PublicRuntimeScanError => Boolean(error)),
       })),
       executionSteps: routeResult.executionSteps?.map((step) => ({
@@ -118,11 +145,12 @@ export const mapInternalRuntimeScanResult = (result: InternalRuntimeScanResult):
   const errors = result.errors.map((error) => mapError(error)).filter((error): error is PublicRuntimeScanError => Boolean(error));
   const issueCount = targetResults.reduce((sum, target) => sum + target.viewportResults.reduce((viewportSum, viewport) => viewportSum + viewport.layoutIssues.length, 0), 0);
   const nestedErrorCount = targetResults.reduce((sum, target) => sum + target.errors.length + target.viewportResults.reduce((viewportSum, viewport) => viewportSum + viewport.errors.length, 0), 0);
+  const diagnosticCount = targetResults.reduce((sum, target) => sum + target.viewportResults.reduce((viewportSum, viewport) => viewportSum + viewport.consoleErrors.length + viewport.pageErrors.length + viewport.networkErrors.length + viewport.failedResponses.length, 0), 0);
   const failedTargets = targetResults.filter((target) => target.status === "failed").length;
   const hasPartialErrors = nestedErrorCount > 0;
   const publicResult: PublicRuntimeScanResult = {
     scanId: result.scanId,
-    status: errors.length > 0 || (targetResults.length > 0 && failedTargets === targetResults.length) ? "failed" : hasPartialErrors || issueCount > 0 ? "warning" : "passed",
+    status: errors.length > 0 || (targetResults.length > 0 && failedTargets === targetResults.length) ? "failed" : hasPartialErrors || issueCount > 0 || diagnosticCount > 0 ? "warning" : "passed",
     startedAt: result.startedAt,
     finishedAt: result.finishedAt,
     durationMs: Math.max(0, Date.parse(result.finishedAt) - Date.parse(result.startedAt)) || 0,
@@ -134,7 +162,7 @@ export const mapInternalRuntimeScanResult = (result: InternalRuntimeScanResult):
     targetResults,
     summary: {
       targetCount: targetResults.length,
-      viewportCount: targetResults.reduce((sum, target) => sum + target.viewportResults.length, 0),
+      viewportCount: new Set(targetResults.flatMap((target) => target.viewportResults.map((viewport) => `${target.scanTargetId}:${viewport.viewport.width}x${viewport.viewport.height}`))).size,
       screenshotCount: result.summary.screenshotCount,
       issueCount,
       errorCount: errors.length + nestedErrorCount,

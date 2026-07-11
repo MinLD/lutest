@@ -257,6 +257,12 @@ export interface RuntimeScanRequest {
   discoveryMode?: RuntimeDiscoveryMode;
   viewportPreset?: "default";
   auth?: { useSavedState: true };
+  interactionDiscovery?: {
+    enabled: true;
+    maxInteractionsPerRoute?: number;
+    maxStatesPerRoute?: number;
+    timeoutMs?: number;
+  };
 }
 export type AuthErrorCode = "AUTH_STATE_MISSING" | "AUTH_STATE_INVALID" | "AUTH_STATE_WRITE_FAILED" | "AUTH_SESSION_START_FAILED" | "AUTH_SESSION_TIMEOUT";
 export interface AuthError { code: AuthErrorCode; message: string }
@@ -266,6 +272,10 @@ export interface AuthStartResponse { status: "saved" | "timeout" | "failed"; aut
 export interface AuthStatusResponse extends AuthStateSummary { status: "missing" | "valid" | "invalid"; error?: AuthError }
 export interface AuthClearResponse { cleared: boolean; status: "cleared" | "missing" }
 export interface RuntimeScanViewport { width: number; height: number }
+export type RuntimeInteractionControlKind = "tab" | "dropdown" | "modal-trigger" | "accordion" | "drawer" | "menu" | "toggle" | "filter-sort";
+export type RuntimeInteractionSkipReason = "disabled" | "requires-input" | "destructive" | "unsafe-candidate" | "not-visible" | "route-change-risk" | "limit-reached" | "duplicate-state" | "unsupported-control";
+export interface RuntimeInteractionSource { candidateId: string; kind: RuntimeInteractionControlKind; label: string; action: "click" }
+export interface RuntimeSkippedInteraction { candidateId: string; kind?: RuntimeInteractionControlKind; label?: string; reason: RuntimeInteractionSkipReason }
 export interface RuntimeRect { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number }
 export interface DomElementGeometry {
   internalId: string;
@@ -324,7 +334,7 @@ export type RuntimeErrorCode =
   | "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED"
   | "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 export interface RuntimeScanError { code: RuntimeErrorCode; message: string; targetId?: string; viewport?: RuntimeScanViewport; stepIndex?: number }
-export interface RuntimeViewportResult { viewport: RuntimeScanViewport; screenshotPath?: string; domGeometry?: DomGeometry; layoutIssues: RuntimeLayoutIssue[]; consoleErrors: string[]; pageErrors: string[]; networkErrors: string[]; failedResponses: string[]; errors: RuntimeScanError[] }
+export interface RuntimeViewportResult { viewport: RuntimeScanViewport; stateId?: string; stateLabel?: string; stateDedupKey?: string; interactionSource?: RuntimeInteractionSource; skippedInteractions?: RuntimeSkippedInteraction[]; screenshotPath?: string; domGeometry?: DomGeometry; layoutIssues: RuntimeLayoutIssue[]; consoleErrors: string[]; pageErrors: string[]; networkErrors: string[]; failedResponses: string[]; errors: RuntimeScanError[] }
 export interface RuntimeExecutionStep { kind: RuntimeFlowStep["kind"]; selector?: string; status: "passed" | "failed"; durationMs: number; redacted?: boolean; valueSource?: "direct" | "env"; valueFromEnv?: string; code?: RuntimeErrorCode; message?: string }
 export interface RuntimeTargetResult { scanTargetId: string; kind: RuntimeTargetKind; route: string; name?: string; status: "passed" | "failed" | "warning"; viewportResults: RuntimeViewportResult[]; executionSteps?: RuntimeExecutionStep[]; errors: RuntimeScanError[] }
 export interface RuntimeScanResult { scanId: string; status: "passed" | "failed" | "warning"; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; targets: RuntimeResultTarget[]; targetResults: RuntimeTargetResult[]; summary: { targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount: number }; errors: RuntimeScanError[] }
@@ -347,7 +357,9 @@ export interface RuntimeArtifactIssueEvidence {
   stateDedupKey?: string;
 }
 export interface RuntimeArtifactIssueDetail { id: string; type: RuntimeLayoutIssueType; severity: RuntimeLayoutIssue["severity"]; message: string; evidence: RuntimeArtifactIssueEvidence }
-export interface RuntimeArtifactViewportDetail { viewport: RuntimeScanViewport; screenshot: RuntimeArtifactScreenshotEvidence; issues: RuntimeArtifactIssueDetail[] }
+export type RuntimeArtifactDiagnosticKind = "console-warning" | "console-error" | "page-error" | "network-error" | "failed-response";
+export interface RuntimeArtifactDiagnostic { kind: RuntimeArtifactDiagnosticKind; message: string }
+export interface RuntimeArtifactViewportDetail { viewport: RuntimeScanViewport; stateId?: string; stateLabel?: string; stateDedupKey?: string; interactionSource?: RuntimeInteractionSource; skippedInteractions?: RuntimeSkippedInteraction[]; screenshot: RuntimeArtifactScreenshotEvidence; diagnostics: RuntimeArtifactDiagnostic[]; issues: RuntimeArtifactIssueDetail[] }
 export interface RuntimeArtifactTargetDetail { scanTargetId: string; kind: RuntimeTargetKind; route: string; stateId?: string; stateLabel?: string; status: RuntimeTargetResult["status"]; viewportResults: RuntimeArtifactViewportDetail[] }
 export interface RuntimeArtifactDetailResponse { scanId: string; status: RuntimeScanResult["status"]; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; summary: RuntimeScanResult["summary"]; targetResults: RuntimeArtifactTargetDetail[] }
 export interface RuntimeArtifactScreenshotQuery extends ProjectPathQuery { ref: string }
@@ -477,6 +489,9 @@ const isAuthErrorCode = (value: unknown): value is AuthErrorCode => value === "A
 const isSafeId = (value: unknown): value is string => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
 const isSafeOpaqueScreenshotRef = (value: unknown): value is string => isNonEmptyString(value) && /^shot_[a-f0-9]{32}$/.test(value);
 const isRuntimeScreenshotMissingReason = (value: unknown): value is RuntimeScreenshotMissingReason => value === "not-captured" || value === "capture-failed" || value === "artifact-missing" || value === "artifact-invalid";
+const isRuntimeArtifactDiagnosticKind = (value: unknown): value is RuntimeArtifactDiagnosticKind => value === "console-warning" || value === "console-error" || value === "page-error" || value === "network-error" || value === "failed-response";
+const isRuntimeInteractionControlKind = (value: unknown): value is RuntimeInteractionControlKind => value === "tab" || value === "dropdown" || value === "modal-trigger" || value === "accordion" || value === "drawer" || value === "menu" || value === "toggle" || value === "filter-sort";
+const isRuntimeInteractionSkipReason = (value: unknown): value is RuntimeInteractionSkipReason => value === "disabled" || value === "requires-input" || value === "destructive" || value === "unsafe-candidate" || value === "not-visible" || value === "route-change-risk" || value === "limit-reached" || value === "duplicate-state" || value === "unsupported-control";
 const isPublicSafeDetailText = (value: unknown): value is string =>
   isNonEmptyString(value) &&
   !value.includes("\0") &&
@@ -557,7 +572,7 @@ const validateRuntimeResultTarget = (value: unknown): ValidationResult<RuntimeRe
 
 export const validateRuntimeScanRequest = (value: unknown): ValidationResult<RuntimeScanRequest> => {
   if (!isRecord(value)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan must be an object" };
-  const keys = rejectUnknownKeys(value, ["enabled", "baseUrl", "routes", "targets", "discoveryMode", "viewportPreset", "auth"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["enabled", "baseUrl", "routes", "targets", "discoveryMode", "viewportPreset", "auth", "interactionDiscovery"]); if (!keys.ok) return keys;
   if (value.enabled !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.enabled must be true" };
   const baseUrl = validateLocalRuntimeBaseUrl(value.baseUrl); if (!baseUrl.ok) return baseUrl;
   const routes = value.routes === undefined ? undefined : Array.isArray(value.routes) && value.routes.every(isLocalRoute) ? value.routes : undefined;
@@ -574,7 +589,20 @@ export const validateRuntimeScanRequest = (value: unknown): ValidationResult<Run
     const authKeys = rejectUnknownKeys(value.auth, ["useSavedState"]); if (!authKeys.ok) return authKeys;
     if (value.auth.useSavedState !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth.useSavedState must be true" };
   }
-  return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset, auth: value.auth === undefined ? undefined : { useSavedState: true } } };
+  let interactionDiscovery: RuntimeScanRequest["interactionDiscovery"];
+  if (value.interactionDiscovery !== undefined) {
+    if (!isRecord(value.interactionDiscovery)) return runtimeInvalid("runtimeScan.interactionDiscovery must be an object");
+    const discoveryKeys = rejectUnknownKeys(value.interactionDiscovery, ["enabled", "maxInteractionsPerRoute", "maxStatesPerRoute", "timeoutMs"]); if (!discoveryKeys.ok) return discoveryKeys;
+    if (value.interactionDiscovery.enabled !== true) return runtimeInvalid("runtimeScan.interactionDiscovery.enabled must be true");
+    const maxInteractionsPerRoute = value.interactionDiscovery.maxInteractionsPerRoute;
+    const maxStatesPerRoute = value.interactionDiscovery.maxStatesPerRoute;
+    const timeoutMs = value.interactionDiscovery.timeoutMs;
+    if (maxInteractionsPerRoute !== undefined && (typeof maxInteractionsPerRoute !== "number" || !Number.isInteger(maxInteractionsPerRoute) || maxInteractionsPerRoute < 1 || maxInteractionsPerRoute > 20)) return runtimeInvalid("runtimeScan.interactionDiscovery.maxInteractionsPerRoute invalid");
+    if (maxStatesPerRoute !== undefined && (typeof maxStatesPerRoute !== "number" || !Number.isInteger(maxStatesPerRoute) || maxStatesPerRoute < 2 || maxStatesPerRoute > 20)) return runtimeInvalid("runtimeScan.interactionDiscovery.maxStatesPerRoute invalid");
+    if (timeoutMs !== undefined && (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000)) return runtimeInvalid("runtimeScan.interactionDiscovery.timeoutMs invalid");
+    interactionDiscovery = { enabled: true, maxInteractionsPerRoute: typeof maxInteractionsPerRoute === "number" ? maxInteractionsPerRoute : undefined, maxStatesPerRoute: typeof maxStatesPerRoute === "number" ? maxStatesPerRoute : undefined, timeoutMs: typeof timeoutMs === "number" ? timeoutMs : undefined };
+  }
+  return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset, auth: value.auth === undefined ? undefined : { useSavedState: true }, interactionDiscovery } };
 };
 
 export const validateAuthStartRequest = (value: unknown): ValidationResult<AuthStartRequest> => {
@@ -896,6 +924,7 @@ export const validateRuntimeLayoutIssue = (value: unknown): ValidationResult<Run
   if (code !== undefined && code !== value.type) return runtimeInvalid("layout issue code must equal type");
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
   if (!isRecord(value.evidence) || !isNonEmptyString(value.evidence.threshold)) return runtimeInvalid("layout issue evidence invalid");
+  if (value.evidence.screenshotPath !== undefined) return runtimeInvalid("public layout issue screenshotPath must not expose internal paths");
   const boundingBox = validateRuntimeRect(value.evidence.boundingBox); if (!boundingBox.ok) return boundingBox;
   const evidenceViewport = validateRuntimeViewport(value.evidence.viewport); if (!evidenceViewport.ok) return evidenceViewport;
   const relatedBoundingBox = value.evidence.relatedBoundingBox === undefined ? undefined : validateRuntimeRect(value.evidence.relatedBoundingBox); if (relatedBoundingBox && !relatedBoundingBox.ok) return relatedBoundingBox;
@@ -911,14 +940,41 @@ const validateRuntimeError = (value: unknown): ValidationResult<RuntimeScanError
   return { ok: true, value: { code: value.code, message: value.message, targetId: isOptionalString(value.targetId) ? value.targetId : undefined, viewport: viewport?.value, stepIndex: typeof stepIndex === "number" && Number.isInteger(stepIndex) ? stepIndex : undefined } };
 };
 
+const validateRuntimeInteractionSource = (value: unknown): ValidationResult<RuntimeInteractionSource> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime interaction source must be object");
+  const keys = rejectUnknownKeys(value, ["candidateId", "kind", "label", "action"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.candidateId) || !isRuntimeInteractionControlKind(value.kind) || !isPublicSafeDetailText(value.label) || value.action !== "click") return runtimeInvalid("runtime interaction source invalid");
+  return { ok: true, value: { candidateId: value.candidateId, kind: value.kind, label: value.label, action: "click" } };
+};
+
+const validateRuntimeSkippedInteraction = (value: unknown): ValidationResult<RuntimeSkippedInteraction> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime skipped interaction must be object");
+  const keys = rejectUnknownKeys(value, ["candidateId", "kind", "label", "reason"]); if (!keys.ok) return keys;
+  if (!isSafeId(value.candidateId) || (value.kind !== undefined && !isRuntimeInteractionControlKind(value.kind)) || (value.label !== undefined && !isPublicSafeDetailText(value.label)) || !isRuntimeInteractionSkipReason(value.reason)) return runtimeInvalid("runtime skipped interaction invalid");
+  return { ok: true, value: { candidateId: value.candidateId, kind: isRuntimeInteractionControlKind(value.kind) ? value.kind : undefined, label: isPublicSafeDetailText(value.label) ? value.label : undefined, reason: value.reason } };
+};
+
+const validateRuntimeStateFields = (value: Record<string, unknown>, required = false): ValidationResult<Pick<RuntimeViewportResult, "stateId" | "stateLabel" | "stateDedupKey" | "interactionSource" | "skippedInteractions">> => {
+  const hasState = value.stateId !== undefined || value.stateLabel !== undefined || value.stateDedupKey !== undefined;
+  if ((required || hasState) && (!isSafeId(value.stateId) || !isPublicSafeDetailText(value.stateLabel) || !isSafeId(value.stateDedupKey))) return runtimeInvalid("runtime viewport state fields invalid");
+  const interactionSource = value.interactionSource === undefined ? undefined : validateRuntimeInteractionSource(value.interactionSource); if (interactionSource && !interactionSource.ok) return interactionSource;
+  if (value.skippedInteractions !== undefined && !Array.isArray(value.skippedInteractions)) return runtimeInvalid("runtime skipped interactions invalid");
+  const skippedInteractions: RuntimeSkippedInteraction[] = [];
+  for (const rawSkipped of value.skippedInteractions ?? []) { const skipped = validateRuntimeSkippedInteraction(rawSkipped); if (!skipped.ok) return skipped; skippedInteractions.push(skipped.value); }
+  return { ok: true, value: { stateId: isSafeId(value.stateId) ? value.stateId : undefined, stateLabel: isPublicSafeDetailText(value.stateLabel) ? value.stateLabel : undefined, stateDedupKey: isSafeId(value.stateDedupKey) ? value.stateDedupKey : undefined, interactionSource: interactionSource?.value, skippedInteractions } };
+};
+
 const validateRuntimeViewportResult = (value: unknown): ValidationResult<RuntimeViewportResult> => {
   if (!isRecord(value)) return runtimeInvalid("runtime viewport result must be object");
+  const keys = rejectUnknownKeys(value, ["viewport", "stateId", "stateLabel", "stateDedupKey", "interactionSource", "skippedInteractions", "screenshotPath", "domGeometry", "layoutIssues", "consoleErrors", "pageErrors", "networkErrors", "failedResponses", "errors"]); if (!keys.ok) return keys;
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
+  if (value.screenshotPath !== undefined) return runtimeInvalid("public runtime viewport screenshotPath must not expose internal paths");
+  const state = validateRuntimeStateFields(value); if (!state.ok) return state;
   const domGeometry = value.domGeometry === undefined ? undefined : validateDomGeometry(value.domGeometry); if (domGeometry && !domGeometry.ok) return domGeometry;
   if (!Array.isArray(value.layoutIssues) || !Array.isArray(value.consoleErrors) || !Array.isArray(value.pageErrors) || !Array.isArray(value.networkErrors) || !Array.isArray(value.failedResponses) || !Array.isArray(value.errors)) return runtimeInvalid("runtime viewport arrays invalid");
   const layoutIssues: RuntimeLayoutIssue[] = []; for (const rawIssue of value.layoutIssues) { const issue = validateRuntimeLayoutIssue(rawIssue); if (!issue.ok) return issue; layoutIssues.push(issue.value); }
   const errors: RuntimeScanError[] = []; for (const rawError of value.errors) { const error = validateRuntimeError(rawError); if (!error.ok) return error; errors.push(error.value); }
-  return { ok: true, value: { viewport: viewport.value, screenshotPath: isOptionalString(value.screenshotPath) ? value.screenshotPath : undefined, domGeometry: domGeometry?.value, layoutIssues, consoleErrors: value.consoleErrors.filter(isString), pageErrors: value.pageErrors.filter(isString), networkErrors: value.networkErrors.filter(isString), failedResponses: value.failedResponses.filter(isString), errors } };
+  return { ok: true, value: { viewport: viewport.value, ...state.value, screenshotPath: isOptionalString(value.screenshotPath) ? value.screenshotPath : undefined, domGeometry: domGeometry?.value, layoutIssues, consoleErrors: value.consoleErrors.filter(isString), pageErrors: value.pageErrors.filter(isString), networkErrors: value.networkErrors.filter(isString), failedResponses: value.failedResponses.filter(isString), errors } };
 };
 
 const validateRuntimeTargetResult = (value: unknown): ValidationResult<RuntimeTargetResult> => {
@@ -994,15 +1050,25 @@ const validateRuntimeArtifactIssueDetail = (value: unknown): ValidationResult<Ru
   return { ok: true, value: { id: value.id, type: value.type, severity: value.severity, message: value.message, evidence: evidence.value } };
 };
 
+const validateRuntimeArtifactDiagnostic = (value: unknown): ValidationResult<RuntimeArtifactDiagnostic> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime artifact diagnostic must be object");
+  const keys = rejectUnknownKeys(value, ["kind", "message"]); if (!keys.ok) return keys;
+  if (!isRuntimeArtifactDiagnosticKind(value.kind) || !isPublicSafeDetailText(value.message)) return runtimeInvalid("runtime artifact diagnostic fields invalid");
+  return { ok: true, value: { kind: value.kind, message: value.message } };
+};
+
 const validateRuntimeArtifactViewportDetail = (value: unknown): ValidationResult<RuntimeArtifactViewportDetail> => {
   if (!isRecord(value)) return runtimeInvalid("runtime artifact viewport must be object");
-  const keys = rejectUnknownKeys(value, ["viewport", "screenshot", "issues"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["viewport", "stateId", "stateLabel", "stateDedupKey", "interactionSource", "skippedInteractions", "screenshot", "diagnostics", "issues"]); if (!keys.ok) return keys;
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
+  const state = validateRuntimeStateFields(value); if (!state.ok) return state;
   const screenshot = validateRuntimeArtifactScreenshotEvidence(value.screenshot); if (!screenshot.ok) return screenshot;
-  if (!Array.isArray(value.issues)) return runtimeInvalid("runtime artifact viewport issues invalid");
+  if (!Array.isArray(value.diagnostics) || !Array.isArray(value.issues)) return runtimeInvalid("runtime artifact viewport collections invalid");
+  const diagnostics: RuntimeArtifactDiagnostic[] = [];
+  for (const rawDiagnostic of value.diagnostics) { const diagnostic = validateRuntimeArtifactDiagnostic(rawDiagnostic); if (!diagnostic.ok) return diagnostic; diagnostics.push(diagnostic.value); }
   const issues: RuntimeArtifactIssueDetail[] = [];
   for (const rawIssue of value.issues) { const issue = validateRuntimeArtifactIssueDetail(rawIssue); if (!issue.ok) return issue; issues.push(issue.value); }
-  return { ok: true, value: { viewport: viewport.value, screenshot: screenshot.value, issues } };
+  return { ok: true, value: { viewport: viewport.value, stateId: state.value.stateId, stateLabel: state.value.stateLabel, stateDedupKey: state.value.stateDedupKey, interactionSource: state.value.interactionSource, skippedInteractions: state.value.skippedInteractions, screenshot: screenshot.value, diagnostics, issues } };
 };
 
 const validateRuntimeArtifactTargetDetail = (value: unknown): ValidationResult<RuntimeArtifactTargetDetail> => {
@@ -1034,7 +1100,7 @@ export const validateRuntimeArtifactDetailResponse = (value: unknown): Validatio
   for (const rawTarget of value.targetResults) { const target = validateRuntimeArtifactTargetDetail(rawTarget); if (!target.ok) return target; targetResults.push(target.value); }
   const { targetCount, viewportCount, screenshotCount, issueCount, errorCount } = value.summary;
   if (!isCount(targetCount) || !isCount(viewportCount) || !isCount(screenshotCount) || !isCount(issueCount) || !isCount(errorCount)) return runtimeInvalid("runtime artifact detail summary invalid");
-  const actualViewportCount = targetResults.reduce((sum, target) => sum + target.viewportResults.length, 0);
+  const actualViewportCount = new Set(targetResults.flatMap((target) => target.viewportResults.map((viewport) => `${target.scanTargetId}:${viewport.viewport.width}x${viewport.viewport.height}`))).size;
   const actualScreenshotCount = targetResults.reduce((sum, target) => sum + target.viewportResults.filter((viewport) => viewport.screenshot.available).length, 0);
   const actualIssueCount = targetResults.reduce((sum, target) => sum + target.viewportResults.reduce((inner, viewport) => inner + viewport.issues.length, 0), 0);
   if (targetCount !== targetResults.length || viewportCount !== actualViewportCount || screenshotCount !== actualScreenshotCount || issueCount !== actualIssueCount) return runtimeInvalid("runtime artifact detail summary mismatch");

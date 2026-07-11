@@ -60,6 +60,9 @@ const customRuntimeRequest = {
 } as const;
 
 assert(validateRuntimeScanRequest(runtimeRequest).ok, "runtime request local baseUrl valid");
+assert(validateRuntimeScanRequest({ ...runtimeRequest, interactionDiscovery: { enabled: true, maxInteractionsPerRoute: 8, maxStatesPerRoute: 6, timeoutMs: 10_000 } }).ok, "runtime interaction discovery request valid");
+assert(!validateRuntimeScanRequest({ ...runtimeRequest, interactionDiscovery: { enabled: true, unknown: true } }).ok, "runtime interaction discovery rejects unknown fields");
+assert(!validateRuntimeScanRequest({ ...runtimeRequest, interactionDiscovery: { enabled: true, maxStatesPerRoute: 1 } }).ok, "runtime interaction discovery rejects invalid limits");
 assert(validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "all-routes", viewportPreset: "default" }).ok, "runtime all-routes request valid");
 assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "all-routes", routes: ["/"] }).ok, "runtime all-routes rejects explicit routes");
 assert(!validateRuntimeScanRequest({ enabled: true, baseUrl: "http://localhost:3000", discoveryMode: "selected-routes", routes: [] }).ok, "runtime selected-routes requires route");
@@ -114,6 +117,11 @@ const runtimeResult = {
     status: "passed",
     viewportResults: [{
       viewport,
+      stateId: "state_0123456789abcdef0123456789abcdef",
+      stateLabel: "after open Filter",
+      stateDedupKey: "state_0123456789abcdef0123456789abcdef",
+      interactionSource: { candidateId: "candidate_1", kind: "filter-sort", label: "Filter", action: "click" },
+      skippedInteractions: [{ candidateId: "candidate_2", kind: "toggle", label: "Delete", reason: "destructive" }],
       domGeometry: { viewport, capturedAt: "2026-07-09T00:00:00.500Z", elementCount: 1, truncated: false, elements: [{ internalId: "el-1", tagName: "BUTTON", selectorHint: "button", textSnippet: "Submit", rect, visibility: { display: "block", visibility: "visible", opacity: 1 }, clickable: true, order: 0 }] },
       layoutIssues: [layoutIssue],
       consoleErrors: [], pageErrors: [], networkErrors: [], failedResponses: [], errors: [],
@@ -124,6 +132,8 @@ const runtimeResult = {
   errors: [],
 } as const;
 assert(validateRuntimeScanResult(runtimeResult).ok, "runtime result with dom/layout valid");
+assert(!validateRuntimeScanResult({ ...runtimeResult, targetResults: [{ ...runtimeResult.targetResults[0], viewportResults: [{ ...runtimeResult.targetResults[0].viewportResults[0], skippedInteractions: [{ candidateId: "candidate_2", reason: "invented" }] }] }] }).ok, "runtime result rejects invalid skipped reason");
+assert(!validateRuntimeScanResult({ ...runtimeResult, targetResults: [{ ...runtimeResult.targetResults[0], viewportResults: [{ ...runtimeResult.targetResults[0].viewportResults[0], unknown: true }] }] }).ok, "runtime result rejects unknown viewport fields");
 assert(validateRuntimeScanResult({ ...runtimeResult, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#secret", redacted: true, valueSource: "direct" }] }] }).ok, "runtime result redacted fill target valid");
 assert(!validateRuntimeScanResult({ ...runtimeResult, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "fill", selector: "#secret", value: "raw-secret" }] }] }).ok, "runtime result raw fill target rejected");
 
@@ -143,7 +153,13 @@ const runtimeDetail = {
     status: "warning",
     viewportResults: [{
       viewport,
+      stateId: "state_0123456789abcdef0123456789abcdef",
+      stateLabel: "after open Filter",
+      stateDedupKey: "state_0123456789abcdef0123456789abcdef",
+      interactionSource: { candidateId: "candidate_1", kind: "filter-sort", label: "Filter", action: "click" },
+      skippedInteractions: [{ candidateId: "candidate_2", kind: "toggle", label: "Delete", reason: "destructive" }],
       screenshot: { available: true, ref: screenshotRef },
+      diagnostics: [{ kind: "console-warning", message: "Fixture warning" }],
       issues: [{
         id: "issue-1",
         type: "small-click-target",
@@ -165,6 +181,10 @@ const runtimeDetail = {
   }],
 } as const;
 assert(validateRuntimeArtifactDetailResponse(runtimeDetail).ok, "runtime artifact detail valid");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], diagnostics: [{ kind: "console-warning", message: "token=secret" }] }] }] }).ok, "runtime artifact detail rejects secret diagnostic text");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], diagnostics: [{ kind: "unknown", message: "invalid" }] }] }] }).ok, "runtime artifact detail rejects invalid diagnostic kind");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], stateId: "/home/user/state" }] }] }).ok, "runtime artifact detail rejects path-like state id");
+assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], skippedInteractions: [{ candidateId: "candidate_2", reason: "unknown" }] }] }] }).ok, "runtime artifact detail rejects invalid skipped reason");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, projectRoot: "/home/user/project" }).ok, "runtime artifact detail rejects internal root");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: "/home/user/project/screenshot.png" } }] }] }).ok, "runtime artifact detail rejects absolute screenshot ref");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: "../screenshot.png" } }] }] }).ok, "runtime artifact detail rejects traversal screenshot ref");

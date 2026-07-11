@@ -22,8 +22,8 @@ Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL D
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R8.4 — Runtime Artifact Detail API & Evidence Model Hardening.
-- Next recommended phase: R8.5 — Route / Target Selection Runtime Scan UI.
+- Latest completed phase recorded here: R8.7 — Safe Interaction Discovery.
+- Next recommended phase: R8.8 — Visual Readability / OKLCH Contrast Engine.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
 - Runtime scan artifacts now use hardened repository save/read, atomic latest/meta/snapshot writes, strict path safety, and separated safe metadata under `<projectRoot>/.lutest/runtime/`.
@@ -33,7 +33,12 @@ Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL D
 - Auth storageState support is manual and opt-in: `/api/actions/auth/start`, `/api/actions/auth/clear`, `/api/auth/status`, and `runtimeScan.auth.useSavedState` without exposing raw cookies/tokens/storageState.
 - `GET /api/report/runtime/latest` reads the latest runtime artifact through the repository and maps it to a strict public-safe detail response without internal roots or filesystem paths.
 - `GET /api/report/runtime/screenshot?ref=<opaque>` serves PNG evidence only after selected-root path-policy, opaque-ref lookup, containment, realpath, extension, and file checks.
-- UI refresh now loads the safe runtime detail response when latest-report runtime summary exists; screenshot refs remain opaque and overlay rendering remains deferred.
+- Runtime screenshots keep the audited viewport width while retaining full vertical document evidence; Reports crops/focuses the image around the selected issue without horizontally compressing overflow content.
+- Layout detection gives fully outside elements precedence over partial overflow and deduplicates ancestor/descendant overflow sharing the same physical edge.
+- Reports UI now maps valid page routes from the production graph, falls back to safe latest-runtime routes, requires an explicit selected/all-routes choice, and sends the strict existing runtime scan contract without auto-running on refresh.
+- Runtime scan now supports strict opt-in safe interaction discovery for semantic tabs, menus, disclosures, modal/drawer triggers, toggles, and filter/sort controls with typed skips, route-wide limits, state/issue deduplication, and no form fill, submit, navigation, auth, or destructive clicks.
+- R8.7 hardening derives the default interaction budget from state and viewport bounds, captures every bounded state without a separate screenshot cap, preserves desktop interaction coverage, and exposes redacted typed browser diagnostics through latest runtime detail.
+- Scans UI exposes an explicit `Discover safe UI states` checkbox; Reports keeps route targets separate from discovered states and adds a State filter plus typed skipped-control summary.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

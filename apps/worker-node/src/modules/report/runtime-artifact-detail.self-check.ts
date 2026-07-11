@@ -40,6 +40,13 @@ const sample = (projectRoot: string, screenshotPath: string): RuntimeScanResult 
     viewportResults: [{
       viewport: { width: 1440, height: 900 },
       screenshotPath,
+      consoleMessages: [
+        { type: "warning", text: "fixture warning" },
+        { type: "error", text: "token=secret\n at /home/user/app.ts:1" },
+      ],
+      pageErrors: ["fixture page error"],
+      networkErrors: [{ url: "http://127.0.0.1:9/failure", method: "GET", failureText: "connection refused" }],
+      failedResponses: [{ url: "http://127.0.0.1:3000/failure", status: 503, statusText: "Service Unavailable" }],
       layoutIssues: [{
         id: "route:1:1440x900:small-click-target:el-1",
         type: "small-click-target",
@@ -125,6 +132,13 @@ const main = async (): Promise<void> => {
       assert(!serialized.includes(forbidden), `detail must not expose ${forbidden}`);
     }
     const screenshot = detail.targetResults[0]?.viewportResults[0]?.screenshot;
+    const diagnostics = detail.targetResults[0]?.viewportResults[0]?.diagnostics ?? [];
+    assert.equal(diagnostics.length, 5);
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "console-warning" && diagnostic.message === "fixture warning"));
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "console-error" && diagnostic.message === "Runtime console diagnostic redacted."));
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "page-error"));
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "network-error"));
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "failed-response"));
     assert.equal(screenshot?.available, true);
     assert.match(screenshot?.ref ?? "", /^shot_[a-f0-9]{32}$/);
     assert.deepEqual(await runtimeArtifactDetailService.getScreenshot(projectRoot, screenshot?.ref ?? ""), png);

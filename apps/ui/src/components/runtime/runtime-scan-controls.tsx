@@ -25,6 +25,7 @@ export function RuntimeScanControls({
   const [mode, setMode] = useState<"all-routes" | "selected-routes">("selected-routes");
   const [baseUrl, setBaseUrl] = useState(DEFAULT_RUNTIME_BASE_URL);
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
+  const [interactionDiscoveryEnabled, setInteractionDiscoveryEnabled] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
   const availableRoutes = useMemo(() => routes.map((option) => option.route), [routes]);
   const validation = useMemo(() => buildRuntimeScanSelectionRequest({
@@ -32,7 +33,8 @@ export function RuntimeScanControls({
     baseUrl,
     availableRoutes,
     selectedRoutes,
-  }), [availableRoutes, baseUrl, mode, selectedRoutes]);
+    interactionDiscoveryEnabled,
+  }), [availableRoutes, baseUrl, interactionDiscoveryEnabled, mode, selectedRoutes]);
 
   const toggleRoute = (route: string): void => {
     setSelectedRoutes((current) => current.includes(route)
@@ -48,6 +50,7 @@ export function RuntimeScanControls({
       baseUrl,
       availableRoutes,
       selectedRoutes,
+      interactionDiscoveryEnabled,
     }, onRunRuntimeScan);
     if (!result.ok) setSubmitError(result.message);
   };
@@ -101,6 +104,18 @@ export function RuntimeScanControls({
           <label className="grid gap-1.5 text-sm font-semibold text-[#344054]">
             Local base URL
             <input type="url" value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setSubmitError(undefined); }} spellCheck={false} className="rounded-xl border border-[#cbd9eb] bg-white px-3 py-2 font-mono text-sm font-normal text-[#111827] outline-none focus:border-[#2563eb]" />
+          </label>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#cbd9eb] bg-white px-3 py-3 text-sm text-[#344054]">
+            <input
+              type="checkbox"
+              checked={interactionDiscoveryEnabled}
+              onChange={(event) => { setInteractionDiscoveryEnabled(event.target.checked); setSubmitError(undefined); }}
+              className="mt-0.5 size-4 accent-[#2563eb]"
+            />
+            <span>
+              <span className="block font-semibold">Discover safe UI states</span>
+              <span className="mt-0.5 block text-xs font-normal leading-5 text-[#667085]">Clicks safe tabs, menus and disclosures only. No forms, navigation or destructive actions.</span>
+            </span>
           </label>
           <label className="grid gap-1.5 text-sm font-semibold text-[#344054]">
             Viewport preset

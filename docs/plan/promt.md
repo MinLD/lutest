@@ -1,614 +1,375 @@
-Bạn là Senior Solution Architect + Staff TypeScript Engineer.
-Nhiệm vụ của bạn là đọc toàn bộ tài liệu kế hoạch trong repo Lutest, audit code hiện tại, sau đó refactor dự án từ hướng MVP/local-core sang hướng production-grade theo đúng lộ trình mới.
+# Lutest Current Handoff Prompt
 
-## 0. Tài liệu bắt buộc phải đọc trước khi sửa code
+You are a Senior Solution Architect + Staff TypeScript Engineer taking over the Lutest repo.
 
-Hãy đọc kỹ các file sau nếu tồn tại trong repo:
+Your job: understand the current state, identify the active phase, then implement only the requested phase with production-grade quality.
 
-```txt
-docs/plan/master-srs-context.md
-docs/plan/master-srs-production.md
-docs/plan/production-implementation-roadmap.md
-docs/plan/api-contract-production.md
-docs/plan/graph-ast-symbol-design.md
-docs/plan/production-test-fixtures-plan.md
-docs/plan/migration-plan-from-mvp-to-production.md
-docs/plan/zero-debt-audit-roadmap.md
-docs/plan/project-progress-total-timeline.md
-```
+Do not follow old MVP planning docs. Some old plan files remain in `docs/plan/` with a `STALE / HISTORICAL DOC` banner for historical context only.
 
-Nếu file nằm ở root hoặc tên hơi khác, hãy tìm file tương ứng.
-Nếu thiếu file quan trọng, hãy báo rõ file nào thiếu, nhưng vẫn audit được phần code hiện tại.
+---
 
-## 1. Bối cảnh dự án hiện tại
+## 1. Required Read Order
 
-Dự án Lutest trước đó đang đi theo kế hoạch MVP/local-core.
-
-Trạng thái hiện tại nên được coi là checkpoint:
+Read these files before coding:
 
 ```txt
-C0 — MVP checkpoint:
-- Đã có monorepo.
-- Đã có CLI host.
-- Đã có Express worker.
-- Đã có contracts package.
-- Đã có project detection.
-- Đã có scan route.
-- Đã có graph v1 quét source files.
-- Đã có đếm page/component/api/file ở mức file-level.
-- Đã có report/latest report pipeline.
-```
-
-Từ bây giờ không tiếp tục mở rộng theo MVP nữa.
-Không làm Playwright, DOM bounding boxes, screenshot, AABB, contrast, auth, cache diff trước khi refactor production foundation xong.
-
-## 2. Mục tiêu refactor
-
-Không được đập toàn bộ để viết lại từ đầu.
-
-Hãy giữ các phần đúng:
-
-```txt
-- monorepo structure
-- apps/cli-host
-- apps/worker-node
-- apps/ui nếu đang chạy được
-- packages/contracts
-- Express worker module boundaries
-- status/project/graph/scan/report/rule modules
-- pathService/storageService concept
-```
-
-Nhưng phải refactor các phần MVP thành production-grade:
-
-```txt
-- scan route naming
-- runtime API validation
-- path security policy
-- report schema integrity
-- graph từ file-level sang AST symbol-level
-- graph contract production
-- import resolver production
-- CLI lifecycle production
-- test fixtures
-- progress tracking
-```
-
-## 3. Nguyên tắc làm việc bắt buộc
-
-Không được sửa code ngay lập tức.
-
-Hãy làm theo thứ tự:
-
-### Step A — Đọc docs và audit code
-
-Trước tiên, tạo hoặc cập nhật file:
-
-```txt
+AI_HANDOFF.md
+docs/ai-context/00-read-me-first.md
+docs/ai-context/01-project-overview.md
+docs/ai-context/02-architecture.md
+docs/ai-context/03-current-state.md
+docs/ai-context/04-decisions.md
+docs/ai-context/05-known-issues.md
+docs/ai-context/06-next-tasks.md
+docs/ai-context/07-session-handoff.md
+docs/plan/lutest-production-completion-roadmap.md
 docs/plan/production-refactor-progress.md
 ```
 
-File này phải ghi rõ:
+Optional historical docs:
 
 ```txt
-1. Current MVP checkpoint
-2. Old plan status
-3. New production plan target
-4. Gap list
-5. Refactor phases
-6. Current phase
-7. Done / In Progress / Blocked
-8. Files changed
-9. Tests required
-10. Next action
+docs/plan/api-contract-production.md
+docs/plan/graph-ast-symbol-design.md
+docs/plan/master-srs-production.md
+docs/plan/migration-plan-from-mvp-to-production.md
+docs/plan/production-implementation-roadmap.md
+docs/plan/production-test-fixtures-plan.md
+docs/plan/zero-debt-audit-roadmap.md
 ```
 
-Sau khi audit, hãy liệt kê rõ vấn đề cũ của dự án, ví dụ:
-
-```txt
-- Graph hiện đang file-level, chưa phải AST symbol-level.
-- componentCount/pageCount/apiCount hiện có nguy cơ chỉ là vanity metrics nếu không phục vụ route coverage, issue mapping, cache diff.
-- API route scan có thể đang lệch giữa /api/scan và /api/actions/scan.
-- Report read có thể chưa phân biệt missing/malformed/schema-invalid.
-- Path policy có thể chưa giới hạn allowed project root.
-- CLI có thể vẫn chạy kiểu dev runner, chưa phải product CLI.
-- Import resolver có thể chưa xử lý tsconfig paths/baseUrl/@ alias.
-```
-
-Không được nói chung chung. Phải dẫn file code cụ thể đang có vấn đề.
-
-### Step B — Đánh dấu điểm dừng MVP
-
-Trong `production-refactor-progress.md`, ghi rõ:
-
-```txt
-MVP checkpoint accepted:
-The old MVP path stops at source scanning + project detection + file-level graph counting.
-From this point forward, graph counting must be upgraded into production AST symbol graph.
-```
-
-Điều này có nghĩa:
-
-```txt
-Không xóa graph v1 ngay.
-Không gọi graph v1 là production.
-Dùng graph v1 làm baseline/migration input.
-Tạo production graph layer mới hoặc refactor từng phần có kiểm soát.
-```
-
-### Step C — Tạo migration plan trong code
-
-Trước khi sửa graph, hãy xác định:
-
-```txt
-- Contract hiện tại đang là gì.
-- UI đang cần response shape nào.
-- Worker route đang trả shape nào.
-- Có cần legacy mapper không.
-- Có thể thêm production graph response song song không.
-```
-
-Nếu phá contract làm UI chết thì phải tạo adapter/migration rõ.
-
-## 4. Thứ tự refactor bắt buộc
-
-Làm theo phase. Không nhảy cóc.
+Only read these if you need historical context. They have a `STALE / HISTORICAL DOC` banner and are not current roadmap instructions.
 
 ---
 
-# Phase R0 — Repo hygiene + baseline
+## 2. Current Project Snapshot
 
-Mục tiêu: biết code hiện tại đang ở đâu.
+Lutest is a local-first Code + UX Audit Platform.
 
-Việc cần làm:
-
-```txt
-1. Chạy typecheck/build/test hiện có nếu có script.
-2. Ghi kết quả vào docs/plan/production-refactor-progress.md.
-3. Kiểm tra repo có commit node_modules/dist/.lutest không.
-4. Kiểm tra .gitignore.
-5. Không sửa feature lớn ở phase này.
-```
-
-Definition of Done:
+Already completed or largely implemented:
 
 ```txt
-- Có baseline rõ.
-- Có danh sách lỗi hiện tại.
-- Có progress file.
-- Không có thay đổi kiến trúc lớn.
+- production graph path and artifacts
+- selected project root/path-policy foundation
+- runtime browser preflight
+- runtime target model
+- DOM geometry capture
+- viewport matrix
+- manual runtime flow execution
+- AABB/layout issue engine
+- runtime artifact repository
+- public runtime contracts
+- POST /api/actions/scan runtime opt-in integration
+- latest report source-of-truth summary integration
+- auth storageState integration
+- dashboard runtime summary/report UI shell
+- screenshot/evidence UI shell with safe refs only
 ```
+
+Current product focus before R9 hardening:
+
+```txt
+complete runtime UI audit core:
+- full runtime artifact detail API
+- screenshot preview through safe artifact endpoint/ref
+- screenshot overlay from bounding boxes
+- OKLCH/readability checks
+- safe interaction discovery for hidden UI states
+- deterministic fix guidance
+```
+
+R9/R10/R11 are hardening/docs/release/legacy cleanup. Do not start them until R8 UI-audit core is complete unless the user explicitly says so.
 
 ---
 
-# Phase R1 — API route + validation boundary
+## 3. Active Roadmap Source
 
-Mục tiêu: chốt API production boundary.
-
-Việc cần làm:
+The current roadmap source is:
 
 ```txt
-1. Chốt canonical scan route là POST /api/actions/scan.
-2. Nếu hiện còn /api/scan, giữ làm legacy alias tạm thời.
-3. UI/docs/code mới phải dùng /api/actions/scan.
-4. Thêm hoặc hoàn thiện runtime validators trong packages/contracts.
-5. Controller phải validate request trước khi gọi service.
-6. Error response phải chuẩn ApiErrorResponse.
+docs/plan/lutest-production-completion-roadmap.md
 ```
 
-Routes production tối thiểu:
+Current R8 sequence:
 
 ```txt
-GET  /api/status
-GET  /api/project
-GET  /api/graph
-GET  /api/report/latest
-POST /api/actions/scan
+R8.0 — Runtime Evidence Model Finalization
+R8.1 — Runtime Scan Controls UI
+R8.2 — Runtime Report UI
+R8.3 — Screenshot / Evidence Viewer
+R8.4 — Runtime Artifact Detail API
+R8.5 — Screenshot Overlay Evidence UI
+R8.6 — Visual Readability / OKLCH Contrast Engine
+R8.7 — Safe Interaction Discovery
+R8.8 — Runtime Fix Guidance UI
+R8.9 — Auth / Flow Controls UI
 ```
 
-Definition of Done:
+Future only, after production clean complete:
 
 ```txt
-- /api/actions/scan hoạt động.
-- /api/scan nếu còn thì chỉ là legacy alias.
-- Invalid request trả 400 INVALID_REQUEST.
-- Không controller nào trust req.body/query trực tiếp.
-- typecheck/build pass.
-- progress file được cập nhật.
+R12+ form-aware interaction testing / test data profiles
+R12+ manual flow builder UI
+AI auto-fix suggestion
+visual diff
+CI/cloud/team features
 ```
 
 ---
 
-# Phase R2 — Path policy production
+## 4. Before You Code
 
-Mục tiêu: Worker không được scan tùy tiện toàn filesystem.
-
-Việc cần làm:
+Do not start editing until you can answer these questions:
 
 ```txt
-1. Tìm pathService/pathPolicyService hiện tại.
-2. Đảm bảo project root tồn tại và là directory.
-3. Thêm allowedRoot policy:
-   - allowedRoot lấy từ CLI/env/config lúc worker startup.
-   - request projectPath phải bằng allowedRoot hoặc nằm trong allowedRoot nếu policy cho phép.
-   - path ngoài allowedRoot trả PATH_NOT_ALLOWED.
-4. Không dùng process.cwd() bừa bãi trong worker service.
-5. Mọi .lutest path phải đi qua pathService.
+1. What phase did the user request?
+2. Which files own the controller/service/mapper/helper/UI path for this phase?
+3. Which contracts/validators are involved?
+4. Which self-checks already exist?
+5. Which generated artifacts must not be committed?
+6. What is explicitly out of scope?
 ```
 
-Definition of Done:
-
-```txt
-- Path ngoài allowedRoot bị chặn.
-- Missing/non-directory path trả lỗi rõ.
-- Không silent scan nhầm folder.
-- Có test hoặc self-check tối thiểu.
-- progress file được cập nhật.
-```
-
----
-
-# Phase R3 — Report integrity
-
-Mục tiêu: report không được đọc lỗi rồi trả null mù.
-
-Việc cần làm:
-
-```txt
-1. Refactor storage/report read thành result type:
-   - ok
-   - missing
-   - malformed
-   - schema-invalid
-   - permission-denied
-2. Latest report API phải phân biệt missing report với malformed report.
-3. Validate ScanResponse trước khi ghi và trước khi trả.
-4. Ghi report nên dùng safe/atomic write nếu khả thi.
-```
-
-Definition of Done:
-
-```txt
-- Missing latest report không crash.
-- Malformed report không bị nuốt thành report:null.
-- Schema invalid trả error/state rõ.
-- UI không crash khi report missing.
-- progress file được cập nhật.
-```
-
----
-
-# Phase R4 — Graph production contract
-
-Mục tiêu: mở đường cho AST symbol graph.
-
-Không tiếp tục dùng graph chỉ có:
-
-```txt
-page | component | api | file
-```
-
-như production model duy nhất.
-
-Thiết kế contract production cần hỗ trợ tối thiểu:
-
-```txt
-GraphNodeKind:
-- file
-- page
-- component
-- hook
-- api-route
-- api-client-method
-- utility
-- external-endpoint
-
-GraphEdgeKind:
-- import
-- render
-- call
-- http
-- route
-```
-
-Graph node nên có:
-
-```txt
-id
-kind
-name
-filePath
-loc
-route
-http metadata nếu có
-confidence nếu cần
-```
-
-Graph edge nên có:
-
-```txt
-id
-kind
-source
-target
-confidence
-reason
-```
-
-Definition of Done:
-
-```txt
-- Contract production được thêm rõ.
-- Legacy graph response nếu UI cần vẫn có mapper.
-- Không phá UI cũ nếu chưa migrate UI.
-- progress file được cập nhật.
-```
-
----
-
-# Phase R5 — AST symbol graph engine
-
-Mục tiêu: thay graph file-level bằng graph symbol-level.
-
-Tạo hoặc refactor module graph theo hướng:
-
-```txt
-apps/worker-node/src/modules/graph/ast/
-  parse-source-file.ts
-  extract-symbols.ts
-  extract-imports.ts
-  resolve-imports.ts
-  extract-jsx-usage.ts
-  extract-calls.ts
-  extract-api-calls.ts
-  graph-linker.ts
-```
-
-Pipeline bắt buộc:
-
-```txt
-source files
--> AST parse
--> symbol declarations
--> imports
--> JSX usage
--> call expressions
--> API calls
--> resolve imports
--> create symbol nodes
--> create import/render/call/http edges
--> summary
-```
-
-Graph production phải trả lời được:
-
-```txt
-- Page nào tồn tại?
-- Page route là gì?
-- Page render component nào?
-- Component dùng hook nào?
-- Hook/service gọi API client nào?
-- API client gọi endpoint nào?
-- API route handler nào tồn tại?
-```
-
-Không được chỉ trả lời:
-
-```txt
-- File nào có fetch?
-- File nào nằm trong components?
-```
-
-Definition of Done:
-
-```txt
-- Component count dựa trên declaration, không chỉ file.
-- API count dựa trên API route/API client method/API calls, không chỉ file.
-- Import resolver xử lý relative + extension + index.
-- Nếu có tsconfig paths/baseUrl/@ alias thì xử lý hoặc ghi rõ unsupported với confidence thấp.
-- Có fixture test tối thiểu cho Next.js app router.
-- progress file được cập nhật.
-```
-
----
-
-# Phase R6 — Fixture tests
-
-Tạo fixtures theo plan:
-
-```txt
-fixtures/next-basic-shop
-fixtures/next-custom-api-client
-fixtures/vite-react-dashboard
-fixtures/vue-basic
-fixtures/laravel-basic
-```
-
-Bắt đầu tối thiểu với:
-
-```txt
-fixtures/next-basic-shop
-fixtures/next-custom-api-client
-```
-
-Test phải assert:
-
-```txt
-- detect framework đúng.
-- route discovery đúng.
-- component declaration count đúng.
-- page count đúng.
-- API route count đúng.
-- API client method count đúng.
-- render/call/http edges đúng.
-- alias import @/* resolve đúng nếu supported.
-- dynamic endpoint không bị báo chắc tuyệt đối.
-```
-
-Definition of Done:
-
-```txt
-- Có fixture.
-- Có test.
-- Test fail nếu quay lại file-level counting.
-- progress file được cập nhật.
-```
-
----
-
-# Phase R7 — CLI production lifecycle
-
-Mục tiêu: CLI không còn chỉ là dev runner.
-
-Cần có command:
+Run targeted search before changing code. Example:
 
 ```bash
-lutest scan <projectPath>
+rg "runtimeScan|LatestReportResponse|screenshotPath|layoutIssues|artifactRef|actions/scan" packages apps docs
 ```
 
-CLI production phải:
+Then audit concrete files. Do not guess.
+
+---
+
+## 5. Hard Rules
+
+Always obey:
 
 ```txt
-1. Parse args.
-2. Validate project path.
-3. Pick available port.
-4. Spawn worker packaged runtime.
-5. Wait GET /api/status.
-6. Call POST /api/actions/scan.
-7. Print result summary.
-8. Shutdown worker cleanly.
-9. Exit code:
-   - 0 passed
-   - 1 failed/error
-   - 2 invalid input
+- Do only the requested phase/scope.
+- Do not jump to R9/R10/R11 before R8 core is complete.
+- Do not change backend API/contracts unless the requested phase requires it.
+- Do not loosen path-policy.
+- Do not change local-only baseUrl policy.
+- Do not use raw absolute local filesystem paths in UI/API responses.
+- Do not use raw .lutest paths as public URLs unless safely resolved by backend.
+- Do not expose cookie/token/password/storageState/localStorage/sessionStorage/raw stack.
+- Do not auto-click destructive actions.
+- Do not auto-fill forms to bypass validation unless a future explicit phase asks for it.
+- Do not commit generated .lutest artifacts.
+- Do not claim tests pass unless you ran them.
+- Do not use loose `any`, `as any`, or `unknown as` to bypass types.
 ```
 
-Definition of Done:
+Runtime security specifics:
 
 ```txt
-- lutest scan <fixturePath> chạy end-to-end.
-- Worker được cleanup.
-- Exit code đúng.
-- Không phụ thuộc npm run dev cho production path.
-- progress file được cập nhật.
+- Playwright browser is controlled by Lutest, not the user's dashboard browser.
+- Missing Chromium maps to PLAYWRIGHT_BROWSER_MISSING.
+- External baseUrl must be rejected before scan.
+- Auth storageState is opt-in and never returned raw.
+- Screenshot preview must use safe backend endpoint/ref, not raw filesystem path.
 ```
 
 ---
 
-# Phase R8 — UI migration
+## 6. Runtime UI Audit Design Principles
 
-Chỉ làm sau khi backend contracts ổn.
-
-UI phải:
+The production runtime UI audit flow is:
 
 ```txt
-- gọi /api/actions/scan.
-- đọc production graph hoặc legacy mapped graph.
-- hiển thị rõ graph mode:
-  - file-level
-  - symbol-level
-- không mock data ở flow chính.
-- có loading/error/empty/stale states.
-- không crash khi report missing/schema-invalid.
+Capture screenshot
+→ Capture DOM geometry
+→ Run AABB layout checks
+→ Save runtime artifact
+→ Load full runtime detail safely
+→ Show issue list/detail
+→ Show screenshot preview
+→ Overlay bounding boxes
+→ Run/read OKLCH readability issues
+→ Explore safe interaction states
+→ Explain issues with deterministic guidance
 ```
 
-Definition of Done:
+Safe interaction discovery rules:
 
 ```txt
-- Dashboard dùng API thật.
-- Không assume field ngoài contracts.
-- Hiển thị được production graph summary.
-- progress file được cập nhật.
+Allowed candidates:
+- tabs
+- menus
+- accordions
+- dropdowns
+- modal open buttons
+- drawers
+- non-destructive toggles
+
+Skip by default:
+- delete/remove/logout/sign out
+- pay/purchase/checkout submit
+- save/send/confirm/upload
+- external links
+- disabled controls
+- form-gated controls requiring input
+```
+
+Form-aware testing is future R12+, not current R8.
+
+---
+
+## 7. Implementation Pattern
+
+For any phase:
+
+```txt
+1. Audit current code and docs.
+2. Add/update contracts first if needed.
+3. Add/update validators/self-checks if contracts changed.
+4. Implement small service/helper/mapper units.
+5. Keep controllers/components thin.
+6. Wire integration.
+7. Run focused self-checks.
+8. Run required builds/typecheck.
+9. Check generated artifacts.
+10. Update handoff/context docs.
+```
+
+Prefer minimal production code over abstractions. Do not add factories/interfaces for one implementation.
+
+---
+
+## 8. Required Verification Baseline
+
+Choose commands based on touched area. Common baseline:
+
+```bash
+npm run typecheck --workspaces --if-present
+npm run build -w @lutest/contracts
+npm run build -w @lutest/worker-node
+npm run build -w ui
+```
+
+Runtime/backend checks often include:
+
+```bash
+npx tsx ./packages/contracts/src/validators.self-check.ts
+npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts
+npx tsx ./apps/worker-node/src/modules/report/latest-report.integration.self-check.ts
+npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.self-check.ts
+npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-artifacts.self-check.ts
+npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts
+npx tsx ./apps/worker-node/src/shared/services/path-policy.http-self-check.ts
+```
+
+UI checks often include:
+
+```bash
+npx tsx ./apps/ui/src/lib/runtime-report-view-model.self-check.ts
+npx tsx ./apps/ui/src/lib/production-graph-adapter.self-check.ts
+npx tsx ./apps/ui/src/lib/dashboard-data-request.self-check.ts
+npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts
+```
+
+If sandbox blocks `tsx` IPC or Next/Google Fonts fetch, state that clearly and rerun with an appropriate environment if allowed.
+
+---
+
+## 9. Git Hygiene
+
+Before final response, run:
+
+```bash
+git status --short
+git status --short .lutest apps/ui/.lutest apps/worker-node/.lutest docs/report
+```
+
+Expected:
+
+```txt
+- no generated .lutest artifacts
+- no auth artifacts
+- no docs/report noise unless explicitly edited
+```
+
+Never commit unless the user explicitly asks.
+
+---
+
+## 10. Context Updates
+
+If a phase passes, update relevant context docs:
+
+```txt
+AI_HANDOFF.md
+docs/ai-context/03-current-state.md
+docs/ai-context/05-known-issues.md
+docs/ai-context/06-next-tasks.md
+docs/ai-context/07-session-handoff.md
+docs/plan/production-refactor-progress.md
+```
+
+Record:
+
+```txt
+- phase implemented
+- changed behavior
+- tests run
+- known limitations
+- next recommended phase
 ```
 
 ---
 
-## 5. Những việc tuyệt đối chưa làm
+## 11. Final Response Format
 
-Không làm các việc này cho đến khi R1-R6 pass:
-
-```txt
-- Playwright browser automation
-- screenshot capture
-- DOM bounding boxes
-- AABB overlap check
-- contrast check
-- auth manual flow
-- cache diff
-- npm publish
-- UI graph animation/polish
-```
-
-Lý do: nếu graph/contract/path/report còn sai, các feature này sẽ xây trên nền sai.
-
-## 6. Quy tắc khi sửa code
-
-Bắt buộc:
+Use this shape unless the user provided a stricter one:
 
 ```txt
-- Không dùng any nếu không có lý do rõ.
-- Không thêm field API ngoài contract.
-- Không cast as unknown as Type để né lỗi.
-- Không placeholder/TODO trong production code.
-- Không mock data ở API thật.
-- Không hardcode .lutest path rải rác.
-- Không hardcode CORS/worker URL nếu config có thể quản lý.
-- Không swallow error.
-```
+Phase completed: <phase>
 
-Nếu feature chưa làm, phải:
-
-```txt
-- không expose như đã xong; hoặc
-- trả lỗi rõ Feature not implemented; hoặc
-- ghi rõ trong progress/backlog.
-```
-
-## 7. Output tôi cần từ bạn sau mỗi phase
-
-Sau mỗi phase, hãy trả lời theo format:
-
-```txt
-Phase completed: <phase name>
+Audit before:
+- ...
 
 Changed files:
 - ...
 
-What was fixed:
+Behavior:
 - ...
 
-What remains:
+Security/privacy:
 - ...
 
 Tests run:
-- command
-- result
+- command — passed/failed/skipped with reason
 
-Progress file updated:
+Git hygiene:
+- generated artifacts:
+- docs/report noise:
+
+Progress/context updated:
+- yes/no
+
+Remaining blockers:
+- none, or list
+
+Ready to commit:
 - yes/no
 
 Next recommended phase:
 - ...
 ```
 
-Nếu gặp lỗi hoặc ambiguity, không tự đoán bừa.
-Hãy ghi rõ blocker và đề xuất phương án tốt nhất.
+---
 
-## 8. Việc đầu tiên cần làm ngay bây giờ
+## 12. Confidence Gate
 
-Bắt đầu bằng Phase R0.
-
-Không sửa code feature ngay.
-
-Hãy:
+You are confident to code only when:
 
 ```txt
-1. Đọc toàn bộ docs.
-2. Audit repo hiện tại.
-3. Tạo/cập nhật docs/plan/production-refactor-progress.md.
-4. Ghi rõ MVP checkpoint hiện tại.
-5. Liệt kê vấn đề cũ theo file cụ thể.
-6. Đề xuất Phase R1 cụ thể với danh sách file sẽ sửa.
+- current phase is identified
+- source-of-truth docs are read
+- relevant files are found with rg
+- scope and non-goals are clear
+- expected tests are known
+- generated artifact hygiene is understood
 ```
 
-Sau khi hoàn thành R0, dừng lại và báo cáo trước khi tiếp tục R1.
+If any of these are unclear, ask or audit more before editing.

@@ -147,6 +147,18 @@ const main = async () => {
   assert.equal((await readRuntimeScanSnapshot(snapshotOnlyRoot, snapshotOnly.scanId))?.scanId, snapshotOnly.scanId);
   assert.equal(await readLatestRuntimeScan(snapshotOnlyRoot), null);
 
+  const legacyArtifact = JSON.parse(latestRawText) as Record<string, unknown>;
+  assert(legacyArtifact.limits && typeof legacyArtifact.limits === "object");
+  const legacyLimits = legacyArtifact.limits as Record<string, unknown>;
+  delete legacyLimits.maxInteractionsPerRoute;
+  delete legacyLimits.maxStatesPerRoute;
+  delete legacyLimits.interactionDiscoveryTimeoutMs;
+  await fs.writeFile(paths.latestResultPath, JSON.stringify(legacyArtifact), "utf-8");
+  const migratedLegacy = await readLatestRuntimeScan(projectRoot);
+  assert.equal(migratedLegacy?.limits.maxInteractionsPerRoute, DEFAULT_RUNTIME_SCAN_LIMITS.maxInteractionsPerRoute);
+  assert.equal(migratedLegacy?.limits.maxStatesPerRoute, DEFAULT_RUNTIME_SCAN_LIMITS.maxStatesPerRoute);
+  assert.equal(migratedLegacy?.limits.interactionDiscoveryTimeoutMs, DEFAULT_RUNTIME_SCAN_LIMITS.interactionDiscoveryTimeoutMs);
+
   const invalidBeforeWrite = sample(await fs.mkdtemp(path.join(os.tmpdir(), "lutest-runtime-invalid-before-")));
   invalidBeforeWrite.targets = [{ id: "flow:bad", kind: "flow", name: "bad", steps: [{ kind: "fill", selector: "#secret", value: "DoNotPersistSecret" }] }];
   await assertRejectsArtifact(saveLatestRuntimeScan(invalidBeforeWrite), "RUNTIME_SCAN_ARTIFACT_INVALID");

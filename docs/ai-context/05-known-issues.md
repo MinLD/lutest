@@ -9,7 +9,7 @@
 - Auth storageState is implemented as manual, local, selected-root-scoped state. UI for starting/clearing auth is not implemented yet.
 - Auth session self-check uses mocked manual browser interaction; real manual login requires a user-driven Playwright browser session.
 
-- Latest report now exposes runtime summary/meta and safe artifact refs, but UI dashboard rendering for these fields remains future work.
+- Latest report/runtime detail render in the dashboard, and R8.5 adds explicit route selection; configured flow/state target discovery still has no public catalog.
 - No contrast issue detection yet.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 
@@ -34,7 +34,19 @@
 
 - This context package can become stale. Future AI sessions must verify against code and progress doc.
 
-- Public runtime artifact detail and opaque screenshot endpoints exist; screenshot image rendering/overlay remains deferred.
+- Screenshot preview/overlay now exists for selected issues; it depends on the worker and latest opaque screenshot artifact remaining available.
+
+## R8.5 — Route / Target Selection Runtime Scan UI
+
+- Route targets come from production graph page routes with latest-runtime detail fallback.
+- Configured flow/state targets are not selectable because no public-safe configured target catalog exists yet.
+- Screenshot preview/overlay, interaction discovery, auth UI, and contrast analysis remain out of scope.
+
+## R8.6 — Screenshot Overlay Evidence UI
+
+- New screenshots keep viewport width and full vertical evidence; old expanded-width artifacts remain supported through viewport cropping but should be regenerated for canonical evidence.
+- Previously generated artifacts may contain React Flow viewport false positives internally, but the report view-model suppresses them from visible issue lists and counts.
+- No interaction discovery, configured flow/state catalog, auth UI, contrast analysis, or new browser overlay exists.
 
 ## R8.2 — Runtime Report UI
 
@@ -104,3 +116,9 @@ Current limitations:
 
 Next recommended phase:
 - R8.5 — Route / Target Selection Runtime Scan UI
+
+## R8.7 — Safe Interaction Discovery
+
+- Discovery is intentionally one safe click deep from a reloaded route baseline; chained interaction flows require a later explicit risk model.
+- Strong semantic controls are preferred. Unknown custom controls are skipped as `unsafe-candidate` or `unsupported-control` rather than guessed.
+- Route-wide interaction/state/time limits may stop later candidates with typed `limit-reached` evidence.

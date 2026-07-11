@@ -1,3 +1,12 @@
+> **STALE / HISTORICAL DOC**
+>
+> This file is from the MVP-to-production refactor era. Do **not** use it as the current implementation roadmap.
+> Current source of truth: `AI_HANDOFF.md`, `docs/ai-context/*`, `docs/plan/lutest-production-completion-roadmap.md`, `docs/plan/production-refactor-progress.md`, and `docs/plan/promt.md`.
+>
+> Keep this file only for historical context.
+
+---
+
 ﻿# Production Test Fixtures Plan
 
 Updated: 2026-06-30

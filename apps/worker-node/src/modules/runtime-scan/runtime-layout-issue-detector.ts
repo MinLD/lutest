@@ -8,6 +8,7 @@ const MAX_OVERLAP_ELEMENTS = 200;
 
 type DetectInput = {
   scanTargetId: string;
+  stateId?: string;
   route: string;
   viewport: RuntimeScanViewport;
   domGeometry?: DomGeometry;
@@ -19,7 +20,7 @@ const issue = (input: DetectInput, element: DomElementGeometry, type: RuntimeLay
   overlapArea: number;
   overlapRatio: number;
 }): RuntimeLayoutIssue => ({
-  id: `${input.scanTargetId}:${input.viewport.width}x${input.viewport.height}:${type}:${element.internalId}`,
+  id: `${input.scanTargetId}:${input.stateId ?? "baseline"}:${input.viewport.width}x${input.viewport.height}:${type}:${element.internalId}`,
   type,
   code: type,
   severity,
@@ -50,10 +51,47 @@ const overlapArea = (a: DomElementGeometry, b: DomElementGeometry): number => {
   return width * height;
 };
 
-const isTransformedCanvasInfrastructure = (element: DomElementGeometry): boolean => {
-  const classes = new Set(element.className?.split(/\s+/).filter(Boolean) ?? []);
-  return classes.has("react-flow__viewport") || classes.has("xyflow__viewport");
+const usesViewportBoundary = (element: DomElementGeometry, axis: "horizontal" | "vertical"): boolean =>
+  (element.viewportBoundary?.[axis] ?? "viewport") === "viewport";
+
+type HorizontalOverflowSide = "left" | "right";
+
+const horizontalOverflowSides = (element: DomElementGeometry, viewport: RuntimeScanViewport): HorizontalOverflowSide[] => {
+  if (!usesViewportBoundary(element, "horizontal")) return [];
+  const sides: HorizontalOverflowSide[] = [];
+  if (element.rect.left < -OVERFLOW_TOLERANCE_PX) sides.push("left");
+  if (element.rect.right > viewport.width + OVERFLOW_TOLERANCE_PX) sides.push("right");
+  return sides;
 };
+
+const isFullyOutsideViewport = (element: DomElementGeometry, viewport: RuntimeScanViewport): boolean =>
+  (usesViewportBoundary(element, "horizontal") && (element.rect.right < -OVERFLOW_TOLERANCE_PX || element.rect.left > viewport.width + OVERFLOW_TOLERANCE_PX))
+  || (usesViewportBoundary(element, "vertical") && element.rect.bottom < -OVERFLOW_TOLERANCE_PX);
+
+const isDescendantOf = (
+  element: DomElementGeometry,
+  ancestor: DomElementGeometry,
+  elementsById: Map<string, DomElementGeometry>,
+): boolean => {
+  const visited = new Set<string>();
+  let parentId = element.parentInternalId;
+  while (parentId && !visited.has(parentId)) {
+    if (parentId === ancestor.internalId) return true;
+    visited.add(parentId);
+    parentId = elementsById.get(parentId)?.parentInternalId;
+  }
+  return false;
+};
+
+const sharesOverflowBoundary = (
+  ancestor: DomElementGeometry,
+  descendant: DomElementGeometry,
+  side: HorizontalOverflowSide,
+): boolean => Math.abs(
+  side === "left"
+    ? ancestor.rect.left - descendant.rect.left
+    : ancestor.rect.right - descendant.rect.right,
+) <= OVERFLOW_TOLERANCE_PX;
 
 const center = (element: DomElementGeometry): { x: number; y: number } => ({
   x: element.rect.left + element.rect.width / 2,
@@ -81,8 +119,15 @@ const hasInsufficientClickTargetSpacing = (element: DomElementGeometry, clickabl
 };
 
 export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssue[] => {
-  const elements = (input.domGeometry?.elements ?? []).filter((element) => !isTransformedCanvasInfrastructure(element));
+  const elements = input.domGeometry?.elements ?? [];
+  const elementsById = new Map(elements.map((element) => [element.internalId, element]));
   const clickableElements = elements.filter((element) => element.clickable && area(element) > 0);
+  const horizontalOverflowElements = elements.filter((element) =>
+    element.rect.width > 0
+    && element.rect.height > 0
+    && !isFullyOutsideViewport(element, input.viewport)
+    && horizontalOverflowSides(element, input.viewport).length > 0,
+  );
   const issues: RuntimeLayoutIssue[] = [];
 
   for (const element of elements) {
@@ -90,11 +135,19 @@ export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssu
       issues.push(issue(input, element, "zero-size-visible-element", "warning", "Visible element has zero-size geometry.", "width > 0 and height > 0"));
       continue;
     }
-    if (element.rect.right > input.viewport.width + OVERFLOW_TOLERANCE_PX || element.rect.left < -OVERFLOW_TOLERANCE_PX) {
-      issues.push(issue(input, element, "horizontal-overflow", "error", "Element extends horizontally outside the viewport.", `left >= 0 and right <= viewport.width + ${OVERFLOW_TOLERANCE_PX}px`));
-    }
-    if (element.rect.right < -OVERFLOW_TOLERANCE_PX || element.rect.left > input.viewport.width + OVERFLOW_TOLERANCE_PX || element.rect.bottom < -OVERFLOW_TOLERANCE_PX) {
+    if (isFullyOutsideViewport(element, input.viewport)) {
       issues.push(issue(input, element, "element-outside-viewport", "warning", "Element is fully outside the viewport in an unexpected direction.", `right >= -${OVERFLOW_TOLERANCE_PX}px, left <= viewport.width + ${OVERFLOW_TOLERANCE_PX}px, bottom >= -${OVERFLOW_TOLERANCE_PX}px`));
+      continue;
+    }
+    const overflowSides = horizontalOverflowSides(element, input.viewport);
+    const duplicatedByDescendant = overflowSides.some((side) => horizontalOverflowElements.some((candidate) =>
+      candidate.internalId !== element.internalId
+      && isDescendantOf(candidate, element, elementsById)
+      && horizontalOverflowSides(candidate, input.viewport).includes(side)
+      && sharesOverflowBoundary(element, candidate, side),
+    ));
+    if (overflowSides.length > 0 && !duplicatedByDescendant) {
+      issues.push(issue(input, element, "horizontal-overflow", "error", "Element extends horizontally outside the viewport.", `left >= 0 and right <= viewport.width + ${OVERFLOW_TOLERANCE_PX}px`));
     }
     // ponytail: geometric scans cover WCAG target size and spacing; add semantic exceptions when DOM capture records inline/equivalent/essential metadata.
     if (element.clickable && isUndersizedClickTarget(element) && hasInsufficientClickTargetSpacing(element, clickableElements)) {

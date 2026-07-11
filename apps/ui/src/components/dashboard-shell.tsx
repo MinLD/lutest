@@ -91,6 +91,9 @@ function Sidebar({
             <button
               key={item.id}
               type="button"
+              aria-label={item.label}
+              aria-controls="dashboard-content"
+              aria-current={active ? "page" : undefined}
               onClick={() => onPageChange(item.id)}
               className={`group flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left transition ${
                 active
@@ -146,6 +149,9 @@ function MobileSidebar({
               <button
                 key={item.id}
                 type="button"
+                aria-label={item.label}
+                aria-controls="dashboard-content"
+                aria-current={active ? "page" : undefined}
                 onClick={() => {
                   onPageChange(item.id);
                   onClose();
@@ -778,7 +784,7 @@ export function DashboardShell() {
         onRunScan={runScan}
         onOpenMenu={() => setIsMobileSidebarOpen(true)}
       />
-      <main className="min-h-dvh bg-[linear-gradient(#e5edf7_1px,transparent_1px),linear-gradient(90deg,#e5edf7_1px,transparent_1px)] bg-[size:50px_50px] px-4 pb-8 pt-24 md:ml-[18rem] md:px-6 lg:px-10">
+      <main id="dashboard-content" className="min-h-dvh bg-[linear-gradient(#e5edf7_1px,transparent_1px),linear-gradient(90deg,#e5edf7_1px,transparent_1px)] bg-[size:50px_50px] px-4 pb-8 pt-24 md:ml-[18rem] md:px-6 lg:px-10">
         <div className="mx-auto max-w-[96rem]">
           <div className="grid gap-5 sm:gap-6">
             <DashboardNotice isLoading={isLoading} error={error} />

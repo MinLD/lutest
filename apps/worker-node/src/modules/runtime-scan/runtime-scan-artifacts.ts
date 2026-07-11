@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveRuntimeArtifactRepositoryPaths } from "./runtime-scan-artifact-contract";
+import { DEFAULT_RUNTIME_SCAN_LIMITS } from "./runtime-scan-limits";
 import { validateRuntimeScanResult, type RuntimeScanResult } from "./runtime-scan.schema";
 
 export type RuntimeScanArtifactMetaFile = {
@@ -34,6 +35,20 @@ export class RuntimeScanArtifactError extends Error {
 
 const stableJson = (value: unknown): string => `${JSON.stringify(value, null, 2)}\n`;
 const isNotFound = (error: unknown): boolean => error instanceof Error && "code" in error && error.code === "ENOENT";
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
+
+const migrateLegacyRuntimeScanArtifact = (value: unknown): unknown => {
+  if (!isRecord(value) || !isRecord(value.limits)) return value;
+  return {
+    ...value,
+    limits: {
+      ...value.limits,
+      maxInteractionsPerRoute: value.limits.maxInteractionsPerRoute ?? DEFAULT_RUNTIME_SCAN_LIMITS.maxInteractionsPerRoute,
+      maxStatesPerRoute: value.limits.maxStatesPerRoute ?? DEFAULT_RUNTIME_SCAN_LIMITS.maxStatesPerRoute,
+      interactionDiscoveryTimeoutMs: value.limits.interactionDiscoveryTimeoutMs ?? DEFAULT_RUNTIME_SCAN_LIMITS.interactionDiscoveryTimeoutMs,
+    },
+  };
+};
 
 const assertInside = (parent: string, candidate: string): string => {
   const root = path.resolve(parent);
@@ -67,7 +82,7 @@ const parseRuntimeScanResult = (raw: string, label: string): RuntimeScanResult =
     throw new RuntimeScanArtifactError("RUNTIME_SCAN_ARTIFACT_MALFORMED", `Runtime scan ${label} artifact is malformed JSON`);
   }
   try {
-    return validateRuntimeScanResult(parsed);
+    return validateRuntimeScanResult(migrateLegacyRuntimeScanArtifact(parsed));
   } catch (error) {
     throw new RuntimeScanArtifactError(
       "RUNTIME_SCAN_ARTIFACT_INVALID",

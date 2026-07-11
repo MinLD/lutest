@@ -4,7 +4,11 @@ import { useState } from "react";
 import { runtimeScreenshotUrl } from "@/lib/api-client";
 import {
   runtimeOverlayEdgeMarker,
+  runtimeOverlayCalloutPlacement,
+  runtimeOverlayPointMarker,
   runtimeOverlayRect,
+  runtimeIssueGuidance,
+  runtimeScreenshotProjection,
   runtimeScreenshotMissingLabel,
   type RuntimeImageSize,
   type RuntimeOverlayRect,
@@ -37,15 +41,15 @@ export function RuntimeScreenshotEvidence({ issue }: { issue: RuntimeIssueView }
   const [imageState, setImageState] = useState<"loading" | "loaded" | "error">("loading");
   const [naturalSize, setNaturalSize] = useState<RuntimeImageSize>();
   const screenshotUrl = runtimeScreenshotUrl(issue.screenshotRef);
-  const primaryRect = naturalSize ? runtimeOverlayRect(issue.boundingBox, issue.viewport, naturalSize) : undefined;
-  const relatedRect = naturalSize ? runtimeOverlayRect(issue.relatedBoundingBox, issue.viewport, naturalSize) : undefined;
-  const edgeMarker = naturalSize && !primaryRect ? runtimeOverlayEdgeMarker(issue.boundingBox, issue.viewport, naturalSize) : undefined;
-  const targetX = primaryRect ? primaryRect.leftPercent + primaryRect.widthPercent / 2 : edgeMarker?.xPercent;
-  const targetY = primaryRect ? primaryRect.topPercent + primaryRect.heightPercent / 2 : edgeMarker?.yPercent;
-  const targetTop = primaryRect?.topPercent ?? targetY;
-  const targetBottom = primaryRect ? primaryRect.topPercent + primaryRect.heightPercent : targetY;
-  const annotationBelow = (targetBottom ?? 0) < 70;
-  const annotationLeft = targetX ?? 50;
+  const projection = naturalSize ? runtimeScreenshotProjection(issue.boundingBox, issue.viewport, naturalSize) : undefined;
+  const focusTop = projection?.focusTop ?? 0;
+  const primaryRect = naturalSize ? runtimeOverlayRect(issue.boundingBox, issue.viewport, naturalSize, focusTop) : undefined;
+  const relatedRect = naturalSize ? runtimeOverlayRect(issue.relatedBoundingBox, issue.viewport, naturalSize, focusTop) : undefined;
+  const edgeMarker = naturalSize && !primaryRect ? runtimeOverlayEdgeMarker(issue.boundingBox, issue.viewport, naturalSize, focusTop) : undefined;
+  const pointMarker = naturalSize && !primaryRect && !edgeMarker ? runtimeOverlayPointMarker(issue.boundingBox, issue.viewport, naturalSize, focusTop) : undefined;
+  const guidance = runtimeIssueGuidance(issue.type, issue.boundingBox, issue.viewport, issue.overlapRatio);
+  const calloutTarget = primaryRect ?? pointMarker;
+  const calloutPlacement = calloutTarget ? runtimeOverlayCalloutPlacement(calloutTarget) : undefined;
 
   if (!issue.screenshotAvailable || !screenshotUrl) {
     const message = issue.screenshotAvailable
@@ -76,7 +80,12 @@ export function RuntimeScreenshotEvidence({ issue }: { issue: RuntimeIssueView }
           <img
             src={screenshotUrl}
             alt={`Runtime evidence for ${issue.type} on ${issue.route}`}
-            className={`absolute inset-x-0 top-0 block h-auto w-full ${imageState === "error" ? "invisible" : ""}`}
+            className={`absolute left-0 top-0 block h-auto max-w-none ${imageState === "error" ? "invisible" : ""}`}
+            style={{
+              width: `${projection?.imageWidthPercent ?? 100}%`,
+              transform: `translateY(-${projection?.imageTranslateYPercent ?? 0}%)`,
+              transformOrigin: "top left",
+            }}
             onLoad={(event) => {
               setNaturalSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight });
               setImageState("loaded");
@@ -85,12 +94,19 @@ export function RuntimeScreenshotEvidence({ issue }: { issue: RuntimeIssueView }
           />
           {imageState === "loaded" && primaryRect ? <OverlayBox rect={primaryRect} /> : null}
           {imageState === "loaded" && relatedRect ? <OverlayBox rect={relatedRect} related /> : null}
+          {imageState === "loaded" && pointMarker ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute z-20 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[#dc2626] shadow-[0_0_0_3px_#dc2626]"
+              style={{ left: `${pointMarker.xPercent}%`, top: `${pointMarker.yPercent}%` }}
+            />
+          ) : null}
           {imageState === "loaded" && edgeMarker ? (
-            <span className="pointer-events-none absolute z-20 rounded-md bg-[#dc2626] px-2 py-1 text-[10px] font-bold text-white shadow-lg" style={edgeMarkerPosition(edgeMarker.side, edgeMarker.positionPercent)}>
-              Outside {edgeMarker.side} · {Math.round(edgeMarker.distancePx)}px
+            <span className="pointer-events-none absolute z-30 max-w-44 rounded-md bg-[#dc2626] px-2.5 py-1.5 text-[10px] font-bold leading-4 text-white shadow-lg" style={edgeMarkerPosition(edgeMarker.side, edgeMarker.positionPercent)}>
+              Element is {Math.round(edgeMarker.distancePx)}px beyond the {edgeMarker.side} edge
             </span>
           ) : null}
-          {imageState === "loaded" && targetX !== undefined && targetY !== undefined ? (
+          {imageState === "loaded" && !edgeMarker && calloutPlacement ? (
             <svg aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 size-full" viewBox="0 0 100 100" preserveAspectRatio="none">
               <defs>
                 <marker id="runtime-evidence-arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
@@ -98,40 +114,63 @@ export function RuntimeScreenshotEvidence({ issue }: { issue: RuntimeIssueView }
                 </marker>
               </defs>
               <line
-                x1={targetX}
-                y1={annotationBelow ? Math.min(100, (targetBottom ?? targetY) + 8) : Math.max(0, (targetTop ?? targetY) - 8)}
-                x2={targetX}
-                y2={annotationBelow ? targetBottom ?? targetY : targetTop ?? targetY}
+                x1={calloutPlacement?.connectorStartX}
+                y1={calloutPlacement?.connectorStartY}
+                x2={calloutPlacement.targetX}
+                y2={calloutPlacement.targetY}
                 stroke="#dc2626"
-                strokeWidth="2.5"
+                strokeWidth="2"
                 vectorEffect="non-scaling-stroke"
                 markerEnd="url(#runtime-evidence-arrow)"
               />
             </svg>
           ) : null}
-          {imageState === "loaded" ? (
+          {imageState === "loaded" && !edgeMarker && calloutPlacement ? (
             <div
-              className="pointer-events-none absolute z-30 rounded-xl border border-[#fecaca] bg-white/95 p-3 text-left shadow-xl backdrop-blur"
+              className="pointer-events-none absolute z-30 w-56 max-w-[calc(100%_-_1rem)] rounded-xl border border-[#fecaca] bg-white/95 px-3 py-2.5 text-left shadow-lg backdrop-blur"
               style={{
-                left: `clamp(0.5rem, calc(${annotationLeft}% - 2rem), calc(100% - 18.5rem))`,
-                width: "min(18rem, calc(100% - 1rem))",
-                ...(annotationBelow
-                  ? { top: `calc(${targetBottom ?? targetY ?? 0}% + 2.75rem)` }
-                  : { bottom: `calc(${100 - (targetTop ?? targetY ?? 100)}% + 2.75rem)` }),
+                left: `clamp(0.5rem, calc(${calloutPlacement.targetX}% - 7rem), calc(100% - 14.5rem))`,
+                top: `${calloutPlacement.targetY}%`,
+                transform: `translateY(${calloutPlacement.vertical === "below" ? "1.25rem" : "calc(-100% - 1.25rem)"})`,
               }}
             >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="font-mono text-xs font-bold text-[#b42318]">{issue.type}</p>
-                <span className="rounded-full bg-[#fee2e2] px-2 py-0.5 text-[10px] font-bold uppercase text-[#b42318]">{issue.severity}</span>
+              <div className="flex items-start gap-2">
+                <span className="mt-1 size-2 shrink-0 rounded-full bg-[#dc2626]" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold leading-4 text-[#991b1b]">{guidance.title}</p>
+                  <p className="mt-0.5 text-[11px] font-semibold leading-4 text-[#b42318]">{guidance.callout}</p>
+                </div>
               </div>
-              <p className="mt-1 text-xs font-semibold text-[#344054]">{issue.message}</p>
-              <p className="mt-1 break-words font-mono text-[11px] text-[#667085]">{issue.selectorHint ?? issue.elementRef}</p>
-              <p className="mt-1 text-[11px] text-[#667085]">{issue.threshold}</p>
             </div>
           ) : null}
         </div>
         {imageState === "loading" ? <p role="status" className="absolute text-sm font-semibold text-[#667085]">Loading screenshot…</p> : null}
         {imageState === "error" ? <p role="alert" className="absolute text-sm font-semibold text-[#b42318]">Screenshot could not be loaded.</p> : null}
+      </div>
+      <div className="mt-3 rounded-xl border border-[#fecaca] bg-white p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-mono text-xs font-bold text-[#b42318]">{issue.type}</p>
+          <span className="rounded-full bg-[#fee2e2] px-2 py-0.5 text-[10px] font-bold uppercase text-[#b42318]">{issue.severity}</span>
+        </div>
+        <p className="mt-2 text-base font-bold text-[#111827]">{guidance.title}</p>
+        <p className="mt-1 text-[#344054]">{guidance.summary}</p>
+        <dl className="mt-3 grid gap-2 rounded-lg bg-[#fff7f7] p-3 text-xs sm:grid-cols-2">
+          <div>
+            <dt className="font-bold uppercase tracking-[0.08em] text-[#b42318]">Where</dt>
+            <dd className="mt-1 text-[#475467]">{guidance.location}</dd>
+          </div>
+          <div>
+            <dt className="font-bold uppercase tracking-[0.08em] text-[#b42318]">Why it matters</dt>
+            <dd className="mt-1 text-[#475467]">{guidance.impact}</dd>
+          </div>
+        </dl>
+        <p className="mt-3 break-words font-mono text-xs text-[#667085]">Element: {issue.selectorHint ?? issue.elementRef}</p>
+        <details className="mt-2 text-xs text-[#667085]">
+          <summary className="cursor-pointer font-semibold text-[#405168]">Technical evidence</summary>
+          <p className="mt-1">{issue.message}</p>
+          <p className="mt-1">{issue.threshold}</p>
+        </details>
+        {projection?.expandedWidth ? <p className="mt-2 text-xs font-semibold text-[#9a6700]">Legacy expanded-width screenshot is cropped to the audited viewport.</p> : null}
       </div>
       <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold text-[#667085]">
         <span className="inline-flex items-center gap-2"><span className="size-3 border-2 border-[#ef4444] bg-[#ef4444]/15" />Primary element</span>

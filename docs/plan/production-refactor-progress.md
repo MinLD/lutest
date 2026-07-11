@@ -4279,3 +4279,150 @@ Known limitations:
 
 Next recommended phase:
 - R8.5 — Route / Target Selection Runtime Scan UI
+
+## R8.5 — Route / Target Selection Runtime Scan UI
+
+Status: completed.
+
+Architecture decisions:
+- Route options are mapped through a UI helper from production graph page nodes, with safe latest-runtime detail fallback.
+- UI validation is UX defense; the existing shared validator and backend remain source-of-truth.
+- No new target catalog/backend endpoint was invented because configured flow/state targets are not publicly exposed.
+
+Request shapes:
+- All routes: `{ enabled: true, baseUrl, discoveryMode: "all-routes", viewportPreset: "default" }`.
+- Selected routes: `{ enabled: true, baseUrl, discoveryMode: "selected-routes", routes, viewportPreset: "default" }`.
+
+UI behavior:
+- No automatic runtime scan on open/refresh and no automatic target selection.
+- Runtime scan stays disabled for empty, unknown, malformed, traversal, absolute filesystem, backslash, or `.lutest` route selections.
+- Static scan remains available; post-scan graph/latest-report/runtime-detail reload remains intact.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- Required contracts/runtime artifact/latest-report/path-policy self-checks — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-scan-selection.self-check.ts` — passed.
+- Runtime detail, runtime report view-model, dashboard request, and scan integration regressions — passed.
+
+Security:
+- Local-only `baseUrl` and selected-root path-policy remain unchanged.
+- No raw filesystem or `.lutest` public URLs, auth/storage secrets, or raw stack are exposed.
+- No destructive clicks, form autofill, overlay, interaction discovery, or backend security relaxation.
+
+Known limitation:
+- Configured flow/state targets require a future public-safe catalog before UI selection can support them.
+
+Next recommended phase:
+- R8.6 — Screenshot Overlay Evidence UI
+
+## R8.6 — Screenshot Overlay Evidence UI
+
+Status: completed.
+
+Architecture decisions:
+- Screenshot URLs are generated only from strict opaque refs and call the existing R8.4 endpoint directly.
+- Overlay geometry is a pure UI transform; backend contracts and screenshot security remain unchanged.
+- Screenshot preview crops to the scanned viewport; natural width versus viewport width still resolves device pixel ratio before overlay positioning.
+- Percentage positioning keeps overlays aligned when the displayed image resizes.
+
+UI behavior:
+- The selected issue shows screenshot preview, route, viewport, selector/element, and evidence reason.
+- Primary evidence uses a red overlay; related evidence uses an amber overlay when present.
+- Loading, network/image error, invalid ref, and all public missing screenshot reasons have explicit fallback states.
+- Textual evidence remains visible when screenshot or overlay geometry is unavailable.
+- An all-issues dropdown selects and displays any issue immediately while synchronizing target/route/viewport/severity filters.
+- The image carries a nearby detail card and short SVG arrow that do not cover the highlighted target; fully off-image legacy evidence gets a red edge marker.
+- React Flow/XYFlow transformed viewport infrastructure is excluded from layout issue detection because negative pan/zoom coordinates are expected.
+- The UI view-model applies the same suppression to stored artifacts and recalculates visible target/viewport/total issue counts.
+- Annotation spacing and arrow weight were increased after visual verification to keep the target association clear.
+
+Security:
+- Only `shot_<32-hex>` refs produce screenshot URLs.
+- Absolute paths, traversal refs, malformed refs, and `.lutest` artifact paths never become image URLs.
+- Legacy raw screenshot paths are removed from the runtime report view model.
+- Backend selected-root/path containment validation and local-only runtime base URL policy are unchanged.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- Required contracts/runtime artifact/latest-report/path-policy self-checks — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- Runtime report view-model, R8.5 route selection, dashboard request, R8.4 detail, and scan integration regressions — passed.
+
+What was not changed:
+- No interaction discovery, configured flow/state catalog, auth UI, OKLCH/theming work, or browser runtime overlay.
+- No backend contract, path-policy, screenshot endpoint, or local-only base URL relaxation.
+
+Next recommended phase:
+- R8.7 — Safe Interaction Discovery
+
+## R8.7 — Safe Interaction Discovery
+
+Status: completed.
+
+Architecture decisions:
+- Discovery is strict opt-in through `runtimeScan.interactionDiscovery.enabled`.
+- Only strong semantic, visible, enabled, non-navigation controls are eligible.
+- Each candidate runs from a reloaded route baseline; configured state/flow targets are not crawled.
+- State dedup uses SHA-256 over normalized visible text/geometry summaries; issue dedup uses type/selector/viewport/box signatures.
+- Public scan output omits internal screenshot paths/raw DOM geometry and redacts sensitive diagnostics.
+
+Limits/defaults:
+- `maxInteractionsPerRoute: 8`.
+- `maxStatesPerRoute: 6`, including baseline.
+- `interactionDiscoveryTimeoutMs: 10_000`.
+- Existing `scanTimeoutMs` remains the global deadline.
+
+Candidate safety:
+- Supported: tab, dropdown, modal trigger, accordion, drawer, menu, toggle, filter/sort trigger.
+- Typed skips: `disabled`, `requires-input`, `destructive`, `unsafe-candidate`, `not-visible`, `route-change-risk`, `limit-reached`, `duplicate-state`, `unsupported-control`.
+- Never clicks submit/reset, save/delete/logout/confirm/payment, anchor/navigation-risk, hidden/disabled, required-input-gated, or unknown risky controls.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed.
+- Required contracts/runtime artifact/latest-report/path-policy self-checks — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-interaction-discovery.self-check.ts` — passed.
+- Playwright scan, runtime schema/layout detector/public adapter/runtime detail regressions — passed.
+
+What was not changed:
+- No R8.8 readability engine or UI.
+- No form filling, submit, auth/login automation, route crawler, payment, destructive action, or validation bypass.
+- No path-policy, local-only base URL, screenshot endpoint, or R8.5/R8.6 UI relaxation.
+
+Next recommended phase:
+- R8.8 — Visual Readability / OKLCH Contrast Engine
+
+### R8.7 UI bridge addendum
+
+- Scans now exposes an unchecked-by-default `Discover safe UI states` control and sends the existing strict `interactionDiscovery.enabled` contract only when selected.
+- Reports keeps route targets unchanged, adds a separate State filter, includes state labels in issue selection, and shows typed skipped-control reasons compactly.
+- UI selection/view-model/overlay self-checks and all required builds passed.
+
+### Runtime evidence correctness addendum
+
+- Replaced Playwright `fullPage` capture with Chromium CDP capture constrained to audited viewport width while preserving full vertical document evidence.
+- Added DOM parent identity for generic overflow dedup; no selector/framework hardcoding was introduced.
+- Fully outside elements take precedence over horizontal overflow, and a leaf element replaces an ancestor when both share the same overflowing edge.
+- Screenshot viewer focuses a viewport-sized crop around the selected issue, crops legacy expanded-width artifacts instead of compressing them, and renders zero-size/offscreen markers.
+- Detailed issue text moved below the screenshot; only a compact label and leader arrow remain over the image.
+- Runtime audit fixture mobile form now wraps responsively, removing an unintended baseline overflow while preserving required-input and submit skip controls.
+- Production fixture asserts screenshot width equals viewport width, screenshot height retains vertical evidence, baseline interaction geometry is clean, and outside evidence is not double-reported.
+- Full workspace typecheck, contracts/worker/UI builds, required runtime/report/path-policy checks, Playwright scan, production fixture, detector, overlay, view-model, and interaction discovery checks passed.
+
+### R8.7 coverage and diagnostics hardening
+
+- Replaced the fixed default route interaction budget with a bounded value derived from configured state capacity and viewport count.
+- Removed the redundant independent screenshot cap; max targets, max states, interaction timeout, route timeout, and total scan timeout remain enforced.
+- Added strict public-safe typed diagnostics to runtime artifact detail and removed duplicate browser resource console messages already represented as network/HTTP failures.
+- Runtime/target status becomes warning when browser diagnostics exist without scanner execution failure.
+- Reports distinguishes browser diagnostics from scanner failures and shows actual discovered snapshot and viewport coverage counts.
+- Production fixture requires safe states at all three default viewport widths, exact intended issue coverage, and screenshot evidence on every captured state.
+- Live production fixture verification returned 27 issues, 30 screenshots, 15 typed diagnostics, no missing screenshot, and no public path/storage/auth/stack leak.
