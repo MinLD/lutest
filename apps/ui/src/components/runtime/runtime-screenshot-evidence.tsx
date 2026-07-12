@@ -165,6 +165,38 @@ export function RuntimeScreenshotEvidence({ issue }: { issue: RuntimeIssueView }
           </div>
         </dl>
         <p className="mt-3 break-words font-mono text-xs text-[#667085]">Element: {issue.selectorHint ?? issue.elementRef}</p>
+        {issue.foregroundColor && issue.backgroundColor && issue.contrastRatio !== undefined && issue.requiredContrastRatio !== undefined ? (
+          <div className="mt-3 rounded-lg border border-[#e5edf7] bg-[#f8fbff] p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="size-7 rounded-md border border-[#cbd5e1]" style={{ backgroundColor: issue.foregroundColor }} />
+                <span><strong className="block text-[#344054]">Text</strong><code className="text-[#667085]">{issue.foregroundColor}</code></span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="size-7 rounded-md border border-[#cbd5e1]" style={{ backgroundColor: issue.backgroundColor }} />
+                <span><strong className="block text-[#344054]">Background</strong><code className="text-[#667085]">{issue.backgroundColor}</code></span>
+              </div>
+              <div className="ml-auto rounded-lg bg-white px-3 py-2 text-right">
+                <strong className="block text-sm tabular-nums text-[#b42318]">{issue.contrastRatio.toFixed(2)}:1</strong>
+                <span className="text-[#667085]">required {issue.requiredContrastRatio.toFixed(1)}:1</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[#475467]">Contrast ratio is below the WCAG AA threshold.</p>
+            {issue.foregroundOklch && issue.backgroundOklch && issue.oklchDelta ? (
+              <div className="mt-2 grid gap-2 rounded-lg bg-white p-3 font-mono text-[11px] text-[#475467] sm:grid-cols-3">
+                <span>Text OKLCH {issue.foregroundOklch.l.toFixed(3)} / {issue.foregroundOklch.c.toFixed(3)} / {issue.foregroundOklch.h.toFixed(1)}°</span>
+                <span>Background OKLCH {issue.backgroundOklch.l.toFixed(3)} / {issue.backgroundOklch.c.toFixed(3)} / {issue.backgroundOklch.h.toFixed(1)}°</span>
+                <span>Delta L/C/H {issue.oklchDelta.lightness.toFixed(3)} / {issue.oklchDelta.chroma.toFixed(3)} / {issue.oklchDelta.hue.toFixed(1)}°</span>
+              </div>
+            ) : null}
+            {issue.suggestedForegroundColor ? (
+              <div className="mt-2 flex flex-wrap items-center gap-3 rounded-lg border border-[#cfe3d8] bg-[#f4fbf6] p-3 text-[#24613a]">
+                <span className="size-7 rounded-md border border-[#a9cbb7]" style={{ backgroundColor: issue.suggestedForegroundColor }} />
+                <span><strong className="block">Suggested text color <code>{issue.suggestedForegroundColor}</code></strong>Suggested color preserves approximate perceptual color while improving contrast.</span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <details className="mt-2 text-xs text-[#667085]">
           <summary className="cursor-pointer font-semibold text-[#405168]">Technical evidence</summary>
           <p className="mt-1">{issue.message}</p>

@@ -45,6 +45,7 @@ const runtimeScan: RuntimeScanResult = {
       stateDedupKey: "state_filter",
       interactionSource: { candidateId: "candidate_1", kind: "filter-sort", label: "Filter", action: "click" },
       skippedInteractions: [{ candidateId: "candidate_2", kind: "toggle", label: "Delete", reason: "destructive" }],
+      readabilityCoverage: { candidateTextCount: 5, checkedTextCount: 4, skippedTextCount: 1, skippedByReason: { "text-shadow": 1 }, incomplete: true },
       screenshotPath: ".lutest/runtime/safe.png",
       domGeometry: undefined,
       layoutIssues: [issue],
@@ -80,6 +81,8 @@ assert.equal(model.screenshotArtifacts[0]?.viewportLabel, "390x844", "screenshot
 assert.equal(model.screenshotArtifacts[0]?.safeRef, undefined, "legacy artifact path is not exposed");
 assert.equal(model.states[0]?.label, "after open Filter", "runtime state mapped separately from target");
 assert.equal(model.skippedInteractions[0]?.reason, "destructive", "typed skipped reason mapped");
+assert.equal(model.readabilityCheckedCount, 4, "public runtime readability coverage mapped");
+assert.equal(model.readabilitySkippedCount, 1, "public runtime readability skips mapped");
 assert.deepEqual(
   groupRuntimeSkippedInteractions([
     { candidateId: "candidate-delete", label: "Delete", kind: "toggle", reason: "destructive", targetId: "target-home", route: "/home", viewportKey: "390x844" },
@@ -123,6 +126,7 @@ const detail: RuntimeArtifactDetailResponse = {
       stateDedupKey: "state_filter",
       interactionSource: { candidateId: "candidate_1", kind: "filter-sort", label: "Filter", action: "click" },
       skippedInteractions: [{ candidateId: "candidate_2", kind: "toggle", label: "Delete", reason: "destructive" }],
+      readabilityCoverage: { candidateTextCount: 5, checkedTextCount: 4, skippedTextCount: 1, skippedByReason: { "text-shadow": 1 }, incomplete: true },
       screenshot: { available: true, ref: opaqueRef },
       diagnostics: [
         { kind: "console-warning", message: "Fixture warning" },
@@ -172,9 +176,53 @@ assert.equal(detailModel.issues[0]?.stateLabel, "after open Filter", "detail iss
 assert.equal(detailModel.states[0]?.interactionLabel, "Filter", "interaction source mapped safely");
 assert.equal(detailModel.skippedInteractions[0]?.label, "Delete", "skipped control label mapped safely");
 assert.equal(detailModel.diagnosticCount, 2, "browser diagnostic count survives artifact refresh");
+assert.equal(detailModel.readabilityCheckedCount, 4, "readability checked count survives artifact refresh");
+assert.equal(detailModel.readabilitySkippedCount, 1, "readability skipped count survives artifact refresh");
+assert.equal(detailModel.readabilityIncompleteViewportCount, 1, "incomplete readability coverage remains visible");
 assert.equal(detailModel.diagnostics[0]?.kind, "console-warning", "typed browser diagnostic mapped");
 assert.equal(detailModel.issues[0]?.threshold, "WCAG 2.2 AA: at least 24×24 CSS px, or sufficient spacing from nearby targets.", "visible small target uses current WCAG explanation");
 assert(!JSON.stringify(detailModel).includes(".lutest"), "runtime detail view model excludes raw lutest paths");
+
+const contrastDetail: RuntimeArtifactDetailResponse = {
+  ...detail,
+  summary: { ...detail.summary, issueCount: 1 },
+  targetResults: [{
+    ...detail.targetResults[0],
+    viewportResults: [{
+      ...detail.targetResults[0].viewportResults[0],
+      issues: [{
+        id: "contrast-1",
+        type: "low-text-contrast",
+        severity: "warning",
+        message: "Text and background colors do not meet the WCAG 2.2 AA contrast requirement.",
+        evidence: {
+          scanTargetId: "target-home",
+          route: "/home",
+          viewport: { width: 390, height: 844 },
+          selector: "p.low-contrast",
+          elementRef: "el-contrast",
+          boundingBox: { x: 20, y: 20, width: 180, height: 24, top: 20, right: 200, bottom: 44, left: 20 },
+          screenshot: { available: true, ref: opaqueRef },
+          reason: "4.5:1 minimum contrast for normal text",
+          foregroundColor: "#999999",
+          backgroundColor: "#ffffff",
+          contrastRatio: 2.85,
+          requiredContrastRatio: 4.5,
+          foregroundOklch: { l: 0.68, c: 0, h: 0 },
+          backgroundOklch: { l: 1, c: 0, h: 0 },
+          oklchDelta: { lightness: 0.32, chroma: 0, hue: 0 },
+          suggestedForegroundColor: "#767676",
+          suggestionReason: "Adjust foreground OKLCH lightness while preserving approximate hue/chroma to meet WCAG AA 4.5:1.",
+          dedupKey: "contrast-1",
+        },
+      }],
+    }],
+  }],
+};
+const contrastModel = runtimeReportViewModel(report, contrastDetail);
+assert.equal(contrastModel.issues[0]?.foregroundOklch?.l, 0.68, "UI view-model preserves foreground OKLCH evidence");
+assert.equal(contrastModel.issues[0]?.oklchDelta?.lightness, 0.32, "UI view-model preserves OKLCH delta");
+assert.equal(contrastModel.issues[0]?.suggestedForegroundColor, "#767676", "UI view-model preserves suggested foreground");
 
 assert.equal(detailModel.screenshotArtifacts[0]?.stateLabel, "after open Filter", "state screenshot remains selectable without relying on issue geometry");
 

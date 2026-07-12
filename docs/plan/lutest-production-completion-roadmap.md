@@ -1306,7 +1306,7 @@ PASS nếu:
 
 ---
 
-## R8.8 — Visual Readability / OKLCH Contrast Engine
+## R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
 
 ### Mục tiêu
 
@@ -1316,13 +1316,13 @@ Cần có:
 
 ```txt
 extract computed foreground/background color từ DOM geometry hoặc runtime style snapshot
-convert/normalize màu sang OKLCH hoặc contrast model tương đương
-check text readability threshold
+normalize màu sang sRGB/OKLCH evidence
+check text readability bằng WCAG contrast threshold
 emit RuntimeLayoutIssue hoặc RuntimeReadabilityIssue rõ ràng
 UI hiển thị color swatch/evidence
 ```
 
-Có thể dùng OKLCH cho perceptual color reasoning, nhưng vẫn cần threshold rõ và self-check deterministic.
+WCAG contrast ratio là nguồn pass/fail. OKLCH chỉ dùng cho perceptual evidence và suggested color fix deterministic.
 
 ### KPI
 
@@ -1331,6 +1331,8 @@ PASS nếu:
 - Detect được text khó đọc với foreground/background tương phản thấp.
 - Không false-positive quá nhiều với hidden/transparent text.
 - Evidence có selector, colors, threshold, viewport.
+- Evidence có OKLCH foreground/background/delta khi màu hợp lệ.
+- Suggested foreground đạt lại WCAG threshold hoặc được bỏ qua an toàn.
 - UI hiển thị nguyên nhân: màu chữ/nền quá gần nhau.
 - Self-check cover light/dark/transparent/inherited color cases.
 ```
@@ -1744,7 +1746,7 @@ R8.4   — Runtime Artifact Detail API & Evidence Model Hardening
 R8.5   — Route / Target Selection Runtime Scan UI
 R8.6   — Screenshot Overlay Evidence UI
 R8.7   — Safe Interaction Discovery
-R8.8   — Visual Readability / OKLCH Contrast Engine
+R8.8   — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
 R8.9   — Runtime Fix Guidance UI
 R8.10  — Auth / Flow Controls UI
 

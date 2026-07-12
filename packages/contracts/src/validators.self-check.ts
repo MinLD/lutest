@@ -10,6 +10,7 @@ import {
   validateRuntimeArtifactDetailResponse,
   validateRuntimeArtifactScreenshotQuery,
   validateRuntimeArtifactMeta,
+  validateDomGeometry,
   validateRuntimeLayoutIssue,
   validateRuntimeScanRequest,
   validateRuntimeScanResult,
@@ -99,6 +100,27 @@ const layoutIssue = {
   evidence: { selectorHint: "button", boundingBox: rect, viewport, threshold: "min 44px" },
 } as const;
 assert(validateRuntimeLayoutIssue(layoutIssue).ok, "layout issue valid");
+const contrastIssue = {
+  ...layoutIssue,
+  id: "contrast-1",
+  type: "low-text-contrast",
+  code: "low-text-contrast",
+  message: "Low text contrast",
+  evidence: { ...layoutIssue.evidence, foregroundColor: "#d4d9e0", backgroundColor: "#f8fafc", contrastRatio: 1.36, requiredContrastRatio: 4.5, foregroundOklch: { l: 0.87, c: 0.01, h: 250 }, backgroundOklch: { l: 0.98, c: 0.005, h: 250 }, oklchDelta: { lightness: 0.11, chroma: 0.005, hue: 0 }, suggestedForegroundColor: "#475569", suggestionReason: "Adjust foreground OKLCH lightness while preserving approximate hue/chroma to meet WCAG AA 4.5:1.", threshold: "4.5:1 minimum contrast for normal text" },
+} as const;
+assert(validateRuntimeLayoutIssue(contrastIssue).ok, "low contrast issue with complete color evidence valid");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, foregroundColor: "/home/user/color" } }).ok, "contrast issue rejects non-color evidence");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, contrastRatio: undefined } }).ok, "contrast issue rejects incomplete evidence");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, contrastRatio: 0.5 } }).ok, "contrast issue rejects ratio below one");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, contrastRatio: 22 } }).ok, "contrast issue rejects ratio above twenty-one");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, requiredContrastRatio: 4 } }).ok, "contrast issue rejects unknown threshold");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, contrastRatio: 4.5 } }).ok, "contrast issue must actually fail its threshold");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, foregroundOklch: { l: 2, c: 0.1, h: 20 } } }).ok, "contrast issue rejects invalid OKLCH lightness");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, backgroundOklch: { l: 0.9, c: -0.1, h: 20 } } }).ok, "contrast issue rejects negative OKLCH chroma");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, oklchDelta: { lightness: 0.1, chroma: 0.1, hue: 361 } } }).ok, "contrast issue rejects invalid OKLCH delta");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, suggestedForegroundColor: "#ffffff" } }).ok, "contrast issue rejects suggested foreground that still fails WCAG");
+assert(!validateRuntimeLayoutIssue({ ...contrastIssue, evidence: { ...contrastIssue.evidence, foregroundOklch: { ...contrastIssue.evidence.foregroundOklch, extra: true } } }).ok, "contrast issue rejects unknown OKLCH fields");
+assert(!validateRuntimeLayoutIssue({ ...layoutIssue, evidence: { ...layoutIssue.evidence, foregroundColor: "#000000", backgroundColor: "#ffffff", contrastRatio: 2, requiredContrastRatio: 4.5 } }).ok, "non-contrast issue rejects contrast evidence");
 assert(!validateRuntimeLayoutIssue({ ...layoutIssue, type: "contrast" }).ok, "layout issue invalid type rejected");
 assert(!validateRuntimeLayoutIssue({ ...layoutIssue, code: "horizontal-overflow" }).ok, "layout issue code mismatch rejected");
 
@@ -181,6 +203,39 @@ const runtimeDetail = {
   }],
 } as const;
 assert(validateRuntimeArtifactDetailResponse(runtimeDetail).ok, "runtime artifact detail valid");
+const contrastRuntimeDetail = {
+  ...runtimeDetail,
+  targetResults: [{
+    ...runtimeDetail.targetResults[0],
+    viewportResults: [{
+      ...runtimeDetail.targetResults[0].viewportResults[0],
+      issues: [{
+        ...runtimeDetail.targetResults[0].viewportResults[0].issues[0],
+        id: "contrast-1",
+        type: "low-text-contrast",
+        message: "Low text contrast",
+        evidence: {
+          ...runtimeDetail.targetResults[0].viewportResults[0].issues[0].evidence,
+          foregroundColor: "#d4d9e0",
+          backgroundColor: "#f8fafc",
+          contrastRatio: 1.36,
+          requiredContrastRatio: 4.5,
+          foregroundOklch: { l: 0.87, c: 0.01, h: 250 },
+          backgroundOklch: { l: 0.98, c: 0.005, h: 250 },
+          oklchDelta: { lightness: 0.11, chroma: 0.005, hue: 0 },
+          suggestedForegroundColor: "#475569",
+          suggestionReason: "Adjust foreground OKLCH lightness while preserving approximate hue/chroma to meet WCAG AA 4.5:1.",
+        },
+      }],
+    }],
+  }],
+} as const;
+assert(validateRuntimeArtifactDetailResponse(contrastRuntimeDetail).ok, "runtime artifact detail accepts public-safe contrast evidence");
+assert(!validateRuntimeArtifactDetailResponse({ ...contrastRuntimeDetail, targetResults: [{ ...contrastRuntimeDetail.targetResults[0], viewportResults: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0], issues: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0], evidence: { ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0].evidence, contrastRatio: 21 } }] }] }] }).ok, "runtime artifact detail rejects non-failing contrast evidence");
+assert(!validateRuntimeArtifactDetailResponse({ ...contrastRuntimeDetail, targetResults: [{ ...contrastRuntimeDetail.targetResults[0], viewportResults: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0], issues: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0], evidence: { ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0].evidence, suggestedForegroundColor: "#ffffff" } }] }] }] }).ok, "runtime artifact detail rejects failing suggested foreground");
+assert(!validateRuntimeArtifactDetailResponse({ ...contrastRuntimeDetail, targetResults: [{ ...contrastRuntimeDetail.targetResults[0], viewportResults: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0], issues: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0], evidence: { ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0].evidence, foregroundOklch: { l: -1, c: 0, h: 0 } } }] }] }] }).ok, "runtime artifact detail rejects invalid OKLCH evidence");
+assert(!validateRuntimeArtifactDetailResponse({ ...contrastRuntimeDetail, targetResults: [{ ...contrastRuntimeDetail.targetResults[0], viewportResults: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0], issues: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0], evidence: { ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0].evidence, foregroundColor: undefined, backgroundColor: undefined, contrastRatio: undefined, requiredContrastRatio: undefined } }] }] }] }).ok, "runtime artifact detail requires low contrast evidence");
+assert(!validateRuntimeArtifactDetailResponse({ ...contrastRuntimeDetail, targetResults: [{ ...contrastRuntimeDetail.targetResults[0], viewportResults: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0], issues: [{ ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0], evidence: { ...contrastRuntimeDetail.targetResults[0].viewportResults[0].issues[0].evidence, secretColorPath: "/tmp/color" } }] }] }] }).ok, "runtime artifact detail rejects unknown contrast evidence fields");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], diagnostics: [{ kind: "console-warning", message: "token=secret" }] }] }] }).ok, "runtime artifact detail rejects secret diagnostic text");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], diagnostics: [{ kind: "unknown", message: "invalid" }] }] }] }).ok, "runtime artifact detail rejects invalid diagnostic kind");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], stateId: "/home/user/state" }] }] }).ok, "runtime artifact detail rejects path-like state id");
@@ -188,6 +243,22 @@ assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults:
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, projectRoot: "/home/user/project" }).ok, "runtime artifact detail rejects internal root");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: "/home/user/project/screenshot.png" } }] }] }).ok, "runtime artifact detail rejects absolute screenshot ref");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: "../screenshot.png" } }] }] }).ok, "runtime artifact detail rejects traversal screenshot ref");
+
+const safeGeometry = {
+  viewport,
+  capturedAt: "2026-07-11T00:00:00.000Z",
+  elementCount: 1,
+  truncated: false,
+  readabilityCoverage: { candidateTextCount: 1, checkedTextCount: 1, skippedTextCount: 0, skippedByReason: {}, incomplete: false },
+  elements: [{ internalId: "el-1", tagName: "P", ariaLabel: "Account label", textSnippet: "Readable evidence", rect, visibility: { display: "block", visibility: "visible", opacity: 1 }, textStyle: { foregroundColor: "#111827", backgroundColor: "#ffffff", fontSizePx: 16, fontWeight: 400, largeText: false }, clickable: false, order: 0 }],
+} as const;
+assert(validateDomGeometry(safeGeometry).ok, "strict readability geometry validates");
+assert(!validateDomGeometry({ ...safeGeometry, extra: true }).ok, "dom geometry rejects unknown fields");
+assert(!validateDomGeometry({ ...safeGeometry, readabilityCoverage: { ...safeGeometry.readabilityCoverage, skippedTextCount: 1 } }).ok, "readability coverage rejects mismatched counts");
+assert(!validateDomGeometry({ ...safeGeometry, elements: [{ ...safeGeometry.elements[0], textSnippet: "Contact user@example.com" }] }).ok, "dom geometry rejects unredacted email evidence");
+assert(!validateDomGeometry({ ...safeGeometry, elements: [{ ...safeGeometry.elements[0], ariaLabel: "token=abcdefghijklmnopqrstuvwxyz1234567890" }] }).ok, "dom geometry rejects unredacted token evidence");
+assert(validateDomGeometry({ ...safeGeometry, elements: [{ ...safeGeometry.elements[0], textSnippet: "CatalogLayoutInteractionsDiagnosticsReadabilityStaticRules" }] }).ok, "dom geometry accepts long alphabetic navigation text");
+assert(!validateDomGeometry({ ...safeGeometry, elements: [{ ...safeGeometry.elements[0], textSnippet: "abcdefghijklmnopqrstuvwxyz1234567890" }] }).ok, "dom geometry rejects opaque token-like text containing digits");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], screenshot: { available: true, ref: ".lutest/runtime/screenshot.png" } }] }] }).ok, "runtime artifact detail rejects raw lutest screenshot ref");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], issues: [{ ...runtimeDetail.targetResults[0].viewportResults[0].issues[0], message: "Error\n at /home/user/app.ts:1" }] }] }] }).ok, "runtime artifact detail rejects raw stack/path");
 assert(!validateRuntimeArtifactDetailResponse({ ...runtimeDetail, targetResults: [{ ...runtimeDetail.targetResults[0], viewportResults: [{ ...runtimeDetail.targetResults[0].viewportResults[0], issues: [{ ...runtimeDetail.targetResults[0].viewportResults[0].issues[0], storageState: {} }] }] }] }).ok, "runtime artifact detail rejects secret fields");

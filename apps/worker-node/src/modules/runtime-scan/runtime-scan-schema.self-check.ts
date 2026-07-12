@@ -75,6 +75,7 @@ const main = () => {
     capturedAt: "2026-01-01T00:00:00.000Z",
     elementCount: 1,
     truncated: false,
+    readabilityCoverage: { candidateTextCount: 1, checkedTextCount: 1, skippedTextCount: 0, skippedByReason: {}, incomplete: false },
     elements: [{
       internalId: "el:1",
       tagName: "MAIN",
@@ -82,6 +83,7 @@ const main = () => {
       textSnippet: "Hello",
       rect: { x: 0, y: 0, width: 100, height: 40, top: 0, right: 100, bottom: 40, left: 0 },
       visibility: { display: "block", visibility: "visible", opacity: 1 },
+      textStyle: { foregroundColor: "#777777", backgroundColor: "#ffffff", fontSizePx: 16, fontWeight: 400, largeText: false },
       clickable: false,
       order: 0,
     }],
@@ -105,6 +107,21 @@ const main = () => {
     },
   }];
   assert.equal(validateRuntimeScanResult(artifact).routes[0].viewportResults[0]?.layoutIssues[0]?.code, "small-click-target");
+  const contrastIssue = {
+    ...artifact.routes[0].viewportResults[0].layoutIssues[0],
+    id: "issue:contrast",
+    type: "low-text-contrast" as const,
+    code: "low-text-contrast" as const,
+    evidence: { ...artifact.routes[0].viewportResults[0].layoutIssues[0].evidence, foregroundColor: "#777777", backgroundColor: "#ffffff", contrastRatio: 4.48, requiredContrastRatio: 4.5, foregroundOklch: { l: 0.57, c: 0, h: 0 }, backgroundOklch: { l: 1, c: 0, h: 0 }, oklchDelta: { lightness: 0.43, chroma: 0, hue: 0 }, suggestedForegroundColor: "#767676", suggestionReason: "Adjust foreground OKLCH lightness while preserving approximate hue/chroma to meet WCAG AA 4.5:1." },
+  };
+  artifact.routes[0].viewportResults[0].layoutIssues = [contrastIssue];
+  assert.equal(validateRuntimeScanResult(artifact).routes[0].viewportResults[0]?.layoutIssues[0]?.type, "low-text-contrast");
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, routes: [{ ...artifact.routes[0], viewportResults: [{ ...artifact.routes[0].viewportResults[0], layoutIssues: [{ ...contrastIssue, evidence: { ...contrastIssue.evidence, contrastRatio: 22 } }] }] }] }), /contrast evidence invalid/);
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, routes: [{ ...artifact.routes[0], viewportResults: [{ ...artifact.routes[0].viewportResults[0], layoutIssues: [{ ...contrastIssue, evidence: { ...contrastIssue.evidence, foregroundOklch: { l: 2, c: 0, h: 0 } } }] }] }] }), /OKLCH color invalid/);
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, routes: [{ ...artifact.routes[0], viewportResults: [{ ...artifact.routes[0].viewportResults[0], layoutIssues: [{ ...contrastIssue, evidence: { ...contrastIssue.evidence, suggestedForegroundColor: "#ffffff" } }] }] }] }), /suggested foreground contrast invalid/);
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, routes: [{ ...artifact.routes[0], viewportResults: [{ ...artifact.routes[0].viewportResults[0], skippedInteractions: [{ candidateId: "bad", reason: "unknown" }] }] }] }), /skipped interaction invalid/);
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, routes: [{ ...artifact.routes[0], viewportResults: [{ ...artifact.routes[0].viewportResults[0], unexpected: true }] }] }), /unknown fields/);
+  assert.throws(() => validateRuntimeScanResult({ ...artifact, routes: [{ ...artifact.routes[0], viewportResults: [{ ...artifact.routes[0].viewportResults[0], domGeometry: { ...artifact.routes[0].viewportResults[0].domGeometry, elements: [{ ...artifact.routes[0].viewportResults[0].domGeometry?.elements[0], textSnippet: "Contact user@example.com" }] } }] }] }), /must be redacted/);
   assert.throws(() => validateRuntimeScanResult({
     ...artifact,
     routes: [{

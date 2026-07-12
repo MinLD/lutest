@@ -13,9 +13,10 @@ import {
   runtimeInteractionStateDedupKey,
 } from "./runtime-interaction-discovery";
 import { detectRuntimeLayoutIssues } from "./runtime-layout-issue-detector";
+import { detectRuntimeReadabilityIssues } from "./runtime-readability-issue-detector";
+import { RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS, RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS, resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { manualTargetRoute, manualTargetSteps, redactRuntimeTarget, runManualFlowSteps, type RuntimeManualStepResult } from "./runtime-manual-flow";
 import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
-import { resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
 import { captureRuntimeScreenshot } from "./runtime-screenshot-capture";
 import { resolveRuntimeTargetDiscovery } from "./runtime-scan-targets";
@@ -248,7 +249,7 @@ export const runPlaywrightRuntimeScan = async (
             const response = await page.goto(url, { waitUntil: "load", timeout: routeTimeoutMs });
             viewportStatus = response?.status();
             status ??= viewportStatus;
-            await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, 5_000) }).catch(() => undefined);
+            await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS) }).catch(() => undefined);
             if (manualSteps.length > 0) {
               const stepResults = await runManualFlowSteps({
                 page,
@@ -295,14 +296,18 @@ export const runPlaywrightRuntimeScan = async (
                 stateScreenshotError = errorMessage(cause);
                 screenshotError ??= stateScreenshotError;
               }
-              const detectedIssues = detectRuntimeLayoutIssues({
+              const issueInput = {
                 scanTargetId: target.id,
                 stateId: stateDedupKey,
                 route,
                 viewport,
                 domGeometry: stateGeometry,
                 screenshotPath: stateScreenshotPath,
-              }).filter((issue) => {
+              };
+              const detectedIssues = [
+                ...detectRuntimeLayoutIssues(issueInput),
+                ...detectRuntimeReadabilityIssues(issueInput),
+              ].filter((issue) => {
                 const key = runtimeInteractionIssueDedupKey({
                   type: issue.type,
                   selector: issue.evidence.selectorHint,
@@ -353,13 +358,13 @@ export const runPlaywrightRuntimeScan = async (
                 }
                 try {
                   await activePage.goto(url, { waitUntil: "load", timeout: Math.min(limits.routeTimeoutMs, Math.max(1, discoveryDeadline - Date.now())) });
-                  await activePage.waitForLoadState("networkidle", { timeout: Math.min(2_000, Math.max(1, discoveryDeadline - Date.now())) }).catch(() => undefined);
+                  await activePage.waitForLoadState("networkidle", { timeout: Math.min(RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS, Math.max(1, discoveryDeadline - Date.now())) }).catch(() => undefined);
                   routeInteractionCount += 1;
                   const clickResult = await clickRuntimeInteractionCandidate({
                     page: activePage,
                     candidate,
                     expectedUrl: url,
-                    timeoutMs: Math.min(2_000, Math.max(1, discoveryDeadline - Date.now())),
+                    timeoutMs: Math.min(RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS, Math.max(1, discoveryDeadline - Date.now())),
                   });
                   if (clickResult !== "clicked") {
                     skipped.push({ candidateId: candidate.candidateId, kind: candidate.kind, label: candidate.label, reason: clickResult });

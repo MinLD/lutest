@@ -277,6 +277,11 @@ export type RuntimeInteractionSkipReason = "disabled" | "requires-input" | "dest
 export interface RuntimeInteractionSource { candidateId: string; kind: RuntimeInteractionControlKind; label: string; action: "click" }
 export interface RuntimeSkippedInteraction { candidateId: string; kind?: RuntimeInteractionControlKind; label?: string; reason: RuntimeInteractionSkipReason }
 export interface RuntimeRect { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number }
+export interface RuntimeTextStyleEvidence { foregroundColor: string; backgroundColor: string; fontSizePx: number; fontWeight: number; largeText: boolean }
+export interface RuntimeOklchColorEvidence { l: number; c: number; h: number }
+export interface RuntimeOklchDeltaEvidence { lightness: number; chroma: number; hue: number }
+export type RuntimeReadabilitySkipReason = "aria-hidden" | "text-shadow" | "background-image" | "transparent-ancestor" | "transparent-foreground" | "invalid-color" | "invalid-font-size" | "unsupported-effect";
+export interface RuntimeReadabilityCoverage { candidateTextCount: number; checkedTextCount: number; skippedTextCount: number; skippedByReason: Partial<Record<RuntimeReadabilitySkipReason, number>>; incomplete: boolean }
 export interface DomElementGeometry {
   internalId: string;
   tagName: string;
@@ -288,11 +293,12 @@ export interface DomElementGeometry {
   textSnippet?: string;
   rect: RuntimeRect;
   visibility: { display: string; visibility: string; opacity: number };
+  textStyle?: RuntimeTextStyleEvidence;
   clickable: boolean;
   order: number;
 }
-export interface DomGeometry { viewport: RuntimeScanViewport; capturedAt: string; elementCount: number; truncated: boolean; elements: DomElementGeometry[] }
-export type RuntimeLayoutIssueType = "horizontal-overflow" | "element-outside-viewport" | "small-click-target" | "suspicious-overlap" | "zero-size-visible-element";
+export interface DomGeometry { viewport: RuntimeScanViewport; capturedAt: string; elementCount: number; truncated: boolean; readabilityCoverage?: RuntimeReadabilityCoverage; elements: DomElementGeometry[] }
+export type RuntimeLayoutIssueType = "horizontal-overflow" | "element-outside-viewport" | "small-click-target" | "suspicious-overlap" | "zero-size-visible-element" | "low-text-contrast";
 export interface RuntimeLayoutIssue {
   id: string;
   type: RuntimeLayoutIssueType;
@@ -314,6 +320,16 @@ export interface RuntimeLayoutIssue {
     viewport: RuntimeScanViewport;
     screenshotPath?: string;
     threshold: string;
+    foregroundColor?: string;
+    backgroundColor?: string;
+    contrastRatio?: number;
+    requiredContrastRatio?: number;
+    foregroundOklch?: RuntimeOklchColorEvidence;
+    backgroundOklch?: RuntimeOklchColorEvidence;
+    oklchDelta?: RuntimeOklchDeltaEvidence;
+    suggestedForegroundColor?: string;
+    suggestedBackgroundColor?: string;
+    suggestionReason?: string;
   };
 }
 export type RuntimeErrorCode =
@@ -334,7 +350,7 @@ export type RuntimeErrorCode =
   | "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED"
   | "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 export interface RuntimeScanError { code: RuntimeErrorCode; message: string; targetId?: string; viewport?: RuntimeScanViewport; stepIndex?: number }
-export interface RuntimeViewportResult { viewport: RuntimeScanViewport; stateId?: string; stateLabel?: string; stateDedupKey?: string; interactionSource?: RuntimeInteractionSource; skippedInteractions?: RuntimeSkippedInteraction[]; screenshotPath?: string; domGeometry?: DomGeometry; layoutIssues: RuntimeLayoutIssue[]; consoleErrors: string[]; pageErrors: string[]; networkErrors: string[]; failedResponses: string[]; errors: RuntimeScanError[] }
+export interface RuntimeViewportResult { viewport: RuntimeScanViewport; stateId?: string; stateLabel?: string; stateDedupKey?: string; interactionSource?: RuntimeInteractionSource; skippedInteractions?: RuntimeSkippedInteraction[]; readabilityCoverage?: RuntimeReadabilityCoverage; screenshotPath?: string; domGeometry?: DomGeometry; layoutIssues: RuntimeLayoutIssue[]; consoleErrors: string[]; pageErrors: string[]; networkErrors: string[]; failedResponses: string[]; errors: RuntimeScanError[] }
 export interface RuntimeExecutionStep { kind: RuntimeFlowStep["kind"]; selector?: string; status: "passed" | "failed"; durationMs: number; redacted?: boolean; valueSource?: "direct" | "env"; valueFromEnv?: string; code?: RuntimeErrorCode; message?: string }
 export interface RuntimeTargetResult { scanTargetId: string; kind: RuntimeTargetKind; route: string; name?: string; status: "passed" | "failed" | "warning"; viewportResults: RuntimeViewportResult[]; executionSteps?: RuntimeExecutionStep[]; errors: RuntimeScanError[] }
 export interface RuntimeScanResult { scanId: string; status: "passed" | "failed" | "warning"; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; targets: RuntimeResultTarget[]; targetResults: RuntimeTargetResult[]; summary: { targetCount: number; viewportCount: number; screenshotCount: number; issueCount: number; errorCount: number }; errors: RuntimeScanError[] }
@@ -353,13 +369,23 @@ export interface RuntimeArtifactIssueEvidence {
   relatedBoundingBox?: RuntimeRect;
   screenshot: RuntimeArtifactScreenshotEvidence;
   reason: string;
+  foregroundColor?: string;
+  backgroundColor?: string;
+  contrastRatio?: number;
+  requiredContrastRatio?: number;
+  foregroundOklch?: RuntimeOklchColorEvidence;
+  backgroundOklch?: RuntimeOklchColorEvidence;
+  oklchDelta?: RuntimeOklchDeltaEvidence;
+  suggestedForegroundColor?: string;
+  suggestedBackgroundColor?: string;
+  suggestionReason?: string;
   dedupKey: string;
   stateDedupKey?: string;
 }
 export interface RuntimeArtifactIssueDetail { id: string; type: RuntimeLayoutIssueType; severity: RuntimeLayoutIssue["severity"]; message: string; evidence: RuntimeArtifactIssueEvidence }
 export type RuntimeArtifactDiagnosticKind = "console-warning" | "console-error" | "page-error" | "network-error" | "failed-response";
 export interface RuntimeArtifactDiagnostic { kind: RuntimeArtifactDiagnosticKind; message: string }
-export interface RuntimeArtifactViewportDetail { viewport: RuntimeScanViewport; stateId?: string; stateLabel?: string; stateDedupKey?: string; interactionSource?: RuntimeInteractionSource; skippedInteractions?: RuntimeSkippedInteraction[]; screenshot: RuntimeArtifactScreenshotEvidence; diagnostics: RuntimeArtifactDiagnostic[]; issues: RuntimeArtifactIssueDetail[] }
+export interface RuntimeArtifactViewportDetail { viewport: RuntimeScanViewport; stateId?: string; stateLabel?: string; stateDedupKey?: string; interactionSource?: RuntimeInteractionSource; skippedInteractions?: RuntimeSkippedInteraction[]; readabilityCoverage?: RuntimeReadabilityCoverage; screenshot: RuntimeArtifactScreenshotEvidence; diagnostics: RuntimeArtifactDiagnostic[]; issues: RuntimeArtifactIssueDetail[] }
 export interface RuntimeArtifactTargetDetail { scanTargetId: string; kind: RuntimeTargetKind; route: string; stateId?: string; stateLabel?: string; status: RuntimeTargetResult["status"]; viewportResults: RuntimeArtifactViewportDetail[] }
 export interface RuntimeArtifactDetailResponse { scanId: string; status: RuntimeScanResult["status"]; startedAt: string; finishedAt: string; durationMs: number; baseUrl: string; summary: RuntimeScanResult["summary"]; targetResults: RuntimeArtifactTargetDetail[] }
 export interface RuntimeArtifactScreenshotQuery extends ProjectPathQuery { ref: string }
@@ -483,7 +509,39 @@ const isLocalRoute = (value: unknown): value is string => {
   return !segments.some((segment) => segment === "." || segment === ".." || segment === ".lutest");
 };
 const isRuntimeDiscoveryMode = (value: unknown): value is RuntimeDiscoveryMode => value === "all-routes" || value === "selected-routes" || value === "custom-targets";
-const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueType => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element";
+const isRuntimeLayoutIssueType = (value: unknown): value is RuntimeLayoutIssueType => value === "horizontal-overflow" || value === "element-outside-viewport" || value === "small-click-target" || value === "suspicious-overlap" || value === "zero-size-visible-element" || value === "low-text-contrast";
+const isRuntimeReadabilitySkipReason = (value: unknown): value is RuntimeReadabilitySkipReason => value === "aria-hidden" || value === "text-shadow" || value === "background-image" || value === "transparent-ancestor" || value === "transparent-foreground" || value === "invalid-color" || value === "invalid-font-size" || value === "unsupported-effect";
+const WCAG_LARGE_TEXT_MIN_FONT_SIZE_PX = 24;
+const WCAG_LARGE_BOLD_TEXT_MIN_FONT_SIZE_PX = 18.6667;
+const WCAG_LARGE_BOLD_TEXT_MIN_FONT_WEIGHT = 700;
+const isHexColor = (value: unknown): value is string => isString(value) && /^#[0-9a-f]{6}$/i.test(value);
+const isContrastRatio = (value: unknown): value is number => isFiniteNumber(value) && value >= 1 && value <= 21;
+const isRequiredContrastRatio = (value: unknown): value is 3 | 4.5 => value === 3 || value === 4.5;
+const validateRuntimeOklchColorEvidence = (value: unknown): ValidationResult<RuntimeOklchColorEvidence> => {
+  if (!isRecord(value)) return runtimeInvalid("OKLCH color evidence must be object");
+  const keys = rejectUnknownKeys(value, ["l", "c", "h"]); if (!keys.ok) return keys;
+  if (!isFiniteNumber(value.l) || value.l < 0 || value.l > 1 || !isFiniteNumber(value.c) || value.c < 0 || !isFiniteNumber(value.h) || value.h < 0 || value.h >= 360) return runtimeInvalid("OKLCH color evidence invalid");
+  return { ok: true, value: { l: value.l, c: value.c, h: value.h } };
+};
+const validateRuntimeOklchDeltaEvidence = (value: unknown): ValidationResult<RuntimeOklchDeltaEvidence> => {
+  if (!isRecord(value)) return runtimeInvalid("OKLCH delta evidence must be object");
+  const keys = rejectUnknownKeys(value, ["lightness", "chroma", "hue"]); if (!keys.ok) return keys;
+  if (!isFiniteNumber(value.lightness) || value.lightness < 0 || value.lightness > 1 || !isFiniteNumber(value.chroma) || value.chroma < 0 || !isFiniteNumber(value.hue) || value.hue < 0 || value.hue > 180) return runtimeInvalid("OKLCH delta evidence invalid");
+  return { ok: true, value: { lightness: value.lightness, chroma: value.chroma, hue: value.hue } };
+};
+const hexRelativeLuminance = (value: string): number => {
+  const channel = (offset: number): number => {
+    const normalized = Number.parseInt(value.slice(offset, offset + 2), 16) / 255;
+    return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+};
+const hexContrastRatio = (foreground: string, background: string): number => {
+  const foregroundLuminance = hexRelativeLuminance(foreground);
+  const backgroundLuminance = hexRelativeLuminance(background);
+  return (Math.max(foregroundLuminance, backgroundLuminance) + 0.05) / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+};
+const containsSensitiveRuntimeText = (value: string): boolean => /[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}|\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b|\b(?:password|passwd|pwd|token|api[-_ ]?key|secret)\s*[:=]\s*[^\s,;]+|\b(?=[A-Za-z0-9_-]{32,}\b)(?=[A-Za-z0-9_-]*[0-9_-])[A-Za-z0-9_-]{32,}\b/i.test(value);
 const isRuntimeErrorCode = (value: unknown): value is RuntimeErrorCode => value === "CONFIG_ERROR" || value === "PATH_NOT_ALLOWED" || value === "BASE_URL_NOT_LOCAL" || value === "PLAYWRIGHT_BROWSER_MISSING" || value === "PLAYWRIGHT_BROWSER_LAUNCH_FAILED" || value === "ROUTE_DISCOVERY_ERROR" || value === "TARGET_EXECUTION_ERROR" || value === "ROUTE_SCAN_ERROR" || value === "ARTIFACT_WRITE_ERROR" || value === "RUNTIME_SCAN_FAILED" || value === "RUNTIME_BASE_URL_NOT_ALLOWED" || value === "RUNTIME_SCAN_ARTIFACT_INVALID" || value === "RUNTIME_SCAN_ARTIFACT_MALFORMED" || value === "RUNTIME_FLOW_ENV_VALUE_MISSING" || value === "RUNTIME_FLOW_DESTRUCTIVE_ACTION_BLOCKED" || value === "RUNTIME_LAYOUT_ISSUE_DETECTION_FAILED";
 const isAuthErrorCode = (value: unknown): value is AuthErrorCode => value === "AUTH_STATE_MISSING" || value === "AUTH_STATE_INVALID" || value === "AUTH_STATE_WRITE_FAILED" || value === "AUTH_SESSION_START_FAILED" || value === "AUTH_SESSION_TIMEOUT";
 const isSafeId = (value: unknown): value is string => isNonEmptyString(value) && /^[a-zA-Z0-9._:-]+$/.test(value) && !value.includes("..");
@@ -880,12 +938,15 @@ const validateScanIssue = (value: unknown): ValidationResult<ScanIssue> => {
 };
 
 const validateRuntimeViewport = (value: unknown): ValidationResult<RuntimeScanViewport> => {
-  if (!isRecord(value) || !isFiniteNumber(value.width) || !isFiniteNumber(value.height)) return runtimeInvalid("runtime viewport is invalid");
+  if (!isRecord(value)) return runtimeInvalid("runtime viewport is invalid");
+  const keys = rejectUnknownKeys(value, ["width", "height"]); if (!keys.ok) return keys;
+  if (!isFiniteNumber(value.width) || !Number.isInteger(value.width) || value.width <= 0 || !isFiniteNumber(value.height) || !Number.isInteger(value.height) || value.height <= 0) return runtimeInvalid("runtime viewport is invalid");
   return { ok: true, value: { width: value.width, height: value.height } };
 };
 
 const validateRuntimeRect = (value: unknown): ValidationResult<RuntimeRect> => {
   if (!isRecord(value)) return runtimeInvalid("runtime rect must be an object");
+  const keys = rejectUnknownKeys(value, ["x", "y", "width", "height", "top", "right", "bottom", "left"]); if (!keys.ok) return keys;
   const { x, y, width, height, top, right, bottom, left } = value;
   if (!isFiniteNumber(x)) return runtimeInvalid("runtime rect.x must be finite");
   if (!isFiniteNumber(y)) return runtimeInvalid("runtime rect.y must be finite");
@@ -895,42 +956,89 @@ const validateRuntimeRect = (value: unknown): ValidationResult<RuntimeRect> => {
   if (!isFiniteNumber(right)) return runtimeInvalid("runtime rect.right must be finite");
   if (!isFiniteNumber(bottom)) return runtimeInvalid("runtime rect.bottom must be finite");
   if (!isFiniteNumber(left)) return runtimeInvalid("runtime rect.left must be finite");
+  if (width < 0 || height < 0) return runtimeInvalid("runtime rect dimensions must not be negative");
   return { ok: true, value: { x, y, width, height, top, right, bottom, left } };
+};
+
+const validateRuntimeReadabilityCoverage = (value: unknown): ValidationResult<RuntimeReadabilityCoverage> => {
+  if (!isRecord(value)) return runtimeInvalid("runtime readability coverage must be object");
+  const keys = rejectUnknownKeys(value, ["candidateTextCount", "checkedTextCount", "skippedTextCount", "skippedByReason", "incomplete"]); if (!keys.ok) return keys;
+  if (!isCount(value.candidateTextCount) || !isCount(value.checkedTextCount) || !isCount(value.skippedTextCount) || typeof value.incomplete !== "boolean" || !isRecord(value.skippedByReason)) return runtimeInvalid("runtime readability coverage fields invalid");
+  if (value.candidateTextCount !== value.checkedTextCount + value.skippedTextCount) return runtimeInvalid("runtime readability coverage count mismatch");
+  const skippedByReason: Partial<Record<RuntimeReadabilitySkipReason, number>> = {};
+  let reasonTotal = 0;
+  for (const [reason, count] of Object.entries(value.skippedByReason)) {
+    if (!isRuntimeReadabilitySkipReason(reason) || !isCount(count)) return runtimeInvalid("runtime readability skip reason invalid");
+    skippedByReason[reason] = count;
+    reasonTotal += count;
+  }
+  if (reasonTotal !== value.skippedTextCount) return runtimeInvalid("runtime readability skipped count mismatch");
+  return { ok: true, value: { candidateTextCount: value.candidateTextCount, checkedTextCount: value.checkedTextCount, skippedTextCount: value.skippedTextCount, skippedByReason, incomplete: value.incomplete } };
 };
 
 const validateDomElementGeometry = (value: unknown): ValidationResult<DomElementGeometry> => {
   if (!isRecord(value)) return runtimeInvalid("dom element must be object");
+  const keys = rejectUnknownKeys(value, ["internalId", "tagName", "selectorHint", "id", "className", "role", "ariaLabel", "textSnippet", "rect", "visibility", "textStyle", "clickable", "order"]); if (!keys.ok) return keys;
   if (!isNonEmptyString(value.internalId) || !isNonEmptyString(value.tagName)) return runtimeInvalid("dom element identity invalid");
-  if (!isOptionalString(value.selectorHint) || !isOptionalString(value.textSnippet) || (isString(value.textSnippet) && value.textSnippet.length > 500)) return runtimeInvalid("dom element text/selector invalid");
+  if (!isOptionalString(value.selectorHint) || !isOptionalString(value.textSnippet) || !isOptionalString(value.ariaLabel) || (isString(value.textSnippet) && value.textSnippet.length > 500) || (isString(value.ariaLabel) && value.ariaLabel.length > 500)) return runtimeInvalid("dom element text/selector invalid");
+  if ((isString(value.textSnippet) && containsSensitiveRuntimeText(value.textSnippet)) || (isString(value.ariaLabel) && containsSensitiveRuntimeText(value.ariaLabel))) return runtimeInvalid("dom element sensitive text evidence invalid");
   const rect = validateRuntimeRect(value.rect); if (!rect.ok) return rect;
-  if (!isRecord(value.visibility) || !isString(value.visibility.display) || !isString(value.visibility.visibility) || !isFiniteNumber(value.visibility.opacity)) return runtimeInvalid("dom element visibility invalid");
-  if (typeof value.clickable !== "boolean" || !isFiniteNumber(value.order)) return runtimeInvalid("dom element clickable/order invalid");
-  return { ok: true, value: { internalId: value.internalId, tagName: value.tagName, selectorHint: value.selectorHint, id: isOptionalString(value.id) ? value.id : undefined, className: isOptionalString(value.className) ? value.className : undefined, role: isOptionalString(value.role) ? value.role : undefined, ariaLabel: isOptionalString(value.ariaLabel) ? value.ariaLabel : undefined, textSnippet: value.textSnippet, rect: rect.value, visibility: { display: value.visibility.display, visibility: value.visibility.visibility, opacity: value.visibility.opacity }, clickable: value.clickable, order: value.order } };
+  if (!isRecord(value.visibility) || !rejectUnknownKeys(value.visibility, ["display", "visibility", "opacity"]).ok || !isString(value.visibility.display) || !isString(value.visibility.visibility) || !isFiniteNumber(value.visibility.opacity) || value.visibility.opacity < 0 || value.visibility.opacity > 1) return runtimeInvalid("dom element visibility invalid");
+  const textStyle = value.textStyle;
+  if (textStyle !== undefined) {
+    if (!isRecord(textStyle) || !rejectUnknownKeys(textStyle, ["foregroundColor", "backgroundColor", "fontSizePx", "fontWeight", "largeText"]).ok || !isHexColor(textStyle.foregroundColor) || !isHexColor(textStyle.backgroundColor) || !isFiniteNumber(textStyle.fontSizePx) || textStyle.fontSizePx <= 0 || !isFiniteNumber(textStyle.fontWeight) || textStyle.fontWeight < 1 || textStyle.fontWeight > 1000 || typeof textStyle.largeText !== "boolean") return runtimeInvalid("dom element text style invalid");
+    const expectedLargeText = textStyle.fontSizePx >= WCAG_LARGE_TEXT_MIN_FONT_SIZE_PX || (textStyle.fontSizePx >= WCAG_LARGE_BOLD_TEXT_MIN_FONT_SIZE_PX && textStyle.fontWeight >= WCAG_LARGE_BOLD_TEXT_MIN_FONT_WEIGHT);
+    if (textStyle.largeText !== expectedLargeText) return runtimeInvalid("dom element large text classification invalid");
+  }
+  if (typeof value.clickable !== "boolean" || !isCount(value.order)) return runtimeInvalid("dom element clickable/order invalid");
+  return { ok: true, value: { internalId: value.internalId, tagName: value.tagName, selectorHint: value.selectorHint, id: isOptionalString(value.id) ? value.id : undefined, className: isOptionalString(value.className) ? value.className : undefined, role: isOptionalString(value.role) ? value.role : undefined, ariaLabel: isOptionalString(value.ariaLabel) ? value.ariaLabel : undefined, textSnippet: value.textSnippet, rect: rect.value, visibility: { display: value.visibility.display, visibility: value.visibility.visibility, opacity: value.visibility.opacity }, textStyle: isRecord(textStyle) ? { foregroundColor: String(textStyle.foregroundColor), backgroundColor: String(textStyle.backgroundColor), fontSizePx: Number(textStyle.fontSizePx), fontWeight: Number(textStyle.fontWeight), largeText: Boolean(textStyle.largeText) } : undefined, clickable: value.clickable, order: value.order } };
 };
 
 export const validateDomGeometry = (value: unknown): ValidationResult<DomGeometry> => {
   if (!isRecord(value)) return runtimeInvalid("domGeometry must be object");
+  const keys = rejectUnknownKeys(value, ["viewport", "capturedAt", "elementCount", "truncated", "readabilityCoverage", "elements"]); if (!keys.ok) return keys;
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
   if (!isNonEmptyString(value.capturedAt) || !isCount(value.elementCount) || typeof value.truncated !== "boolean" || !Array.isArray(value.elements)) return runtimeInvalid("domGeometry metadata invalid");
   const elements: DomElementGeometry[] = [];
   for (const rawElement of value.elements) { const element = validateDomElementGeometry(rawElement); if (!element.ok) return element; elements.push(element.value); }
-  return { ok: true, value: { viewport: viewport.value, capturedAt: value.capturedAt, elementCount: value.elementCount, truncated: value.truncated, elements } };
+  if (value.elementCount !== elements.length) return runtimeInvalid("domGeometry element count mismatch");
+  const readabilityCoverage = value.readabilityCoverage === undefined ? undefined : validateRuntimeReadabilityCoverage(value.readabilityCoverage); if (readabilityCoverage && !readabilityCoverage.ok) return readabilityCoverage;
+  if (readabilityCoverage && readabilityCoverage.value.incomplete !== value.truncated) return runtimeInvalid("domGeometry readability completeness mismatch");
+  return { ok: true, value: { viewport: viewport.value, capturedAt: value.capturedAt, elementCount: value.elementCount, truncated: value.truncated, readabilityCoverage: readabilityCoverage?.value, elements } };
 };
 
 export const validateRuntimeLayoutIssue = (value: unknown): ValidationResult<RuntimeLayoutIssue> => {
   if (!isRecord(value)) return runtimeInvalid("layout issue must be object");
+  const keys = rejectUnknownKeys(value, ["id", "type", "code", "severity", "message", "scanTargetId", "route", "viewport", "elementRef", "evidence"]); if (!keys.ok) return keys;
   if (!isNonEmptyString(value.id) || !isRuntimeLayoutIssueType(value.type) || !isScanIssueSeverity(value.severity) || !isNonEmptyString(value.message) || !isNonEmptyString(value.scanTargetId) || !isLocalRoute(value.route) || !isNonEmptyString(value.elementRef)) return runtimeInvalid("layout issue fields invalid");
   const code = value.code;
   if (code !== undefined && code !== value.type) return runtimeInvalid("layout issue code must equal type");
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
   if (!isRecord(value.evidence) || !isNonEmptyString(value.evidence.threshold)) return runtimeInvalid("layout issue evidence invalid");
+  const evidenceKeys = rejectUnknownKeys(value.evidence, ["selectorHint", "boundingBox", "relatedElementRef", "relatedSelectorHint", "relatedBoundingBox", "overlapArea", "overlapRatio", "viewport", "screenshotPath", "threshold", "foregroundColor", "backgroundColor", "contrastRatio", "requiredContrastRatio", "foregroundOklch", "backgroundOklch", "oklchDelta", "suggestedForegroundColor", "suggestedBackgroundColor", "suggestionReason"]); if (!evidenceKeys.ok) return evidenceKeys;
   if (value.evidence.screenshotPath !== undefined) return runtimeInvalid("public layout issue screenshotPath must not expose internal paths");
   const boundingBox = validateRuntimeRect(value.evidence.boundingBox); if (!boundingBox.ok) return boundingBox;
   const evidenceViewport = validateRuntimeViewport(value.evidence.viewport); if (!evidenceViewport.ok) return evidenceViewport;
   const relatedBoundingBox = value.evidence.relatedBoundingBox === undefined ? undefined : validateRuntimeRect(value.evidence.relatedBoundingBox); if (relatedBoundingBox && !relatedBoundingBox.ok) return relatedBoundingBox;
   const overlapArea = value.evidence.overlapArea;
   const overlapRatio = value.evidence.overlapRatio;
-  return { ok: true, value: { id: value.id, type: value.type, code: isRuntimeLayoutIssueType(code) ? code : undefined, severity: value.severity, message: value.message, scanTargetId: value.scanTargetId, route: value.route, viewport: viewport.value, elementRef: value.elementRef, evidence: { selectorHint: isOptionalString(value.evidence.selectorHint) ? value.evidence.selectorHint : undefined, boundingBox: boundingBox.value, relatedElementRef: isOptionalString(value.evidence.relatedElementRef) ? value.evidence.relatedElementRef : undefined, relatedSelectorHint: isOptionalString(value.evidence.relatedSelectorHint) ? value.evidence.relatedSelectorHint : undefined, relatedBoundingBox: relatedBoundingBox?.value, overlapArea: isFiniteNumber(overlapArea) ? overlapArea : undefined, overlapRatio: isFiniteNumber(overlapRatio) ? overlapRatio : undefined, viewport: evidenceViewport.value, screenshotPath: isOptionalString(value.evidence.screenshotPath) ? value.evidence.screenshotPath : undefined, threshold: value.evidence.threshold } } };
+  const foregroundColor = value.evidence.foregroundColor;
+  const backgroundColor = value.evidence.backgroundColor;
+  const contrastRatio = value.evidence.contrastRatio;
+  const requiredContrastRatio = value.evidence.requiredContrastRatio;
+  const hasContrastEvidence = foregroundColor !== undefined || backgroundColor !== undefined || contrastRatio !== undefined || requiredContrastRatio !== undefined;
+  if (hasContrastEvidence && (!isHexColor(foregroundColor) || !isHexColor(backgroundColor) || !isContrastRatio(contrastRatio) || !isRequiredContrastRatio(requiredContrastRatio) || contrastRatio >= requiredContrastRatio)) return runtimeInvalid("layout issue contrast evidence invalid");
+  const hasOklchEvidence = value.evidence.foregroundOklch !== undefined || value.evidence.backgroundOklch !== undefined || value.evidence.oklchDelta !== undefined;
+  const foregroundOklch = hasOklchEvidence ? validateRuntimeOklchColorEvidence(value.evidence.foregroundOklch) : undefined; if (foregroundOklch && !foregroundOklch.ok) return foregroundOklch;
+  const backgroundOklch = hasOklchEvidence ? validateRuntimeOklchColorEvidence(value.evidence.backgroundOklch) : undefined; if (backgroundOklch && !backgroundOklch.ok) return backgroundOklch;
+  const delta = hasOklchEvidence ? validateRuntimeOklchDeltaEvidence(value.evidence.oklchDelta) : undefined; if (delta && !delta.ok) return delta;
+  const hasSuggestion = value.evidence.suggestedForegroundColor !== undefined || value.evidence.suggestedBackgroundColor !== undefined || value.evidence.suggestionReason !== undefined;
+  if (hasSuggestion && (!hasContrastEvidence || (!isHexColor(value.evidence.suggestedForegroundColor) && !isHexColor(value.evidence.suggestedBackgroundColor)) || !isPublicSafeDetailText(value.evidence.suggestionReason))) return runtimeInvalid("layout issue contrast suggestion invalid");
+  if (isHexColor(value.evidence.suggestedForegroundColor) && isHexColor(backgroundColor) && isRequiredContrastRatio(requiredContrastRatio) && hexContrastRatio(value.evidence.suggestedForegroundColor, backgroundColor) < requiredContrastRatio) return runtimeInvalid("suggested foreground contrast invalid");
+  if (isHexColor(value.evidence.suggestedBackgroundColor) && isHexColor(foregroundColor) && isRequiredContrastRatio(requiredContrastRatio) && hexContrastRatio(foregroundColor, value.evidence.suggestedBackgroundColor) < requiredContrastRatio) return runtimeInvalid("suggested background contrast invalid");
+  if (value.type === "low-text-contrast" && !hasContrastEvidence) return runtimeInvalid("low contrast issue evidence required");
+  if (value.type !== "low-text-contrast" && (hasContrastEvidence || hasOklchEvidence || hasSuggestion)) return runtimeInvalid("contrast evidence only allowed for low contrast issue");
+  return { ok: true, value: { id: value.id, type: value.type, code: isRuntimeLayoutIssueType(code) ? code : undefined, severity: value.severity, message: value.message, scanTargetId: value.scanTargetId, route: value.route, viewport: viewport.value, elementRef: value.elementRef, evidence: { selectorHint: isOptionalString(value.evidence.selectorHint) ? value.evidence.selectorHint : undefined, boundingBox: boundingBox.value, relatedElementRef: isOptionalString(value.evidence.relatedElementRef) ? value.evidence.relatedElementRef : undefined, relatedSelectorHint: isOptionalString(value.evidence.relatedSelectorHint) ? value.evidence.relatedSelectorHint : undefined, relatedBoundingBox: relatedBoundingBox?.value, overlapArea: isFiniteNumber(overlapArea) ? overlapArea : undefined, overlapRatio: isFiniteNumber(overlapRatio) ? overlapRatio : undefined, viewport: evidenceViewport.value, screenshotPath: isOptionalString(value.evidence.screenshotPath) ? value.evidence.screenshotPath : undefined, threshold: value.evidence.threshold, foregroundColor: hasContrastEvidence ? String(foregroundColor) : undefined, backgroundColor: hasContrastEvidence ? String(backgroundColor) : undefined, contrastRatio: hasContrastEvidence ? Number(contrastRatio) : undefined, requiredContrastRatio: hasContrastEvidence ? Number(requiredContrastRatio) : undefined, foregroundOklch: foregroundOklch?.ok ? foregroundOklch.value : undefined, backgroundOklch: backgroundOklch?.ok ? backgroundOklch.value : undefined, oklchDelta: delta?.ok ? delta.value : undefined, suggestedForegroundColor: isHexColor(value.evidence.suggestedForegroundColor) ? value.evidence.suggestedForegroundColor : undefined, suggestedBackgroundColor: isHexColor(value.evidence.suggestedBackgroundColor) ? value.evidence.suggestedBackgroundColor : undefined, suggestionReason: isPublicSafeDetailText(value.evidence.suggestionReason) ? value.evidence.suggestionReason : undefined } } };
 };
 
 const validateRuntimeError = (value: unknown): ValidationResult<RuntimeScanError> => {
@@ -966,15 +1074,16 @@ const validateRuntimeStateFields = (value: Record<string, unknown>, required = f
 
 const validateRuntimeViewportResult = (value: unknown): ValidationResult<RuntimeViewportResult> => {
   if (!isRecord(value)) return runtimeInvalid("runtime viewport result must be object");
-  const keys = rejectUnknownKeys(value, ["viewport", "stateId", "stateLabel", "stateDedupKey", "interactionSource", "skippedInteractions", "screenshotPath", "domGeometry", "layoutIssues", "consoleErrors", "pageErrors", "networkErrors", "failedResponses", "errors"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["viewport", "stateId", "stateLabel", "stateDedupKey", "interactionSource", "skippedInteractions", "readabilityCoverage", "screenshotPath", "domGeometry", "layoutIssues", "consoleErrors", "pageErrors", "networkErrors", "failedResponses", "errors"]); if (!keys.ok) return keys;
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
   if (value.screenshotPath !== undefined) return runtimeInvalid("public runtime viewport screenshotPath must not expose internal paths");
   const state = validateRuntimeStateFields(value); if (!state.ok) return state;
   const domGeometry = value.domGeometry === undefined ? undefined : validateDomGeometry(value.domGeometry); if (domGeometry && !domGeometry.ok) return domGeometry;
+  const readabilityCoverage = value.readabilityCoverage === undefined ? undefined : validateRuntimeReadabilityCoverage(value.readabilityCoverage); if (readabilityCoverage && !readabilityCoverage.ok) return readabilityCoverage;
   if (!Array.isArray(value.layoutIssues) || !Array.isArray(value.consoleErrors) || !Array.isArray(value.pageErrors) || !Array.isArray(value.networkErrors) || !Array.isArray(value.failedResponses) || !Array.isArray(value.errors)) return runtimeInvalid("runtime viewport arrays invalid");
   const layoutIssues: RuntimeLayoutIssue[] = []; for (const rawIssue of value.layoutIssues) { const issue = validateRuntimeLayoutIssue(rawIssue); if (!issue.ok) return issue; layoutIssues.push(issue.value); }
   const errors: RuntimeScanError[] = []; for (const rawError of value.errors) { const error = validateRuntimeError(rawError); if (!error.ok) return error; errors.push(error.value); }
-  return { ok: true, value: { viewport: viewport.value, ...state.value, screenshotPath: isOptionalString(value.screenshotPath) ? value.screenshotPath : undefined, domGeometry: domGeometry?.value, layoutIssues, consoleErrors: value.consoleErrors.filter(isString), pageErrors: value.pageErrors.filter(isString), networkErrors: value.networkErrors.filter(isString), failedResponses: value.failedResponses.filter(isString), errors } };
+  return { ok: true, value: { viewport: viewport.value, ...state.value, readabilityCoverage: readabilityCoverage?.value, screenshotPath: isOptionalString(value.screenshotPath) ? value.screenshotPath : undefined, domGeometry: domGeometry?.value, layoutIssues, consoleErrors: value.consoleErrors.filter(isString), pageErrors: value.pageErrors.filter(isString), networkErrors: value.networkErrors.filter(isString), failedResponses: value.failedResponses.filter(isString), errors } };
 };
 
 const validateRuntimeTargetResult = (value: unknown): ValidationResult<RuntimeTargetResult> => {
@@ -1012,9 +1121,9 @@ export const validateRuntimeArtifactScreenshotEvidence = (value: unknown): Valid
   return { ok: true, value: { available: false, missingReason: value.missingReason } };
 };
 
-const validateRuntimeArtifactIssueEvidence = (value: unknown): ValidationResult<RuntimeArtifactIssueEvidence> => {
+const validateRuntimeArtifactIssueEvidence = (value: unknown, issueType: RuntimeLayoutIssueType): ValidationResult<RuntimeArtifactIssueEvidence> => {
   if (!isRecord(value)) return runtimeInvalid("runtime artifact issue evidence must be object");
-  const keys = rejectUnknownKeys(value, ["scanTargetId", "route", "stateId", "stateLabel", "viewport", "selector", "elementRef", "boundingBox", "relatedBoundingBox", "screenshot", "reason", "dedupKey", "stateDedupKey"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["scanTargetId", "route", "stateId", "stateLabel", "viewport", "selector", "elementRef", "boundingBox", "relatedBoundingBox", "screenshot", "reason", "foregroundColor", "backgroundColor", "contrastRatio", "requiredContrastRatio", "foregroundOklch", "backgroundOklch", "oklchDelta", "suggestedForegroundColor", "suggestedBackgroundColor", "suggestionReason", "dedupKey", "stateDedupKey"]); if (!keys.ok) return keys;
   if (!isSafeId(value.scanTargetId) || !isLocalRoute(value.route) || !isSafeId(value.elementRef) || !isSafeId(value.dedupKey)) return runtimeInvalid("runtime artifact issue evidence identity invalid");
   if (value.stateId !== undefined && !isSafeId(value.stateId)) return runtimeInvalid("runtime artifact issue stateId invalid");
   if (value.stateDedupKey !== undefined && !isSafeId(value.stateDedupKey)) return runtimeInvalid("runtime artifact issue stateDedupKey invalid");
@@ -1025,6 +1134,18 @@ const validateRuntimeArtifactIssueEvidence = (value: unknown): ValidationResult<
   const boundingBox = validateRuntimeRect(value.boundingBox); if (!boundingBox.ok) return boundingBox;
   const relatedBoundingBox = value.relatedBoundingBox === undefined ? undefined : validateRuntimeRect(value.relatedBoundingBox); if (relatedBoundingBox && !relatedBoundingBox.ok) return relatedBoundingBox;
   const screenshot = validateRuntimeArtifactScreenshotEvidence(value.screenshot); if (!screenshot.ok) return screenshot;
+  const hasContrastEvidence = value.foregroundColor !== undefined || value.backgroundColor !== undefined || value.contrastRatio !== undefined || value.requiredContrastRatio !== undefined;
+  if (hasContrastEvidence && (!isHexColor(value.foregroundColor) || !isHexColor(value.backgroundColor) || !isContrastRatio(value.contrastRatio) || !isRequiredContrastRatio(value.requiredContrastRatio) || value.contrastRatio >= value.requiredContrastRatio)) return runtimeInvalid("runtime artifact contrast evidence invalid");
+  const hasOklchEvidence = value.foregroundOklch !== undefined || value.backgroundOklch !== undefined || value.oklchDelta !== undefined;
+  const foregroundOklch = hasOklchEvidence ? validateRuntimeOklchColorEvidence(value.foregroundOklch) : undefined; if (foregroundOklch && !foregroundOklch.ok) return foregroundOklch;
+  const backgroundOklch = hasOklchEvidence ? validateRuntimeOklchColorEvidence(value.backgroundOklch) : undefined; if (backgroundOklch && !backgroundOklch.ok) return backgroundOklch;
+  const delta = hasOklchEvidence ? validateRuntimeOklchDeltaEvidence(value.oklchDelta) : undefined; if (delta && !delta.ok) return delta;
+  const hasSuggestion = value.suggestedForegroundColor !== undefined || value.suggestedBackgroundColor !== undefined || value.suggestionReason !== undefined;
+  if (hasSuggestion && (!hasContrastEvidence || (!isHexColor(value.suggestedForegroundColor) && !isHexColor(value.suggestedBackgroundColor)) || !isPublicSafeDetailText(value.suggestionReason))) return runtimeInvalid("runtime artifact contrast suggestion invalid");
+  if (isHexColor(value.suggestedForegroundColor) && isHexColor(value.backgroundColor) && isRequiredContrastRatio(value.requiredContrastRatio) && hexContrastRatio(value.suggestedForegroundColor, value.backgroundColor) < value.requiredContrastRatio) return runtimeInvalid("runtime artifact suggested foreground contrast invalid");
+  if (isHexColor(value.suggestedBackgroundColor) && isHexColor(value.foregroundColor) && isRequiredContrastRatio(value.requiredContrastRatio) && hexContrastRatio(value.foregroundColor, value.suggestedBackgroundColor) < value.requiredContrastRatio) return runtimeInvalid("runtime artifact suggested background contrast invalid");
+  if (issueType === "low-text-contrast" && !hasContrastEvidence) return runtimeInvalid("runtime artifact low contrast evidence required");
+  if (issueType !== "low-text-contrast" && (hasContrastEvidence || hasOklchEvidence || hasSuggestion)) return runtimeInvalid("runtime artifact contrast evidence issue type invalid");
   return { ok: true, value: {
     scanTargetId: value.scanTargetId,
     route: value.route,
@@ -1037,6 +1158,16 @@ const validateRuntimeArtifactIssueEvidence = (value: unknown): ValidationResult<
     relatedBoundingBox: relatedBoundingBox?.value,
     screenshot: screenshot.value,
     reason: value.reason,
+    foregroundColor: hasContrastEvidence ? String(value.foregroundColor) : undefined,
+    backgroundColor: hasContrastEvidence ? String(value.backgroundColor) : undefined,
+    contrastRatio: hasContrastEvidence ? Number(value.contrastRatio) : undefined,
+    requiredContrastRatio: hasContrastEvidence ? Number(value.requiredContrastRatio) : undefined,
+    foregroundOklch: foregroundOklch?.ok ? foregroundOklch.value : undefined,
+    backgroundOklch: backgroundOklch?.ok ? backgroundOklch.value : undefined,
+    oklchDelta: delta?.ok ? delta.value : undefined,
+    suggestedForegroundColor: isHexColor(value.suggestedForegroundColor) ? value.suggestedForegroundColor : undefined,
+    suggestedBackgroundColor: isHexColor(value.suggestedBackgroundColor) ? value.suggestedBackgroundColor : undefined,
+    suggestionReason: isPublicSafeDetailText(value.suggestionReason) ? value.suggestionReason : undefined,
     dedupKey: value.dedupKey,
     stateDedupKey: isSafeId(value.stateDedupKey) ? value.stateDedupKey : undefined,
   } };
@@ -1046,7 +1177,7 @@ const validateRuntimeArtifactIssueDetail = (value: unknown): ValidationResult<Ru
   if (!isRecord(value)) return runtimeInvalid("runtime artifact issue must be object");
   const keys = rejectUnknownKeys(value, ["id", "type", "severity", "message", "evidence"]); if (!keys.ok) return keys;
   if (!isSafeId(value.id) || !isRuntimeLayoutIssueType(value.type) || !isScanIssueSeverity(value.severity) || !isPublicSafeDetailText(value.message)) return runtimeInvalid("runtime artifact issue fields invalid");
-  const evidence = validateRuntimeArtifactIssueEvidence(value.evidence); if (!evidence.ok) return evidence;
+  const evidence = validateRuntimeArtifactIssueEvidence(value.evidence, value.type); if (!evidence.ok) return evidence;
   return { ok: true, value: { id: value.id, type: value.type, severity: value.severity, message: value.message, evidence: evidence.value } };
 };
 
@@ -1059,16 +1190,17 @@ const validateRuntimeArtifactDiagnostic = (value: unknown): ValidationResult<Run
 
 const validateRuntimeArtifactViewportDetail = (value: unknown): ValidationResult<RuntimeArtifactViewportDetail> => {
   if (!isRecord(value)) return runtimeInvalid("runtime artifact viewport must be object");
-  const keys = rejectUnknownKeys(value, ["viewport", "stateId", "stateLabel", "stateDedupKey", "interactionSource", "skippedInteractions", "screenshot", "diagnostics", "issues"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["viewport", "stateId", "stateLabel", "stateDedupKey", "interactionSource", "skippedInteractions", "readabilityCoverage", "screenshot", "diagnostics", "issues"]); if (!keys.ok) return keys;
   const viewport = validateRuntimeViewport(value.viewport); if (!viewport.ok) return viewport;
   const state = validateRuntimeStateFields(value); if (!state.ok) return state;
   const screenshot = validateRuntimeArtifactScreenshotEvidence(value.screenshot); if (!screenshot.ok) return screenshot;
+  const readabilityCoverage = value.readabilityCoverage === undefined ? undefined : validateRuntimeReadabilityCoverage(value.readabilityCoverage); if (readabilityCoverage && !readabilityCoverage.ok) return readabilityCoverage;
   if (!Array.isArray(value.diagnostics) || !Array.isArray(value.issues)) return runtimeInvalid("runtime artifact viewport collections invalid");
   const diagnostics: RuntimeArtifactDiagnostic[] = [];
   for (const rawDiagnostic of value.diagnostics) { const diagnostic = validateRuntimeArtifactDiagnostic(rawDiagnostic); if (!diagnostic.ok) return diagnostic; diagnostics.push(diagnostic.value); }
   const issues: RuntimeArtifactIssueDetail[] = [];
   for (const rawIssue of value.issues) { const issue = validateRuntimeArtifactIssueDetail(rawIssue); if (!issue.ok) return issue; issues.push(issue.value); }
-  return { ok: true, value: { viewport: viewport.value, stateId: state.value.stateId, stateLabel: state.value.stateLabel, stateDedupKey: state.value.stateDedupKey, interactionSource: state.value.interactionSource, skippedInteractions: state.value.skippedInteractions, screenshot: screenshot.value, diagnostics, issues } };
+  return { ok: true, value: { viewport: viewport.value, stateId: state.value.stateId, stateLabel: state.value.stateLabel, stateDedupKey: state.value.stateDedupKey, interactionSource: state.value.interactionSource, skippedInteractions: state.value.skippedInteractions, readabilityCoverage: readabilityCoverage?.value, screenshot: screenshot.value, diagnostics, issues } };
 };
 
 const validateRuntimeArtifactTargetDetail = (value: unknown): ValidationResult<RuntimeArtifactTargetDetail> => {

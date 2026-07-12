@@ -60,6 +60,8 @@ const isInside = (parent: string, candidate: string): boolean => {
 const screenshotRef = (scanId: string, relativePath: string): string =>
   `${SCREENSHOT_REF_PREFIX}${crypto.createHash("sha256").update(`${scanId}\0${relativePath.replaceAll("\\", "/")}`).digest("hex").slice(0, SCREENSHOT_REF_HEX_LENGTH)}`;
 
+const publicViewport = (viewport: RuntimeViewportResult["viewport"]): RuntimeViewportResult["viewport"] => ({ width: viewport.width, height: viewport.height });
+
 const isNotFound = (error: unknown): boolean =>
   error instanceof Error && "code" in error && error.code === "ENOENT";
 
@@ -162,13 +164,23 @@ const issueDetail = async (input: {
       scanTargetId: input.issue.scanTargetId,
       route: input.issue.route,
       ...state,
-      viewport: input.issue.viewport,
+      viewport: publicViewport(input.issue.viewport),
       selector: input.issue.evidence.selectorHint,
       elementRef: input.issue.elementRef,
       boundingBox: input.issue.evidence.boundingBox,
       relatedBoundingBox: input.issue.evidence.relatedBoundingBox,
       screenshot: issueScreenshot,
       reason: input.issue.evidence.threshold,
+      foregroundColor: input.issue.evidence.foregroundColor,
+      backgroundColor: input.issue.evidence.backgroundColor,
+      contrastRatio: input.issue.evidence.contrastRatio,
+      requiredContrastRatio: input.issue.evidence.requiredContrastRatio,
+      foregroundOklch: input.issue.evidence.foregroundOklch,
+      backgroundOklch: input.issue.evidence.backgroundOklch,
+      oklchDelta: input.issue.evidence.oklchDelta,
+      suggestedForegroundColor: input.issue.evidence.suggestedForegroundColor,
+      suggestedBackgroundColor: input.issue.evidence.suggestedBackgroundColor,
+      suggestionReason: input.issue.evidence.suggestionReason,
       dedupKey: input.issue.id,
       stateDedupKey: state.stateDedupKey,
     },
@@ -196,12 +208,13 @@ const mapTarget = async (input: {
       fallbackScreenshot: screenshot,
     })));
     return {
-      viewport: viewport.viewport,
+      viewport: publicViewport(viewport.viewport),
       stateId: viewport.stateId ?? stateFields(input.route).stateId ?? "state_baseline",
       stateLabel: viewport.stateLabel ?? stateFields(input.route).stateLabel ?? "baseline",
       stateDedupKey: viewport.stateDedupKey ?? viewport.stateId ?? stateFields(input.route).stateId ?? "state_baseline",
       interactionSource: viewport.interactionSource,
       skippedInteractions: viewport.skippedInteractions ?? [],
+      readabilityCoverage: viewport.domGeometry?.readabilityCoverage,
       screenshot,
       diagnostics: viewportDiagnostics(viewport),
       issues,

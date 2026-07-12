@@ -7,7 +7,7 @@ Standalone Next.js production fixture. It intentionally contains runtime and sta
 - `/layout`: all current geometry issue types plus negative controls.
 - `/interactions`: safe SPA states and risky controls that must be skipped.
 - `/diagnostics`: real Next API success/503 responses, console errors, page error, and network failure.
-- `/readability`: low-contrast cases reserved for R8.8.
+- `/readability`: low-contrast, inherited-color, dark-theme, and alpha-composited background cases for R8.8.
 - `/static-rules`: source fixtures for `large-file`, `console`, and `todo` rules.
 
 ## Production Run
@@ -27,4 +27,4 @@ npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-production-fixture.s
 
 The self-check requires a completed fixture build. It starts the production server, scans with Playwright, asserts runtime/static coverage, then removes generated fixture `.lutest` artifacts.
 
-R8.8 readability cases are captured now but intentionally remain undetected until the contrast engine exists.
+R8.8 readability cases emit deterministic WCAG AA contrast evidence; the high-contrast card remains a negative control.

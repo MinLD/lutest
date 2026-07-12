@@ -4,13 +4,13 @@
 
 - Public runtime contracts are exposed and `/api/actions/scan` can execute runtime scan when explicitly opted in.
 
-- Layout issue detection is heuristic-only and does not include contrast, OCR, or AI analysis.
+- Layout/readability detection is deterministic and heuristic-only; OCR and AI analysis are not included.
 
 - Auth storageState is implemented as manual, local, selected-root-scoped state. UI for starting/clearing auth is not implemented yet.
 - Auth session self-check uses mocked manual browser interaction; real manual login requires a user-driven Playwright browser session.
 
 - Latest report/runtime detail render in the dashboard, and R8.5 adds explicit route selection; configured flow/state target discovery still has no public catalog.
-- No contrast issue detection yet.
+- Contrast detection skips hidden/transparent text, text shadows, non-uniform image/gradient backgrounds, blend/filter/mask effects when reliable evidence cannot be derived; checked/skipped/incomplete coverage is returned explicitly.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 
 ## Graph
@@ -122,3 +122,11 @@ Next recommended phase:
 - Discovery is intentionally one safe click deep from a reloaded route baseline; chained interaction flows require a later explicit risk model.
 - Strong semantic controls are preferred. Unknown custom controls are skipped as `unsafe-candidate` or `unsupported-control` rather than guessed.
 - Route-wide interaction/state/time limits may stop later candidates with typed `limit-reached` evidence.
+
+## R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
+
+- Pass/fail uses WCAG 2.2 relative luminance. OKLCH is evidence/suggestion only; no invented OKLCH conformance threshold exists.
+- Suggested fixes currently adjust foreground first and remain limited to deterministic in-gamut sRGB output.
+- Direct text nodes only are audited to prevent ancestor/descendant duplicate contrast issues.
+- Unsupported visual effects are skipped instead of guessed.
+- Skipped effects remain an intentional correctness boundary, not silent coverage; full pixel/OCR analysis is outside R8.8.

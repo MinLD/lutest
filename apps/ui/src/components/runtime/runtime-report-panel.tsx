@@ -7,7 +7,6 @@ import { RuntimeScreenshotEvidence } from "./runtime-screenshot-evidence";
 import {
   defaultRuntimeFilters,
   filterRuntimeIssues,
-  groupRuntimeSkippedInteractions,
   runtimeReportViewModel,
   type RuntimeIssueView,
   type RuntimeReportFilters,
@@ -173,38 +172,14 @@ function InteractionDiscoverySummary({ model }: { model: RuntimeReportViewModel 
   const discoveredStates = model.states.filter((state) => state.label !== "baseline");
   const discoveredViewportCount = new Set(discoveredStates.map((state) => state.viewportKey)).size;
   const viewportPresetCount = new Set(model.states.map((state) => state.viewportKey)).size;
-  const groupedSkipped = groupRuntimeSkippedInteractions(model.skippedInteractions);
-  const skippedByReason = Object.entries(groupedSkipped.reduce<Record<string, number>>((counts, skipped) => {
-    counts[skipped.reason] = (counts[skipped.reason] ?? 0) + 1;
-    return counts;
-  }, {})).sort((left, right) => right[1] - left[1]);
-  if (stateLabels.length <= 1 && model.skippedInteractions.length === 0) return null;
+  if (stateLabels.length <= 1) return null;
   return (
     <div className="mt-3 rounded-xl border border-[#dbe7f5] bg-[#fbfdff] px-3 py-3 text-sm text-[#405168]">
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-semibold text-[#111827]">Unique states: {Math.max(0, stateLabels.length - (stateLabels.includes("baseline") ? 1 : 0))}</span>
         <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">snapshots · {discoveredStates.length}</span>
         <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">viewport coverage · {discoveredViewportCount}/{viewportPresetCount}</span>
-        {groupedSkipped.length > 0 ? <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">safe skips · {groupedSkipped.length} controls</span> : null}
-        {skippedByReason.map(([reason, count]) => <span key={reason} className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[#667085]">{reason} · {count}</span>)}
       </div>
-      {groupedSkipped.length > 0 ? (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-xs font-semibold text-[#2563eb]">Interaction safety audit</summary>
-          <p className="mt-2 text-xs text-[#667085]">Controls detected but intentionally not clicked. Repeated observations are grouped across states and viewports.</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {groupedSkipped.map((skipped) => (
-              <div key={`${skipped.route}:${skipped.candidateId}:${skipped.reason}`} className="rounded-lg border border-[#e5edf7] bg-white px-3 py-2 text-xs">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate font-semibold text-[#344054]">{skipped.label ?? skipped.candidateId}</p>
-                  {skipped.observationCount > 1 ? <span className="shrink-0 rounded-full bg-[#eef5ff] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#2563eb]">×{skipped.observationCount}</span> : null}
-                </div>
-                <p className="mt-0.5 text-[#7b8ba1]">{skipped.route} · {skipped.reason}{skipped.kind ? ` · ${skipped.kind}` : ""} · {skipped.viewportCount} viewport{skipped.viewportCount === 1 ? "" : "s"}</p>
-              </div>
-            ))}
-          </div>
-        </details>
-      ) : null}
     </div>
   );
 }
@@ -235,6 +210,17 @@ function BrowserDiagnostics({ model }: { model: RuntimeReportViewModel }) {
   );
 }
 
+function ReadabilityCoverageSummary({ model }: { model: RuntimeReportViewModel }) {
+  if (model.readabilityCheckedCount === 0 && model.readabilitySkippedCount === 0 && model.readabilityIncompleteViewportCount === 0) return null;
+  return (
+    <div className={`rounded-xl border px-4 py-3 text-sm ${model.readabilitySkippedCount > 0 || model.readabilityIncompleteViewportCount > 0 ? "border-[#fde7b0] bg-[#fffaf0] text-[#7a5a12]" : "border-[#d7eadf] bg-[#f4fbf6] text-[#24613a]"}`}>
+      <strong>Contrast coverage:</strong> {model.readabilityCheckedCount} text elements checked
+      {model.readabilitySkippedCount > 0 ? ` · ${model.readabilitySkippedCount} skipped because the visual background could not be measured reliably` : ""}
+      {model.readabilityIncompleteViewportCount > 0 ? ` · ${model.readabilityIncompleteViewportCount} snapshots reached the DOM capture limit` : ""}
+    </div>
+  );
+}
+
 export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { latestReport: LatestReportResponse | null; runtimeArtifactDetail: RuntimeArtifactDetailResponse | null }) {
   const model = useMemo(() => runtimeReportViewModel(latestReport, runtimeArtifactDetail), [latestReport, runtimeArtifactDetail]);
   const [filters, setFilters] = useState<RuntimeReportFilters>(defaultRuntimeFilters);
@@ -256,6 +242,7 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
       {!model.hasFullIssueData ? <div className="rounded-xl border border-[#fef3c7] bg-[#fffbeb] p-4 text-sm text-[#a16207]">Detailed runtime issues are not available in this report.</div> : null}
       <RuntimeErrorList model={model} />
       <BrowserDiagnostics model={model} />
+      <ReadabilityCoverageSummary model={model} />
 
       {model.hasFullIssueData ? (
         <section className="rounded-2xl border border-[#dbe7f5] bg-white p-3 sm:p-4">

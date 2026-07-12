@@ -22,8 +22,8 @@ Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL D
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R8.7 — Safe Interaction Discovery.
-- Next recommended phase: R8.8 — Visual Readability / OKLCH Contrast Engine.
+- Latest completed phase recorded here: R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence.
+- Next recommended phase: R8.9 — Runtime Fix Guidance UI.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
 - Runtime scan artifacts now use hardened repository save/read, atomic latest/meta/snapshot writes, strict path safety, and separated safe metadata under `<projectRoot>/.lutest/runtime/`.
@@ -39,6 +39,10 @@ Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL D
 - Runtime scan now supports strict opt-in safe interaction discovery for semantic tabs, menus, disclosures, modal/drawer triggers, toggles, and filter/sort controls with typed skips, route-wide limits, state/issue deduplication, and no form fill, submit, navigation, auth, or destructive clicks.
 - R8.7 hardening derives the default interaction budget from state and viewport bounds, captures every bounded state without a separate screenshot cap, preserves desktop interaction coverage, and exposes redacted typed browser diagnostics through latest runtime detail.
 - Scans UI exposes an explicit `Discover safe UI states` checkbox; Reports keeps route targets separate from discovered states and adds a State filter plus typed skipped-control summary.
+- Runtime readability detection measures WCAG 2.2 relative-luminance contrast for direct visible text and reports public-safe `low-text-contrast` evidence.
+- Failing contrast issues include normalized OKLCH foreground/background/delta evidence plus an optional gamut-safe foreground suggestion whose WCAG ratio is revalidated.
+- Reports renders color swatches, measured/required ratios, OKLCH evidence, suggested foreground, selector, viewport, and opaque screenshot evidence without exposing internal DOM or artifact paths.
+- R8.8 hardening redacts sensitive rendered text/ARIA before persistence, exposes checked/skipped/incomplete contrast coverage, caches computed style/background resolution, and enforces semantic contrast/artifact validation.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

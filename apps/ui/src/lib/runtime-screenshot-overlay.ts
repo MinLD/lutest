@@ -171,6 +171,14 @@ export function runtimeIssueGuidance(
         impact: "One control may hide another or receive the user's click unexpectedly.",
         location: rectLocation(rect),
       };
+    case "low-text-contrast":
+      return {
+        title: "Text is difficult to read against its background",
+        callout: "Contrast is below the WCAG AA requirement",
+        summary: "The computed foreground and effective background colors are too similar.",
+        impact: "People with low vision or displays in difficult lighting may not be able to read this text.",
+        location: rectLocation(rect),
+      };
     default:
       return assertNever(type);
   }

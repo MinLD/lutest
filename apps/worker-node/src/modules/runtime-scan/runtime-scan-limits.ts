@@ -1,5 +1,8 @@
 ﻿import type { RuntimeScanLimits } from "./runtime-scan.schema";
 
+export const RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS = 5_000;
+export const RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS = 2_000;
+
 export const DEFAULT_RUNTIME_SCAN_LIMITS: RuntimeScanLimits = {
   maxRoutes: 25,
   maxTargets: 25,

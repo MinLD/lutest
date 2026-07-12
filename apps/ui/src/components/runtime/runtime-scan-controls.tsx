@@ -103,7 +103,7 @@ export function RuntimeScanControls({
         <div className="grid content-start gap-3">
           <label className="grid gap-1.5 text-sm font-semibold text-[#344054]">
             Local base URL
-            <input type="url" value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setSubmitError(undefined); }} spellCheck={false} className="rounded-xl border border-[#cbd9eb] bg-white px-3 py-2 font-mono text-sm font-normal text-[#111827] outline-none focus:border-[#2563eb]" />
+            <input type="url" value={baseUrl} onChange={(event) => { setBaseUrl(event.target.value); setSubmitError(undefined); }} spellCheck={false } disabled className=" rounded-xl border border-[#cbd9eb] bg-white px-3 py-2 font-mono text-sm font-normal text-[#111827] outline-none focus:border-[#2563eb]" />
           </label>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#cbd9eb] bg-white px-3 py-3 text-sm text-[#344054]">
             <input

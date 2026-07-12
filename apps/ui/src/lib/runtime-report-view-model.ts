@@ -6,6 +6,7 @@ import type {
   RuntimeLayoutIssue,
   RuntimeInteractionControlKind,
   RuntimeInteractionSkipReason,
+  RuntimeReadabilityCoverage,
   RuntimeScanError,
   RuntimeScanResult,
   RuntimeScanViewport,
@@ -39,6 +40,16 @@ export type RuntimeIssueView = {
   overlapArea?: number;
   overlapRatio?: number;
   threshold: string;
+  foregroundColor?: string;
+  backgroundColor?: string;
+  contrastRatio?: number;
+  requiredContrastRatio?: number;
+  foregroundOklch?: RuntimeLayoutIssue["evidence"]["foregroundOklch"];
+  backgroundOklch?: RuntimeLayoutIssue["evidence"]["backgroundOklch"];
+  oklchDelta?: RuntimeLayoutIssue["evidence"]["oklchDelta"];
+  suggestedForegroundColor?: string;
+  suggestedBackgroundColor?: string;
+  suggestionReason?: string;
   screenshotAvailable: boolean;
   screenshotRef?: string;
   screenshotMissingReason?: RuntimeScreenshotMissingReason;
@@ -129,6 +140,9 @@ export type RuntimeReportViewModel = {
   issueCount: number;
   errorCount: number;
   diagnosticCount: number;
+  readabilityCheckedCount: number;
+  readabilitySkippedCount: number;
+  readabilityIncompleteViewportCount: number;
   issueCountsBySeverity: Record<string, number>;
   targets: RuntimeTargetView[];
   viewports: RuntimeViewportView[];
@@ -140,6 +154,15 @@ export type RuntimeReportViewModel = {
   errors: RuntimeScanError[];
   hasFullIssueData: boolean;
 };
+
+const summarizeReadabilityCoverage = (coverages: Array<RuntimeReadabilityCoverage | undefined>) => coverages.reduce(
+  (summary, coverage) => ({
+    checked: summary.checked + (coverage?.checkedTextCount ?? 0),
+    skipped: summary.skipped + (coverage?.skippedTextCount ?? 0),
+    incompleteViewports: summary.incompleteViewports + (coverage?.incomplete ? 1 : 0),
+  }),
+  { checked: 0, skipped: 0, incompleteViewports: 0 },
+);
 
 export const defaultRuntimeFilters: RuntimeReportFilters = {
   route: "all",
@@ -203,12 +226,23 @@ const issueFromRuntime = (
     overlapArea: issue.evidence.overlapArea,
     overlapRatio: issue.evidence.overlapRatio,
     threshold: visibleIssueReason(issue.type, issue.evidence.threshold),
+    foregroundColor: issue.evidence.foregroundColor,
+    backgroundColor: issue.evidence.backgroundColor,
+    contrastRatio: issue.evidence.contrastRatio,
+    requiredContrastRatio: issue.evidence.requiredContrastRatio,
+    foregroundOklch: issue.evidence.foregroundOklch,
+    backgroundOklch: issue.evidence.backgroundOklch,
+    oklchDelta: issue.evidence.oklchDelta,
+    suggestedForegroundColor: issue.evidence.suggestedForegroundColor,
+    suggestedBackgroundColor: issue.evidence.suggestedBackgroundColor,
+    suggestionReason: issue.evidence.suggestionReason,
     screenshotAvailable: Boolean(issue.evidence.screenshotPath ?? fallbackScreenshotPath),
     screenshotRef,
   };
 };
 
 const fromRuntimeScan = (runtimeScan: RuntimeScanResult): RuntimeReportViewModel => {
+  const readabilityCoverage = summarizeReadabilityCoverage(runtimeScan.targetResults.flatMap((target) => target.viewportResults.map((viewport) => viewport.readabilityCoverage ?? viewport.domGeometry?.readabilityCoverage)));
   const targets = runtimeScan.targetResults.map((target) => ({
     id: target.scanTargetId,
     name: target.name,
@@ -322,6 +356,9 @@ const fromRuntimeScan = (runtimeScan: RuntimeScanResult): RuntimeReportViewModel
     issueCount: issues.length,
     errorCount: runtimeScan.summary.errorCount,
     diagnosticCount: diagnostics.length,
+    readabilityCheckedCount: readabilityCoverage.checked,
+    readabilitySkippedCount: readabilityCoverage.skipped,
+    readabilityIncompleteViewportCount: readabilityCoverage.incompleteViewports,
     issueCountsBySeverity,
     targets,
     viewports,
@@ -342,6 +379,7 @@ const fromRuntimeScan = (runtimeScan: RuntimeScanResult): RuntimeReportViewModel
 };
 
 const fromRuntimeArtifactDetail = (detail: RuntimeArtifactDetailResponse): RuntimeReportViewModel => {
+  const readabilityCoverage = summarizeReadabilityCoverage(detail.targetResults.flatMap((target) => target.viewportResults.map((viewport) => viewport.readabilityCoverage)));
   const visibleDetailIssues = (issues: RuntimeArtifactDetailResponse["targetResults"][number]["viewportResults"][number]["issues"]) =>
     issues.filter((issue) => !isLegacySmallClickTargetFalsePositive(issue.type, issue.evidence.boundingBox));
   const targets = detail.targetResults.map((target) => ({
@@ -381,6 +419,16 @@ const fromRuntimeArtifactDetail = (detail: RuntimeArtifactDetailResponse): Runti
     boundingBox: issue.evidence.boundingBox,
     relatedBoundingBox: issue.evidence.relatedBoundingBox,
     threshold: visibleIssueReason(issue.type, issue.evidence.reason),
+    foregroundColor: issue.evidence.foregroundColor,
+    backgroundColor: issue.evidence.backgroundColor,
+    contrastRatio: issue.evidence.contrastRatio,
+    requiredContrastRatio: issue.evidence.requiredContrastRatio,
+    foregroundOklch: issue.evidence.foregroundOklch,
+    backgroundOklch: issue.evidence.backgroundOklch,
+    oklchDelta: issue.evidence.oklchDelta,
+    suggestedForegroundColor: issue.evidence.suggestedForegroundColor,
+    suggestedBackgroundColor: issue.evidence.suggestedBackgroundColor,
+    suggestionReason: issue.evidence.suggestionReason,
     screenshotAvailable: issue.evidence.screenshot.available,
     screenshotRef: issue.evidence.screenshot.ref,
     screenshotMissingReason: issue.evidence.screenshot.missingReason,
@@ -442,6 +490,9 @@ const fromRuntimeArtifactDetail = (detail: RuntimeArtifactDetailResponse): Runti
     issueCount: issues.length,
     errorCount: detail.summary.errorCount,
     diagnosticCount: diagnostics.length,
+    readabilityCheckedCount: readabilityCoverage.checked,
+    readabilitySkippedCount: readabilityCoverage.skipped,
+    readabilityIncompleteViewportCount: readabilityCoverage.incompleteViewports,
     issueCountsBySeverity,
     targets,
     viewports,
@@ -469,6 +520,9 @@ export const runtimeReportViewModel = (
       issueCount: 0,
       errorCount: 0,
       diagnosticCount: 0,
+      readabilityCheckedCount: 0,
+      readabilitySkippedCount: 0,
+      readabilityIncompleteViewportCount: 0,
       issueCountsBySeverity: emptyCounts,
       targets: [],
       viewports: [],
@@ -499,6 +553,9 @@ export const runtimeReportViewModel = (
     issueCount: summary.issueCount,
     errorCount: summary.errorCount,
     diagnosticCount: 0,
+    readabilityCheckedCount: 0,
+    readabilitySkippedCount: 0,
+    readabilityIncompleteViewportCount: 0,
     issueCountsBySeverity: summary.issueSummary.bySeverity,
     targets: [],
     viewports: [],

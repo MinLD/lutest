@@ -47,6 +47,24 @@ const sample = (projectRoot: string, screenshotPath: string): RuntimeScanResult 
       pageErrors: ["fixture page error"],
       networkErrors: [{ url: "http://127.0.0.1:9/failure", method: "GET", failureText: "connection refused" }],
       failedResponses: [{ url: "http://127.0.0.1:3000/failure", status: 503, statusText: "Service Unavailable" }],
+      domGeometry: {
+        viewport: { width: 1440, height: 900 },
+        capturedAt: "2026-07-10T00:00:00.500Z",
+        elementCount: 1,
+        truncated: false,
+        readabilityCoverage: { candidateTextCount: 2, checkedTextCount: 1, skippedTextCount: 1, skippedByReason: { "text-shadow": 1 }, incomplete: false },
+        elements: [{
+          internalId: "el-2",
+          tagName: "P",
+          selectorHint: "p.low-contrast",
+          textSnippet: "Low contrast evidence",
+          rect: { x: 20, y: 40, width: 200, height: 24, top: 40, right: 220, bottom: 64, left: 20 },
+          visibility: { display: "block", visibility: "visible", opacity: 1 },
+          textStyle: { foregroundColor: "#d4d9e0", backgroundColor: "#f8fafc", fontSizePx: 16, fontWeight: 400, largeText: false },
+          clickable: false,
+          order: 0,
+        }],
+      },
       layoutIssues: [{
         id: "route:1:1440x900:small-click-target:el-1",
         type: "small-click-target",
@@ -63,6 +81,32 @@ const sample = (projectRoot: string, screenshotPath: string): RuntimeScanResult 
           viewport: { width: 1440, height: 900 },
           screenshotPath,
           threshold: "minimum 44x44px",
+        },
+      }, {
+        id: "route:1:1440x900:low-text-contrast:el-2",
+        type: "low-text-contrast",
+        code: "low-text-contrast",
+        severity: "warning",
+        message: "Text and background colors do not meet the WCAG 2.2 AA contrast requirement.",
+        scanTargetId: "route:1",
+        route: "/",
+        viewport: { width: 1440, height: 900 },
+        elementRef: "el-2",
+        evidence: {
+          selectorHint: "p.low-contrast",
+          boundingBox: { x: 20, y: 40, width: 200, height: 24, top: 40, right: 220, bottom: 64, left: 20 },
+          viewport: { width: 1440, height: 900 },
+          screenshotPath,
+          threshold: "4.5:1 minimum contrast for normal text",
+          foregroundColor: "#d4d9e0",
+          backgroundColor: "#f8fafc",
+          contrastRatio: 1.36,
+          requiredContrastRatio: 4.5,
+          foregroundOklch: { l: 0.87, c: 0.01, h: 250 },
+          backgroundOklch: { l: 0.98, c: 0.005, h: 250 },
+          oklchDelta: { lightness: 0.11, chroma: 0.005, hue: 0 },
+          suggestedForegroundColor: "#475569",
+          suggestionReason: "Adjust foreground OKLCH lightness while preserving approximate hue/chroma to meet WCAG AA 4.5:1.",
         },
       }],
     }],
@@ -132,6 +176,17 @@ const main = async (): Promise<void> => {
       assert(!serialized.includes(forbidden), `detail must not expose ${forbidden}`);
     }
     const screenshot = detail.targetResults[0]?.viewportResults[0]?.screenshot;
+    const contrastEvidence = detail.targetResults[0]?.viewportResults[0]?.issues.find((issue) => issue.type === "low-text-contrast")?.evidence;
+    assert.deepEqual(detail.targetResults[0]?.viewportResults[0]?.readabilityCoverage, { candidateTextCount: 2, checkedTextCount: 1, skippedTextCount: 1, skippedByReason: { "text-shadow": 1 }, incomplete: false });
+    assert.equal(contrastEvidence?.foregroundColor, "#d4d9e0");
+    assert.equal(contrastEvidence?.backgroundColor, "#f8fafc");
+    assert.equal(contrastEvidence?.contrastRatio, 1.36);
+    assert.equal(contrastEvidence?.requiredContrastRatio, 4.5);
+    assert.deepEqual(contrastEvidence?.foregroundOklch, { l: 0.87, c: 0.01, h: 250 });
+    assert.deepEqual(contrastEvidence?.backgroundOklch, { l: 0.98, c: 0.005, h: 250 });
+    assert.deepEqual(contrastEvidence?.oklchDelta, { lightness: 0.11, chroma: 0.005, hue: 0 });
+    assert.equal(contrastEvidence?.suggestedForegroundColor, "#475569");
+    assert.match(contrastEvidence?.suggestionReason ?? "", /WCAG AA 4\.5:1/);
     const diagnostics = detail.targetResults[0]?.viewportResults[0]?.diagnostics ?? [];
     assert.equal(diagnostics.length, 5);
     assert(diagnostics.some((diagnostic) => diagnostic.kind === "console-warning" && diagnostic.message === "fixture warning"));

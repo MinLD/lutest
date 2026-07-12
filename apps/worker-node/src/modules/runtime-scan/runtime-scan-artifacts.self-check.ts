@@ -138,6 +138,33 @@ const main = async () => {
   assert.equal(latest?.artifacts.resultPath, paths.latestResultPath);
   assert.equal(await readLatestRuntimeScan(missingRoot), null);
 
+  const legacyTextArtifact = JSON.parse(latestRawText) as Record<string, unknown>;
+  const legacyTextRoutes = legacyTextArtifact.routes as Array<Record<string, unknown>>;
+  const legacyTextViewports = legacyTextRoutes[0]?.viewportResults as Array<Record<string, unknown>>;
+  if (!legacyTextViewports[0]) throw new Error("Legacy text fixture viewport missing");
+  legacyTextViewports[0].domGeometry = {
+    viewport: { width: 1440, height: 900 },
+    capturedAt: "2026-01-01T00:00:00.500Z",
+    elementCount: 1,
+    truncated: false,
+    elements: [{
+      internalId: "el:legacy",
+      tagName: "NAV",
+      selectorHint: "nav",
+      textSnippet: "CatalogLayoutInteractionsDiagnosticsReadabilityStaticRules Contact user@example.com",
+      ariaLabel: "token=abcdefghijklmnopqrstuvwxyz1234567890",
+      rect: { x: 0, y: 0, width: 100, height: 40, top: 0, right: 100, bottom: 40, left: 0 },
+      visibility: { display: "block", visibility: "visible", opacity: 1 },
+      clickable: false,
+      order: 0,
+    }],
+  };
+  await fs.writeFile(paths.latestResultPath, JSON.stringify(legacyTextArtifact), "utf-8");
+  const migratedLegacyText = await readLatestRuntimeScan(projectRoot);
+  const migratedElement = migratedLegacyText?.routes[0]?.viewportResults[0]?.domGeometry?.elements[0];
+  assert.equal(migratedElement?.textSnippet, "CatalogLayoutInteractionsDiagnosticsReadabilityStaticRules Contact [redacted-email]");
+  assert.equal(migratedElement?.ariaLabel, "[redacted-secret]");
+
   const snapshot = await readRuntimeScanSnapshot(projectRoot, artifact.scanId);
   assert.equal(snapshot?.scanId, artifact.scanId);
   assert.equal(snapshot?.artifacts.resultPath, paths.snapshotPath);

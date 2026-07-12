@@ -2,7 +2,7 @@
 
 ## Latest Completed Phase
 
-R8.7 — Safe Interaction Discovery.
+R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence.
 
 ## Current Status
 
@@ -47,8 +47,8 @@ R8.7 — Safe Interaction Discovery.
 - Manual flow steps supported internally: `goto`, `click`, `fill`, `waitForSelector`, `waitForTimeout`, `screenshotMarker`.
 - Scanner only executes explicitly declared steps; no crawler or auto-click discovery.
 - Runtime layout issue detector runs from DOM geometry only, independent of Playwright browser APIs.
-- Runtime issues currently cover horizontal overflow, outside viewport, small click target, suspicious overlap, and zero-size visible element.
-- Contrast, OCR, and AI analysis are intentionally not implemented.
+- Runtime issues currently cover horizontal overflow, outside viewport, small click target, suspicious overlap, zero-size visible element, and low text contrast.
+- Low-text-contrast detection uses WCAG 2.2 relative luminance; OCR and AI analysis remain intentionally unimplemented.
 - Runtime artifact repository has atomic latest/meta/snapshot writes and typed read errors.
 - Canonical runtime artifact paths remain `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`, `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`, and `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
 - Runtime metadata is separate from `RuntimeScanResult` and stores safe counts only.
@@ -250,7 +250,7 @@ Known limitations:
 - Interaction/state discovery remains R8.7.
 
 Next recommended phase:
-- R8.8 — Visual Readability / OKLCH Contrast Engine
+- R8.7 — Safe Interaction Discovery
 
 ## R8.7 Coverage And Diagnostics Hardening
 
@@ -277,4 +277,24 @@ Safety ceiling:
 - No input fill, submit/reset, auth/login automation, route navigation, payment, save, delete, logout, confirm, or destructive action.
 
 Next recommended phase:
-- R8.8 — Visual Readability / OKLCH Contrast Engine
+- R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
+
+## R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
+
+Status: completed.
+
+Implemented:
+- Direct visible text captures inherited foreground, composited solid backgrounds, font size/weight, and large-text classification.
+- Hidden/transparent, text-shadow, image, and gradient cases are skipped when evidence would be unreliable.
+- `low-text-contrast` issues include selector, geometry, viewport, colors, measured ratio, required ratio, and opaque screenshot evidence.
+- Valid hex evidence is normalized to OKLCH foreground/background/delta; WCAG remains the only pass/fail source.
+- Failing text receives an optional gamut-safe foreground suggestion that preserves approximate OKLCH hue/chroma and is revalidated against the required WCAG ratio.
+- Reports renders contrast swatches, OKLCH evidence, suggested foreground, and guidance through the existing public-safe evidence overlay.
+- Production fixture verifies 24 intended contrast failures across three viewports with high-contrast negative controls excluded.
+- Runtime text/ARIA evidence is redacted before leaving the browser context; email, JWT-like, explicit secret assignments, and long token-like values are not persisted raw.
+- Readability coverage reports checked/skipped counts and incomplete DOM snapshots; unsupported visual composition is no longer a silent omission.
+- Internal/public validators enforce strict fields, color format, ratio range, WCAG threshold, failing-ratio semantics, coverage count consistency, and redacted text evidence.
+- Computed styles and ancestor background resolutions are cached per snapshot to bound repeated DOM work.
+
+Next recommended phase:
+- R8.9 — Runtime Fix Guidance UI

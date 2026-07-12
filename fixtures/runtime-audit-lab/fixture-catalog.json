@@ -19,8 +19,8 @@
   },
   {
     "route": "/readability",
-    "title": "Future R8.8 readability",
-    "expected": ["future-low-contrast", "future-inherited-color", "future-dark-theme-contrast", "future-transparent-background"],
+    "title": "R8.8 readability",
+    "expected": ["low-text-contrast", "inherited-color", "dark-theme-contrast", "transparent-background-composition"],
     "negativeControls": ["high contrast text"]
   },
   {

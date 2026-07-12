@@ -33,7 +33,7 @@ button, a { cursor: pointer; }
 .overlap-stage { min-height: 220px; }
 .overlap-button { position: absolute; top: 92px; width: 120px; height: 72px; border: 0; color: white; font-weight: 800; }
 .overlap-a { left: 32px; z-index: 2; background: #dc2626; }
-.overlap-b { left: 70px; z-index: 1; background: #d97706; }
+.overlap-b { left: 70px; z-index: 1; background: #92400e; }
 .zero-stage { min-height: 170px; }
 .zero-size-visible { position: absolute; left: 30px; top: 100px; width: 0; height: 0; overflow: visible; white-space: nowrap; border: 0; padding: 0; background: transparent; color: #dc2626; }
 .negative-card { border-color: #86efac; background: #f0fdf4; }
@@ -55,12 +55,19 @@ button, a { cursor: pointer; }
 .low-contrast { background: #f8fafc; color: #d4d9e0; }
 .inherited-color { background: #fff7ed; color: #f1c9a8; }
 .dark-low-contrast { background: #20242c; color: #343943; }
-.transparency-stage { background: linear-gradient(90deg, #f8fafc, #cbd5e1); color: #c5cad1; }
+.transparency-stage { background: #cbd5e1; color: #c5cad1; }
 .transparent-layer { background: rgba(255,255,255,.45); padding: 18px; }
 .high-contrast { background: #111827; color: #ffffff; }
 
 @media (max-width: 720px) {
   .lab-header { align-items: flex-start; flex-direction: column; }
-  .catalog-grid, .diagnostic-grid, .readability-grid { grid-template-columns: 1fr; }
+  .catalog-grid, .diagnostic-grid { grid-template-columns: 1fr; }
+  .readability-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .readability-card { min-height: 0; border-radius: 12px; padding: 12px; }
+  .readability-card h2 { margin: 4px 0; font-size: 16px; }
+  .readability-card p { font-size: 12px; line-height: 1.35; }
+  .readability-card .transparent-layer { padding: 8px; }
+  .fixture-heading { margin-bottom: 12px; }
+  .fixture-heading h1 { font-size: 26px; line-height: 1; }
   .lab-shell { width: min(100% - 20px, 1120px); padding-top: 28px; }
 }

@@ -4398,7 +4398,7 @@ What was not changed:
 - No path-policy, local-only base URL, screenshot endpoint, or R8.5/R8.6 UI relaxation.
 
 Next recommended phase:
-- R8.8 — Visual Readability / OKLCH Contrast Engine
+- R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
 
 ### R8.7 UI bridge addendum
 
@@ -4426,3 +4426,51 @@ Next recommended phase:
 - Reports distinguishes browser diagnostics from scanner failures and shows actual discovered snapshot and viewport coverage counts.
 - Production fixture requires safe states at all three default viewport widths, exact intended issue coverage, and screenshot evidence on every captured state.
 - Live production fixture verification returned 27 issues, 30 screenshots, 15 typed diagnostics, no missing screenshot, and no public path/storage/auth/stack leak.
+
+## R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence
+
+Status: completed.
+
+Architecture decisions:
+- Contrast conformance uses WCAG 2.2 relative luminance: 4.5:1 normal text, 3:1 large text.
+- OKLCH never decides conformance; it supplies normalized perceptual evidence and deterministic foreground suggestions.
+- Browser computed colors normalize to public-safe `#rrggbb`; pass/fail does not depend on browser color serialization.
+- Direct visible text nodes are audited. Inherited foreground and solid alpha ancestor backgrounds resolve; unreliable visual effects are skipped.
+- Readability issues reuse existing state/issue deduplication and opaque screenshot evidence.
+
+Contract/UI behavior:
+- Added `low-text-contrast` with strict foreground/background, measured-ratio, required-ratio, OKLCH foreground/background/delta, and optional WCAG-valid suggested foreground evidence.
+- Runtime artifact detail returns public-safe contrast evidence only; no computed DOM tree or screenshot path is exposed.
+- Reports shows current/suggested color swatches, WCAG ratio, OKLCH values, threshold, selector, viewport, and existing screenshot overlay.
+
+Tests/checks run:
+- `npm run typecheck --workspaces --if-present` — passed.
+- Contracts, worker, and UI builds — passed.
+- Required contracts/runtime artifact/latest-report/path-policy self-checks — passed.
+- DOM geometry, readability detector, runtime detail, overlay, and view-model self-checks — passed.
+- Production fixture build/scan — passed with exactly 24 intended contrast issues across three viewports.
+
+Security:
+- Local-only `baseUrl`, selected-root path-policy, opaque screenshot refs, and artifact containment remain unchanged.
+- No raw path, `.lutest` URL, cookie/token/password/storage data, or raw stack is added.
+
+Next recommended phase:
+- R8.9 — Runtime Fix Guidance UI
+
+### R8.8 production hardening addendum
+
+- Named WCAG and conservative evidence-policy constants replace readability magic values; scanner settle/network waits use named limits.
+- Sensitive `textSnippet` and `ariaLabel` values are redacted inside the browser before artifact persistence or state hashing.
+- Added typed readability coverage with checked/skipped counts, skip reason totals, and incomplete DOM capture state; Reports shows one compact coverage summary.
+- Public/internal validators now reject unknown fields, invalid viewport/rect/style values, malformed colors, ratios outside 1–21, unknown thresholds, non-failing low-contrast evidence, invalid skip reasons, inconsistent coverage, and unredacted sensitive text.
+- Public boundaries normalize named internal viewports to width/height only; historical named internal viewport artifacts remain accepted.
+- DOM capture caches computed styles and ancestor background resolutions per snapshot.
+- Full workspace typecheck and builds, mandatory runtime/report/path-policy checks, Playwright scan, interaction discovery, scan integration, focused UI lint, and production fixture passed.
+
+### R8.8 WCAG + OKLCH evidence hardening
+
+- Added standards-based sRGB↔OKLab/OKLCH conversion without a new runtime dependency.
+- Added deterministic in-gamut foreground lightness search; every emitted suggestion is rechecked against the required WCAG ratio.
+- Strict internal/public validators reject malformed OKLCH values, unknown nested fields, and suggestions that still fail WCAG.
+- Elements fully below the audited viewport no longer emit contrast issues; the production fixture keeps all intended readability controls inside each viewport.
+- WCAG remains the only pass/fail model. OKLCH is public-safe perceptual evidence and fix guidance only.

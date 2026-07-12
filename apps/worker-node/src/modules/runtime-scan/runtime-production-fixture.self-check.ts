@@ -74,7 +74,7 @@ const main = async (): Promise<void> => {
   });
 
   const catalog = JSON.parse(await fs.readFile(path.join(fixtureRoot, "fixture-catalog.json"), "utf8")) as FixtureCatalogEntry[];
-  assert(catalog.some((entry) => entry.route === "/readability" && entry.expected.includes("future-low-contrast")));
+  assert(catalog.some((entry) => entry.route === "/readability" && entry.expected.includes("low-text-contrast")));
 
   const discovered = await discoverRuntimeScanRoutes({ projectRoot: fixtureRoot });
   for (const route of ["/layout", "/interactions", "/diagnostics", "/readability", "/static-rules"]) {
@@ -162,7 +162,17 @@ const main = async (): Promise<void> => {
     assert(diagnostics.networkErrors.length > 0, "real network failure captured");
 
     const readability = result.routes.find((route) => route.route === "/readability");
-    assert(readability?.viewportResults.some((viewport) => viewport.screenshotPath), "future readability fixture screenshot captured");
+    assert(readability, "readability fixture scanned");
+    assert(readability.viewportResults.some((viewport) => viewport.screenshotPath), "readability fixture screenshot captured");
+    const readabilityIssues = readability.viewportResults.flatMap((viewport) => viewport.layoutIssues.filter((issue) => issue.type === "low-text-contrast"));
+    assert.equal(readabilityIssues.length, 24, "eight intended low-contrast text elements fail on each viewport");
+    for (const selector of ["#fixture-low-contrast-title", "#fixture-low-contrast-body", "#fixture-inherited-title", "#fixture-inherited-body", "#fixture-dark-title", "#fixture-dark-body", "#fixture-transparent-title", "#fixture-transparent-body"]) {
+      assert.equal(readabilityIssues.filter((issue) => issue.evidence.selectorHint === selector).length, 3, `readability fixture detects ${selector} on every viewport`);
+    }
+    assert(!readabilityIssues.some((issue) => issue.evidence.selectorHint?.startsWith("#fixture-high-contrast")), "high contrast text remains a negative control");
+    assert(readabilityIssues.every((issue) => issue.evidence.foregroundColor && issue.evidence.backgroundColor && issue.evidence.contrastRatio !== undefined && issue.evidence.requiredContrastRatio !== undefined), "readability issues include complete color evidence");
+    assert(readabilityIssues.every((issue) => issue.evidence.foregroundOklch && issue.evidence.backgroundOklch && issue.evidence.oklchDelta), "readability issues include OKLCH perceptual evidence");
+    assert(readabilityIssues.every((issue) => issue.evidence.suggestedForegroundColor && issue.evidence.suggestionReason), "readability issues include deterministic foreground suggestions");
     assert.equal(result.summary.screenshotCount, result.routes.flatMap((route) => route.viewportResults).length, "every captured state has screenshot evidence");
     for (const viewportResult of result.routes.flatMap((route) => route.viewportResults)) {
       assert(viewportResult.screenshotPath, "captured state includes screenshot evidence");

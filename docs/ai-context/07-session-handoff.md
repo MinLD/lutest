@@ -2,30 +2,34 @@
 
 ## Phase Completed
 
-R8.7 — Safe Interaction Discovery.
+R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence.
 
 ## Summary
 
-R8.7 adds strict opt-in, bounded safe interaction discovery to route runtime scans. Scans exposes the opt-in checkbox; Reports keeps targets as routes while showing discovered state labels, State filtering, and typed skipped-control reasons.
+R8.8 uses deterministic WCAG 2.2 text contrast for pass/fail, adds public-safe OKLCH perceptual evidence and validated foreground suggestions, then renders them through the existing Reports evidence card.
 
 ## Changed Files From Latest Phase
 
 - `packages/contracts/src/index.ts`
 - `packages/contracts/src/validators.self-check.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-interaction-discovery.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-interaction-discovery.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-readability-issue-detector.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-readability-issue-detector.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-oklch.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-oklch.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts`
 - `apps/worker-node/src/modules/runtime-scan/playwright-scan.service.ts`
-- `apps/worker-node/src/modules/runtime-scan/playwright-scan.types.ts`
 - `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-scan-limits.ts`
-- `apps/worker-node/src/modules/runtime-scan/runtime-public-contract-adapter.ts`
 - `apps/worker-node/src/modules/report/runtime-artifact-detail.service.ts`
-- `apps/ui/src/components/runtime/runtime-scan-controls.tsx`
-- `apps/ui/src/components/runtime/runtime-report-panel.tsx`
-- `apps/ui/src/lib/runtime-scan-selection.ts`
-- `apps/ui/src/lib/runtime-scan-selection.self-check.ts`
+- `apps/worker-node/src/modules/report/runtime-artifact-detail.self-check.ts`
+- `apps/ui/src/components/runtime/runtime-screenshot-evidence.tsx`
+- `apps/ui/src/lib/runtime-screenshot-overlay.ts`
+- `apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts`
 - `apps/ui/src/lib/runtime-report-view-model.ts`
-- `apps/ui/src/lib/runtime-report-view-model.self-check.ts`
+- `fixtures/runtime-audit-lab/app/readability/page.tsx`
+- `fixtures/runtime-audit-lab/app/globals.css`
+- `fixtures/runtime-audit-lab/fixture-catalog.json`
+- `fixtures/runtime-audit-lab/README.md`
 - `AI_HANDOFF.md`
 - `docs/ai-context/03-current-state.md`
 - `docs/ai-context/05-known-issues.md`
@@ -35,28 +39,31 @@ R8.7 adds strict opt-in, bounded safe interaction discovery to route runtime sca
 
 ## What Changed
 
-- Added strict `interactionDiscovery` request config and route-wide interaction/state/time limits.
-- Added semantic candidate classification for tabs, dropdowns, dialogs, accordions, drawers, menus, toggles, and filter/sort triggers.
-- Added typed skipped reasons for disabled, required-input, destructive, unsafe, hidden, route-risk, limit, duplicate, and unsupported candidates.
-- Added baseline/discovered state labels, public-safe interaction source, SHA-256 state signatures, and issue deduplication.
-- Removed internal screenshot paths/raw geometry from public scan output and redacted sensitive diagnostics.
-- Added explicit Scans discovery opt-in, Reports State filtering, and compact skipped-control reason visibility.
+- Added direct-text computed-style capture with inherited foreground and solid alpha-background compositing.
+- Added WCAG 2.2 relative-luminance detection with 4.5:1 normal-text and 3:1 large-text thresholds.
+- Added deterministic sRGB↔OKLCH normalization, foreground/background delta evidence, and gamut-safe foreground suggestions revalidated by WCAG.
+- Added strict internal/public contrast evidence contracts and artifact-detail mapping.
+- Added Reports foreground/background/suggested swatches, measured ratio, required ratio, OKLCH values, and contrast-specific guidance.
+- Added deterministic light, dark, inherited, composited-transparent, hidden/unsupported, and production fixture checks.
+- Hardened browser-side text/ARIA redaction, semantic ratio/style validation, typed readability coverage, public viewport normalization, and cached computed style/background resolution.
 
 ## Verification
 
 - Required workspace typecheck and contracts/worker/UI builds passed.
 - Required contracts, runtime artifact, latest-report mapper/integration, and path-policy HTTP self-checks passed.
-- R8.7 deterministic Playwright interaction discovery self-check passed.
-- Runtime schema/layout detector/public adapter/runtime detail/playwright regressions passed.
+- R8.8 DOM geometry, readability detector, runtime detail, overlay, view-model, and production fixture self-checks passed.
+- Production fixture emitted exactly 24 intended contrast issues across three viewports.
+- Elements fully below the audited viewport are excluded from contrast issues because the current viewport screenshot does not prove them.
 
 ## Current Limitations
 
-- Discovery is one safe click deep from a reloaded baseline; no chained flow crawler exists.
-- No configured flow/state target catalog, auth UI, contrast engine, form fill, submit, navigation, or destructive action was added.
+- Non-uniform image/gradient backgrounds, text shadows, and partially transparent element trees are skipped instead of guessed.
+- Suggested fixes change foreground only; no style mutation or automatic source edit occurs.
+- No OCR, AI image analysis, automatic source edits, auth UI, or security-policy relaxation was added.
 
 ## Next Recommended Phase
 
-R8.8 — Visual Readability / OKLCH Contrast Engine.
+R8.9 — Runtime Fix Guidance UI.
 
 ## Historical R7.4 Notes
 
@@ -163,7 +170,7 @@ Next recommended phase:
 - DOM lineage supports deduping ancestor/descendant overflow that shares the same physical edge.
 - Reports focuses each full-height screenshot around the selected issue, crops legacy expanded-width images, marks zero-size/offscreen evidence, and keeps detailed text below the image.
 - Production fixture asserts exact screenshot width, clean interaction baseline geometry, outside-viewport precedence, and all R8.7 interaction states.
-- Current next recommended phase remains R8.8 — Visual Readability / OKLCH Contrast Engine.
+- Current next recommended phase is R8.9 — Runtime Fix Guidance UI.
 
 ### R8.7 coverage and diagnostics hardening
 
@@ -172,4 +179,4 @@ Next recommended phase:
 - Runtime artifact detail exposes strict typed browser diagnostics with redaction and resource-console deduplication; no raw path, storage/auth value, or stack is returned.
 - Reports separates browser diagnostics from scanner failures and shows unique states, discovered snapshots, and viewport coverage explicitly.
 - Production fixture requires all four safe states at 390, 768, and 1440 widths, exact 27 intended issues, and screenshot evidence for every captured state.
-- Next recommended phase remains R8.8 — Visual Readability / OKLCH Contrast Engine.
+- Next recommended phase is R8.9 — Runtime Fix Guidance UI.

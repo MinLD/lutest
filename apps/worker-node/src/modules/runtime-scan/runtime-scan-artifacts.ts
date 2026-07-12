@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { resolveRuntimeArtifactRepositoryPaths } from "./runtime-scan-artifact-contract";
 import { DEFAULT_RUNTIME_SCAN_LIMITS } from "./runtime-scan-limits";
+import { redactRuntimeTextEvidence } from "./runtime-readability-policy";
 import { validateRuntimeScanResult, type RuntimeScanResult } from "./runtime-scan.schema";
 
 export type RuntimeScanArtifactMetaFile = {
@@ -37,15 +38,48 @@ const stableJson = (value: unknown): string => `${JSON.stringify(value, null, 2)
 const isNotFound = (error: unknown): boolean => error instanceof Error && "code" in error && error.code === "ENOENT";
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 
-const migrateLegacyRuntimeScanArtifact = (value: unknown): unknown => {
-  if (!isRecord(value) || !isRecord(value.limits)) return value;
+const sanitizeLegacyDomGeometry = (value: unknown): unknown => {
+  if (!isRecord(value) || !Array.isArray(value.elements)) return value;
   return {
     ...value,
+    elements: value.elements.map((element) => {
+      if (!isRecord(element)) return element;
+      return {
+        ...element,
+        textSnippet: typeof element.textSnippet === "string" ? redactRuntimeTextEvidence(element.textSnippet) : element.textSnippet,
+        ariaLabel: typeof element.ariaLabel === "string" ? redactRuntimeTextEvidence(element.ariaLabel) : element.ariaLabel,
+      };
+    }),
+  };
+};
+
+const sanitizeLegacyRuntimeTextEvidence = (value: unknown): unknown => {
+  if (!isRecord(value) || !Array.isArray(value.routes)) return value;
+  return {
+    ...value,
+    routes: value.routes.map((route) => {
+      if (!isRecord(route) || !Array.isArray(route.viewportResults)) return route;
+      return {
+        ...route,
+        viewportResults: route.viewportResults.map((viewport) => {
+          if (!isRecord(viewport) || viewport.domGeometry === undefined) return viewport;
+          return { ...viewport, domGeometry: sanitizeLegacyDomGeometry(viewport.domGeometry) };
+        }),
+      };
+    }),
+  };
+};
+
+const migrateLegacyRuntimeScanArtifact = (value: unknown): unknown => {
+  const sanitized = sanitizeLegacyRuntimeTextEvidence(value);
+  if (!isRecord(sanitized) || !isRecord(sanitized.limits)) return sanitized;
+  return {
+    ...sanitized,
     limits: {
-      ...value.limits,
-      maxInteractionsPerRoute: value.limits.maxInteractionsPerRoute ?? DEFAULT_RUNTIME_SCAN_LIMITS.maxInteractionsPerRoute,
-      maxStatesPerRoute: value.limits.maxStatesPerRoute ?? DEFAULT_RUNTIME_SCAN_LIMITS.maxStatesPerRoute,
-      interactionDiscoveryTimeoutMs: value.limits.interactionDiscoveryTimeoutMs ?? DEFAULT_RUNTIME_SCAN_LIMITS.interactionDiscoveryTimeoutMs,
+      ...sanitized.limits,
+      maxInteractionsPerRoute: sanitized.limits.maxInteractionsPerRoute ?? DEFAULT_RUNTIME_SCAN_LIMITS.maxInteractionsPerRoute,
+      maxStatesPerRoute: sanitized.limits.maxStatesPerRoute ?? DEFAULT_RUNTIME_SCAN_LIMITS.maxStatesPerRoute,
+      interactionDiscoveryTimeoutMs: sanitized.limits.interactionDiscoveryTimeoutMs ?? DEFAULT_RUNTIME_SCAN_LIMITS.interactionDiscoveryTimeoutMs,
     },
   };
 };

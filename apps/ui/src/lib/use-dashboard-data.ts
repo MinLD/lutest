@@ -22,6 +22,7 @@ export type DashboardData = {
   productionGraphView: ProductionFlowModel | null;
   latestReport: LatestReportResponse | null;
   runtimeArtifactDetail: RuntimeArtifactDetailResponse | null;
+  runtimeArtifactError: string | null;
   lastScan: ScanResponse | null;
 };
 
@@ -32,6 +33,7 @@ const emptyDashboardData: DashboardData = {
   productionGraphView: null,
   latestReport: null,
   runtimeArtifactDetail: null,
+  runtimeArtifactError: null,
   lastScan: null,
 };
 
@@ -46,16 +48,17 @@ async function loadGraph(projectPath: string | undefined) {
   };
 }
 
-async function loadRuntimeArtifactDetail(
+export async function loadRuntimeArtifactDetail(
   latestReport: LatestReportResponse,
   projectPath: string | undefined,
-): Promise<RuntimeArtifactDetailResponse | null> {
-  if (latestReport.state !== "valid" || !latestReport.runtimeScanSummary) return null;
+  loader: (path?: string) => Promise<RuntimeArtifactDetailResponse> = lutestApi.getLatestRuntimeArtifactDetail,
+): Promise<{ detail: RuntimeArtifactDetailResponse | null; error: string | null }> {
+  if (latestReport.state !== "valid" || !latestReport.runtimeScanSummary) return { detail: null, error: null };
   try {
-    return await lutestApi.getLatestRuntimeArtifactDetail(projectPath);
+    return { detail: await loader(projectPath), error: null };
   } catch (cause) {
-    if (cause instanceof Error && "code" in cause && cause.code === "RUNTIME_ARTIFACT_NOT_FOUND") return null;
-    throw cause;
+    if (cause instanceof Error && "code" in cause && cause.code === "RUNTIME_ARTIFACT_NOT_FOUND") return { detail: null, error: null };
+    return { detail: null, error: errorMessage(cause) };
   }
 }
 
@@ -85,16 +88,17 @@ export function useDashboardData(
         loadGraph(selectedProjectPath),
         lutestApi.getLatestReport(selectedProjectPath),
       ]);
-      const runtimeArtifactDetail = await loadRuntimeArtifactDetail(latestReport, selectedProjectPath);
-
       setData((current) => ({
         ...current,
         status,
         project,
         ...graphData,
         latestReport,
-        runtimeArtifactDetail,
+        runtimeArtifactDetail: null,
+        runtimeArtifactError: null,
       }));
+      const runtimeArtifact = await loadRuntimeArtifactDetail(latestReport, selectedProjectPath);
+      setData((current) => ({ ...current, runtimeArtifactDetail: runtimeArtifact.detail, runtimeArtifactError: runtimeArtifact.error }));
     } catch (cause) {
       setError(errorMessage(cause));
     } finally {
@@ -115,15 +119,16 @@ export function useDashboardData(
         loadGraph(selectedProjectPath),
         lutestApi.getLatestReport(selectedProjectPath),
       ]);
-      const runtimeArtifactDetail = await loadRuntimeArtifactDetail(latestReport, selectedProjectPath);
-
       setData((current) => ({
         ...current,
         ...graphData,
         latestReport,
-        runtimeArtifactDetail,
+        runtimeArtifactDetail: null,
+        runtimeArtifactError: null,
         lastScan: scan,
       }));
+      const runtimeArtifact = await loadRuntimeArtifactDetail(latestReport, selectedProjectPath);
+      setData((current) => ({ ...current, runtimeArtifactDetail: runtimeArtifact.detail, runtimeArtifactError: runtimeArtifact.error }));
     } catch (cause) {
       setError(
         isPathNotAllowedError(cause)
