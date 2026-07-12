@@ -2,7 +2,10 @@
   "name": "@lutest/contracts",
   "version": "1.0.0",
   "main": "./dist/index.js",
-  "types": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"

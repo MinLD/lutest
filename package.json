@@ -1,6 +1,15 @@
 {
-  "name": "lutest",
+  "name": "@minld/lutest",
+  "version": "1.0.0",
   "private": false,
+  "bin": {
+    "lutest": "apps/cli-host/dist/main.js"
+  },
+  "files": [
+    "apps/cli-host/dist",
+    "apps/worker-node/dist/main.js",
+    "README.md"
+  ],
   "packageManager": "npm@10.5.0",
   "workspaces": [
     "apps/*",
@@ -10,11 +19,20 @@
     "dev": "npm run dev -w @lutest/cli-host",
     "dev:host": "npm run dev -w @lutest/cli-host",
     "dev:worker": "npm run dev -w @lutest/worker-node",
+    "bundle:worker": "esbuild apps/worker-node/src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:express --external:playwright --outfile=apps/worker-node/dist/main.js",
+    "build:packages": "npm run build -w @lutest/contracts && npm run build -w @lutest/worker-node && npm run bundle:worker && npm run build -w @lutest/cli-host",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
-    "lint": "npm run lint --workspaces --if-present"
+    "lint": "npm run lint --workspaces --if-present",
+    "prepack": "npm run build:packages"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "playwright": "^1.61.1"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "turbo": "latest",
     "typescript": "^5.4.0"
   }

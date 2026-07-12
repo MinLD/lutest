@@ -2,7 +2,7 @@
 
 Local-first UI quality auditing for web applications using Playwright, deterministic rules, DOM geometry, screenshot evidence, and an interactive report dashboard.
 
-> **Project status: developer preview.** Runtime scanning, screenshot evidence, geometry findings, and the dashboard are implemented. WCAG contrast, full accessibility coverage, runtime-to-source component mapping, portable report export, and installable CLI packaging are still in development.
+> **Project status: developer preview.** Runtime scanning, screenshot evidence, geometry findings, WCAG contrast/readability evidence, safe interaction discovery, and the dashboard are implemented. Full WCAG coverage, runtime-to-source component mapping, portable report export, and fully bundled dashboard distribution are still in development.
 
 ## What Lutest does
 
@@ -18,7 +18,7 @@ Lutest inspects both the source structure and the running UI of a local web proj
 - Show the affected route, state, viewport, selector, bounding box, screenshot, and overlay.
 - Persist the latest report and runtime artifacts inside the scanned project.
 
-Lutest does **not yet** provide complete WCAG conformance testing or reliable React component/source-line mapping. AABB is used as a geometry technique; OKLCH contrast/readability work is planned but is not implemented in the current version.
+Lutest does **not yet** provide complete WCAG conformance testing or reliable React component/source-line mapping. AABB is used as a geometry technique; text contrast pass/fail uses WCAG contrast ratio with OKLCH evidence and deterministic color suggestions.
 
 ## Architecture
 
@@ -60,6 +60,42 @@ fixtures/
 
 The current runtime API accepts only `localhost`, `127.0.0.1`, or `::1` HTTP(S) base URLs. This is an intentional security restriction.
 
+## Installation from npm
+
+The public package name is scoped because `lutest` is already taken on npm. The installed command is still `lutest`.
+
+Run once without global install:
+
+```bash
+cd /absolute/path/to/your-project
+npx @minld/lutest
+```
+
+Or install globally:
+
+```bash
+npm install -g @minld/lutest
+cd /absolute/path/to/your-project
+lutest
+```
+
+Project root detection order:
+
+```text
+--project <path>
+LUTEST_PROJECT_PATH from the current directory's .env
+current working directory
+```
+
+Examples:
+
+```bash
+lutest --project /absolute/path/to/your-project
+LUTEST_PROJECT_PATH=/absolute/path/to/your-project lutest
+```
+
+The npm CLI starts the local Lutest worker with the selected project as the allowed root. Keep the audited web application running on a local URL before starting a runtime scan.
+
 ## Installation from source
 
 Clone the repository and install dependencies:
@@ -77,7 +113,7 @@ On Linux, if Chromium reports missing system libraries, use Playwright's support
 npx playwright install --with-deps chromium
 ```
 
-Do not use `npm install -g lutest` yet. The repository has not completed the installable CLI packaging phase.
+Do not use `npm install -g lutest`; that unscoped package name belongs to another npm maintainer. Use `@minld/lutest`.
 
 ## Quick start
 
