@@ -31,6 +31,7 @@ type CliOptions = {
   openBrowser: boolean;
   startApp: boolean;
   interactiveBrowserInstall: boolean;
+  useEnvProjectPath: boolean;
 };
 
 type ProjectPackage = {
@@ -46,7 +47,7 @@ type ManagedCommand = {
 };
 
 function printUsage(): void {
-  console.log(`Usage: lutest [doctor|install-browsers] [--project <path>] [--base-url <local-url>] [--no-open] [--no-start-app] [--no-install-prompt]\n\nDefaults to the current working directory. Starts a local worker and dashboard, then opens Lutest.`);
+  console.log(`Usage: lutest [doctor|install-browsers] [--project <path>] [--base-url <local-url>] [--no-open] [--no-start-app] [--no-install-prompt] [--use-env-project]\n\nDefaults to the current working directory. Starts a local worker and dashboard, then opens Lutest.`);
 }
 
 function parsePort(value: string, flag: string): number {
@@ -57,7 +58,7 @@ function parsePort(value: string, flag: string): number {
 
 function parseOptions(argv: string[]): CliOptions {
   const args = argv.slice(2);
-  const options: CliOptions = { command: "run", openBrowser: true, startApp: true, interactiveBrowserInstall: true };
+  const options: CliOptions = { command: "run", openBrowser: true, startApp: true, interactiveBrowserInstall: true, useEnvProjectPath: false };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -131,6 +132,11 @@ function parseOptions(argv: string[]): CliOptions {
       continue;
     }
 
+    if (arg === "--use-env-project") {
+      options.useEnvProjectPath = true;
+      continue;
+    }
+
     if (arg.startsWith("--")) throw new Error(`Unknown option: ${arg}`);
     if (options.projectPath) throw new Error(`Unexpected extra argument: ${arg}`);
     options.projectPath = arg;
@@ -140,15 +146,14 @@ function parseOptions(argv: string[]): CliOptions {
 }
 
 function resolveProjectRoot(options: CliOptions): string {
-  const resolvedProjectPath = path.resolve(options.projectPath ?? process.env.LUTEST_PROJECT_PATH ?? process.cwd());
+  const requestedProjectPath = options.projectPath ?? (options.useEnvProjectPath ? process.env.LUTEST_PROJECT_PATH : undefined) ?? process.cwd();
+  const resolvedProjectPath = path.resolve(requestedProjectPath);
   const realProjectPath = fs.realpathSync(resolvedProjectPath);
   const projectStats = fs.statSync(realProjectPath);
 
   if (!projectStats.isDirectory()) throw new Error(`Project path must be a directory: ${resolvedProjectPath}`);
   return realProjectPath;
 }
-
-dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -474,6 +479,7 @@ function logChildExit(name: string, child: ChildProcess): void {
 
 async function main(): Promise<void> {
   const options = parseOptions(process.argv);
+  if (options.useEnvProjectPath) dotenv.config({ path: path.resolve(process.cwd(), ".env") });
   const projectRoot = resolveProjectRoot(options);
   dotenv.config({ path: path.resolve(projectRoot, ".env") });
 

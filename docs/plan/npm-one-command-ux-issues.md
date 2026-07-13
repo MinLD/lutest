@@ -1,6 +1,6 @@
 # Lutest NPM One-Command UX Issues
 
-Status: P0 implemented, browser-missing UX and safe frontend fallback hardened through `@minld/lutest@1.0.6`
+Status: P0 implemented, browser-missing UX and safe frontend fallback hardened through `@minld/lutest@1.0.7`
 Priority: P0 for npm usability
 Scope: make installed `lutest` usable without manual worker/dashboard wiring.
 
@@ -183,6 +183,7 @@ PASS if:
 ## Implementation Notes
 
 - `lutest` defaults to `process.cwd()` and accepts `--project` for monorepos.
+- Project resolution is `--project` first, then current working directory. `LUTEST_PROJECT_PATH` is legacy opt-in only through `--use-env-project`, so stale `.env` files cannot hijack the selected project.
 - Worker and dashboard use free local ports; dashboard prefers `3000` only when available.
 - Frontend dev server starts automatically for safe Next/Vite `dev` scripts, or Lutest uses an already running local app.
 - If a Next/Vite project has dependencies installed but no `dev` script, Lutest falls back to the project-local package entrypoint through `node`; this avoids Windows `.cmd` path issues when the user directory contains spaces.

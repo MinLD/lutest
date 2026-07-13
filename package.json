@@ -1,6 +1,6 @@
 {
   "name": "@minld/lutest",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": false,
   "bin": {
     "lutest": "apps/cli-host/dist/main.js"
