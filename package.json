@@ -1,6 +1,6 @@
 {
   "name": "@minld/lutest",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "bin": {
     "lutest": "apps/cli-host/dist/main.js"
@@ -8,6 +8,7 @@
   "files": [
     "apps/cli-host/dist",
     "apps/worker-node/dist/main.js",
+    "apps/ui/.next/standalone",
     "README.md"
   ],
   "packageManager": "npm@10.5.0",
@@ -20,7 +21,8 @@
     "dev:host": "npm run dev -w @lutest/cli-host",
     "dev:worker": "npm run dev -w @lutest/worker-node",
     "bundle:worker": "esbuild apps/worker-node/src/main.ts --bundle --platform=node --format=cjs --target=node20 --external:express --external:playwright --outfile=apps/worker-node/dist/main.js",
-    "build:packages": "npm run build -w @lutest/contracts && npm run build -w @lutest/worker-node && npm run bundle:worker && npm run build -w @lutest/cli-host",
+    "bundle:ui": "npm run build -w ui && node scripts/prepare-ui-standalone.mjs",
+    "build:packages": "npm run build -w @lutest/contracts && npm run build -w @lutest/worker-node && npm run bundle:worker && npm run build -w @lutest/cli-host && npm run bundle:ui",
     "build": "npm run build --workspaces",
     "typecheck": "npm run typecheck --workspaces",
     "lint": "npm run lint --workspaces --if-present",

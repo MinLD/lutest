@@ -8,11 +8,23 @@ import { errorHandler } from "./shared/middleware/error-handler";
 import { scanRoutes } from "./modules/scan/scan.routes";
 import { authActionRoutes, authRoutes } from "./modules/auth/auth.routes";
 
+function allowedLocalDashboardOrigin(origin: string | undefined): string | null {
+  if (!origin) return "http://localhost:3000";
+  try {
+    const url = new URL(origin);
+    const isLocalHost = url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
+    return (url.protocol === "http:" || url.protocol === "https:") && isLocalHost ? origin : null;
+  } catch {
+    return null;
+  }
+}
+
 export const createApp = () => {
   const app = express();
 
   app.use((req, res, next) => {
-    res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+    const origin = allowedLocalDashboardOrigin(req.headers.origin);
+    if (origin) res.setHeader("Access-Control-Allow-Origin", origin);
     res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "content-type");
 

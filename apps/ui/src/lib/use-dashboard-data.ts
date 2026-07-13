@@ -37,7 +37,6 @@ const emptyDashboardData: DashboardData = {
   lastScan: null,
 };
 
-const DEFAULT_PROJECT_PATH = process.env.NEXT_PUBLIC_LUTEST_PROJECT_PATH;
 const PATH_NOT_ALLOWED_MESSAGE = "Selected path is outside worker allowed root";
 
 async function loadGraph(projectPath: string | undefined) {
@@ -68,7 +67,7 @@ function errorMessage(cause: unknown) {
 }
 
 export function useDashboardData(
-  projectPath = DEFAULT_PROJECT_PATH,
+  projectPath?: string,
 ) {
   const [data, setData] = useState<DashboardData>(emptyDashboardData);
   const [isLoading, setIsLoading] = useState(true);

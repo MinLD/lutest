@@ -13,8 +13,7 @@ import {
   validateRuntimeArtifactDetailResponse,
   validateRuntimeArtifactScreenshotQuery,
 } from "@lutest/contracts";
-
-const DEFAULT_WORKER_URL = "http://localhost:6532";
+import { getInitialRuntimeConfig, getRuntimeConfig } from "./lutest-runtime-config";
 
 export class ApiClientError extends Error {
   constructor(
@@ -27,11 +26,8 @@ export class ApiClientError extends Error {
   }
 }
 
-function getWorkerUrl() {
-  return (
-    process.env.NEXT_PUBLIC_LUTEST_WORKER_URL?.replace(/\/$/, "") ??
-    DEFAULT_WORKER_URL
-  );
+async function getWorkerUrl() {
+  return (await getRuntimeConfig()).workerUrl;
 }
 
 function withProjectPath(path: string, projectPath?: string) {
@@ -42,7 +38,8 @@ function withProjectPath(path: string, projectPath?: string) {
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getWorkerUrl()}${path}`, {
+  const workerUrl = await getWorkerUrl();
+  const response = await fetch(`${workerUrl}${path}`, {
     ...init,
     headers: {
       "content-type": "application/json",
@@ -69,7 +66,7 @@ export function runtimeScreenshotUrl(ref: string | undefined): string | undefine
   const validation = validateRuntimeArtifactScreenshotQuery({ ref });
   if (!validation.ok) return undefined;
   const params = new URLSearchParams({ ref: validation.value.ref });
-  return `${getWorkerUrl()}/api/report/runtime/screenshot?${params.toString()}`;
+  return `${getInitialRuntimeConfig().workerUrl}/api/report/runtime/screenshot?${params.toString()}`;
 }
 
 function isApiErrorBody(input: unknown): input is {

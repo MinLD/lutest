@@ -1,15 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { RuntimeScanRequest } from "@lutest/contracts";
 import {
   buildRuntimeScanSelectionRequest,
   submitRuntimeScanSelection,
   type RuntimeScanRouteOption,
 } from "@/lib/runtime-scan-selection";
+import { getInitialRuntimeConfig, getRuntimeConfig } from "@/lib/lutest-runtime-config";
 
-const DEFAULT_RUNTIME_BASE_URL =
-  process.env.NEXT_PUBLIC_LUTEST_RUNTIME_BASE_URL ?? "http://localhost:3000";
+const DEFAULT_RUNTIME_BASE_URL = getInitialRuntimeConfig().runtimeBaseUrl;
 
 export function RuntimeScanControls({
   routes,
@@ -35,6 +35,14 @@ export function RuntimeScanControls({
     selectedRoutes,
     interactionDiscoveryEnabled,
   }), [availableRoutes, baseUrl, interactionDiscoveryEnabled, mode, selectedRoutes]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getRuntimeConfig().then((config) => {
+      if (!cancelled) setBaseUrl(config.runtimeBaseUrl);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const toggleRoute = (route: string): void => {
     setSelectedRoutes((current) => current.includes(route)
