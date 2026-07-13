@@ -9,7 +9,8 @@ import {
 } from "@/lib/runtime-scan-selection";
 import { getInitialRuntimeConfig, getRuntimeConfig } from "@/lib/lutest-runtime-config";
 
-const DEFAULT_RUNTIME_BASE_URL = getInitialRuntimeConfig().runtimeBaseUrl;
+const INITIAL_RUNTIME_CONFIG = getInitialRuntimeConfig();
+const INSTALL_BROWSER_COMMAND = "lutest install-browsers";
 
 export function RuntimeScanControls({
   routes,
@@ -23,10 +24,12 @@ export function RuntimeScanControls({
   onRunRuntimeScan: (request: RuntimeScanRequest) => Promise<void> | void;
 }) {
   const [mode, setMode] = useState<"all-routes" | "selected-routes">("selected-routes");
-  const [baseUrl, setBaseUrl] = useState(DEFAULT_RUNTIME_BASE_URL);
+  const [baseUrl, setBaseUrl] = useState(INITIAL_RUNTIME_CONFIG.runtimeBaseUrl);
+  const [chromiumStatus, setChromiumStatus] = useState(INITIAL_RUNTIME_CONFIG.chromiumStatus);
   const [selectedRoutes, setSelectedRoutes] = useState<string[]>([]);
   const [interactionDiscoveryEnabled, setInteractionDiscoveryEnabled] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
+  const browserMissing = chromiumStatus === "missing";
   const availableRoutes = useMemo(() => routes.map((option) => option.route), [routes]);
   const validation = useMemo(() => buildRuntimeScanSelectionRequest({
     mode,
@@ -39,7 +42,10 @@ export function RuntimeScanControls({
   useEffect(() => {
     let cancelled = false;
     void getRuntimeConfig().then((config) => {
-      if (!cancelled) setBaseUrl(config.runtimeBaseUrl);
+      if (!cancelled) {
+        setBaseUrl(config.runtimeBaseUrl);
+        setChromiumStatus(config.chromiumStatus);
+      }
     });
     return () => { cancelled = true; };
   }, []);
@@ -74,11 +80,20 @@ export function RuntimeScanControls({
           <button type="button" onClick={onRunStaticScan} disabled={isScanning} className="rounded-xl border border-[#cbd9eb] bg-white px-3.5 py-2 text-sm font-semibold text-[#344054] transition hover:border-[#94aaca] disabled:cursor-not-allowed disabled:opacity-60">
             Run static scan
           </button>
-          <button type="button" onClick={() => void runRuntime()} disabled={isScanning || !validation.ok} className="rounded-xl bg-[#2563eb] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={() => void runRuntime()} disabled={isScanning || !validation.ok || browserMissing} className="rounded-xl bg-[#2563eb] px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-[#1d4ed8] disabled:cursor-not-allowed disabled:opacity-50">
             {isScanning ? "Scanning..." : "Run runtime scan"}
           </button>
         </div>
       </div>
+
+      {browserMissing ? (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+          <p className="font-semibold">Chromium is not installed, so runtime scans are paused.</p>
+          <p className="mt-1 text-amber-800">Run <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">{INSTALL_BROWSER_COMMAND}</code>, then restart <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">lutest</code>.</p>
+        </div>
+      ) : null}
+
+      {isScanning ? <ScanProgressSkeleton /> : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <div>
@@ -135,5 +150,34 @@ export function RuntimeScanControls({
         </div>
       </div>
     </section>
+  );
+}
+
+function ScanProgressSkeleton() {
+  const steps = ["Preparing local scan", "Reading project graph", "Capturing runtime evidence"];
+  return (
+    <div className="mt-4 rounded-2xl border border-[#cfe0f5] bg-white p-4 shadow-[0_12px_30px_rgba(37,99,235,0.08)]" role="status" aria-live="polite">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[#111827]">Scan running</p>
+          <p className="mt-1 text-xs text-[#667085]">Keep this page open while Lutest refreshes reports.</p>
+        </div>
+        <div className="h-2 w-24 overflow-hidden rounded-full bg-[#e8f1ff]">
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-[#2563eb]" />
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        {steps.map((step) => (
+          <div key={step} className="rounded-xl border border-[#e5edf7] bg-[#fbfdff] p-3">
+            <div className="h-2.5 w-20 animate-pulse rounded-full bg-[#dbeafe]" />
+            <p className="mt-3 text-xs font-semibold text-[#405168]">{step}</p>
+            <div className="mt-3 grid gap-1.5">
+              <div className="h-2 animate-pulse rounded-full bg-[#eef4fb]" />
+              <div className="h-2 w-2/3 animate-pulse rounded-full bg-[#eef4fb]" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

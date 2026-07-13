@@ -13,6 +13,13 @@ const packageRoot = path.resolve(cliDir, "../../..");
 const requireFromCli = createRequire(__filename);
 const localRuntimePorts = [3000, 3001, 3002, 3400, 5173, 5174, 4173, 4200, 4300, 8000, 8080];
 const projectFlags = new Set(["--project", "--project-path"]);
+const DASHBOARD_WAIT_RETRIES = 80;
+const DASHBOARD_WAIT_DELAY_MS = 500;
+const WORKER_WAIT_RETRIES = 30;
+const WORKER_WAIT_DELAY_MS = 250;
+const REACHABILITY_TIMEOUT_MS = 900;
+
+type ChromiumStatus = "ok" | "missing";
 
 type CliOptions = {
   command: "run" | "doctor" | "install-browsers";
@@ -200,19 +207,20 @@ async function askInstallChromium(): Promise<boolean> {
   }
 }
 
-async function ensureChromium(projectRoot: string, options: CliOptions): Promise<void> {
-  if (await checkChromium()) return;
+async function ensureChromium(projectRoot: string, options: CliOptions): Promise<ChromiumStatus> {
+  if (await checkChromium()) return "ok";
   if (options.interactiveBrowserInstall && await askInstallChromium()) {
     await installBrowsers(projectRoot);
-    if (await checkChromium()) return;
+    if (await checkChromium()) return "ok";
     throw new Error("Chromium install completed but browser still cannot launch.");
   }
   console.log("[Host] Runtime scan needs Chromium. Run: lutest install-browsers");
+  return "missing";
 }
 
 async function isReachable(url: string): Promise<boolean> {
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(900), redirect: "manual" });
+    const response = await fetch(url, { signal: AbortSignal.timeout(REACHABILITY_TIMEOUT_MS), redirect: "manual" });
     return response.status < 500 || response.status === 503;
   } catch {
     return false;
@@ -344,7 +352,7 @@ function resolveDashboardEntrypoint(): string | null {
   return fs.existsSync(standaloneServer) ? standaloneServer : null;
 }
 
-function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string, projectRoot: string): ChildProcess {
+function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string, projectRoot: string, chromiumStatus: ChromiumStatus): ChildProcess {
   const dashboardEntrypoint = resolveDashboardEntrypoint();
   if (dashboardEntrypoint) {
     return spawn(process.execPath, [dashboardEntrypoint], {
@@ -356,6 +364,7 @@ function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string,
         LUTEST_WORKER_URL: workerUrl,
         LUTEST_RUNTIME_BASE_URL: runtimeBaseUrl,
         LUTEST_PROJECT_PATH: projectRoot,
+        LUTEST_CHROMIUM_STATUS: chromiumStatus,
       },
       stdio: "inherit",
       shell: process.platform === "win32",
@@ -369,6 +378,7 @@ function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string,
       NEXT_PUBLIC_LUTEST_WORKER_URL: workerUrl,
       NEXT_PUBLIC_LUTEST_RUNTIME_BASE_URL: runtimeBaseUrl,
       NEXT_PUBLIC_LUTEST_PROJECT_PATH: projectRoot,
+      NEXT_PUBLIC_LUTEST_CHROMIUM_STATUS: chromiumStatus,
     },
     stdio: "inherit",
     shell: process.platform === "win32",
@@ -388,7 +398,7 @@ async function waitForUrl(url: string, retries: number, delayMs: number, label: 
   throw new Error(`${label} did not become reachable${lastError ? `: ${errorMessage(lastError)}` : ""}`);
 }
 
-async function waitForWorker(port: number, retries = 30, delayMs = 250): Promise<unknown> {
+async function waitForWorker(port: number, retries = WORKER_WAIT_RETRIES, delayMs = WORKER_WAIT_DELAY_MS): Promise<unknown> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
@@ -435,7 +445,7 @@ async function main(): Promise<void> {
 
   console.log("=== Lutest CLI Starting ===");
   console.log(`[Host] Project root: ${projectRoot}`);
-  await ensureChromium(projectRoot, options);
+  const chromiumStatus = await ensureChromium(projectRoot, options);
 
   const { baseUrl, appProcess } = await resolveRuntimeBaseUrl(options, projectRoot);
   console.log(`[Host] Runtime base URL: ${baseUrl}`);
@@ -451,9 +461,9 @@ async function main(): Promise<void> {
 
   const dashboardPort = await getFreePort(options.dashboardPort ?? 3000);
   const dashboardUrl = `http://127.0.0.1:${dashboardPort}`;
-  const dashboard = startDashboard(dashboardPort, workerUrl, baseUrl, projectRoot);
+  const dashboard = startDashboard(dashboardPort, workerUrl, baseUrl, projectRoot, chromiumStatus);
   logChildExit("Dashboard", dashboard);
-  await waitForUrl(dashboardUrl, 80, 500, "dashboard");
+  await waitForUrl(dashboardUrl, DASHBOARD_WAIT_RETRIES, DASHBOARD_WAIT_DELAY_MS, "dashboard");
   console.log(`[Host] Dashboard: ${dashboardUrl}`);
 
   if (options.openBrowser) openBrowser(dashboardUrl);
