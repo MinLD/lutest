@@ -14,6 +14,7 @@ const localRuntimePorts = [3000, 3001, 3002, 3400, 5173, 5174, 4173, 4200, 4300,
 const projectFlags = new Set(["--project", "--project-path"]);
 
 type CliOptions = {
+  command: "run" | "doctor" | "install-browsers";
   projectPath?: string;
   baseUrl?: string;
   dashboardPort?: number;
@@ -28,7 +29,7 @@ type ProjectPackage = {
 };
 
 function printUsage(): void {
-  console.log(`Usage: lutest [--project <path>] [--base-url <local-url>] [--no-open] [--no-start-app]\n\nDefaults to the current working directory. Starts a local worker and dashboard, then opens Lutest.`);
+  console.log(`Usage: lutest [doctor|install-browsers] [--project <path>] [--base-url <local-url>] [--no-open] [--no-start-app]\n\nDefaults to the current working directory. Starts a local worker and dashboard, then opens Lutest.`);
 }
 
 function parsePort(value: string, flag: string): number {
@@ -39,7 +40,7 @@ function parsePort(value: string, flag: string): number {
 
 function parseOptions(argv: string[]): CliOptions {
   const args = argv.slice(2);
-  const options: CliOptions = { openBrowser: true, startApp: true };
+  const options: CliOptions = { command: "run", openBrowser: true, startApp: true };
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -47,6 +48,12 @@ function parseOptions(argv: string[]): CliOptions {
     if (arg === "--help" || arg === "-h") {
       printUsage();
       process.exit(0);
+    }
+
+    if (arg === "doctor" || arg === "install-browsers") {
+      if (index !== 0) throw new Error(`${arg} must be the first argument`);
+      options.command = arg;
+      continue;
     }
 
     if (projectFlags.has(arg)) {
@@ -132,6 +139,47 @@ function isLocalBaseUrl(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function playwrightCliArgs(extra: string[]): { command: string; args: string[] } {
+  const isWindows = process.platform === "win32";
+  const playwrightBin = path.join(packageRoot, "node_modules", ".bin", isWindows ? "playwright.cmd" : "playwright");
+  if (fs.existsSync(playwrightBin)) return { command: playwrightBin, args: extra };
+  return { command: "npx", args: ["playwright", ...extra] };
+}
+
+function runCommand(command: string, args: string[], cwd: string, env = process.env): Promise<number> {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { cwd, env, stdio: "inherit", shell: process.platform === "win32" });
+    child.once("exit", (code) => resolve(code ?? 0));
+  });
+}
+
+async function checkChromium(): Promise<boolean> {
+  try {
+    const playwright = requireFromCli("playwright") as typeof import("playwright");
+    const browser = await playwright.chromium.launch({ headless: true });
+    await browser.close();
+    return true;
+  } catch (error) {
+    const message = errorMessage(error);
+    console.log(`[Host] Chromium check failed: ${message.split("\n")[0]}`);
+    return false;
+  }
+}
+
+async function runDoctor(projectRoot: string): Promise<void> {
+  console.log("=== Lutest Doctor ===");
+  console.log(`[Doctor] Project root: ${projectRoot}`);
+  console.log(`[Doctor] Chromium: ${(await checkChromium()) ? "ok" : "missing"}`);
+  console.log("[Doctor] If Chromium is missing, run: lutest install-browsers");
+}
+
+async function installBrowsers(projectRoot: string): Promise<void> {
+  console.log("=== Lutest Browser Install ===");
+  const command = playwrightCliArgs(["install", "chromium"]);
+  const code = await runCommand(command.command, command.args, projectRoot);
+  if (code !== 0) throw new Error("Playwright Chromium install failed. On Linux, try: npx playwright install --with-deps chromium");
 }
 
 async function isReachable(url: string): Promise<boolean> {
@@ -347,8 +395,20 @@ async function main(): Promise<void> {
   const projectRoot = resolveProjectRoot(options);
   dotenv.config({ path: path.resolve(projectRoot, ".env") });
 
+  if (options.command === "doctor") {
+    await runDoctor(projectRoot);
+    return;
+  }
+
+  if (options.command === "install-browsers") {
+    await installBrowsers(projectRoot);
+    return;
+  }
+
   console.log("=== Lutest CLI Starting ===");
   console.log(`[Host] Project root: ${projectRoot}`);
+  const chromiumOk = await checkChromium();
+  if (!chromiumOk) console.log("[Host] Runtime scan needs Chromium. Run: lutest install-browsers");
 
   const { baseUrl, appProcess } = await resolveRuntimeBaseUrl(options, projectRoot);
   console.log(`[Host] Runtime base URL: ${baseUrl}`);
