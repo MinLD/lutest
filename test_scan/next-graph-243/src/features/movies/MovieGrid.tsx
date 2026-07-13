@@ -1,12 +1,10 @@
-import { paginateMovies } from "../../services/movie-service";
+import { fallbackMovies } from "../../services/movie-service";
 import { MovieCard } from "../../components/MovieCard";
 
-export async function MovieGrid() {
-  const movies = await paginateMovies();
-
+export function MovieGrid() {
   return (
     <section>
-      {movies.map((movie) => (
+      {fallbackMovies.map((movie) => (
         <MovieCard key={movie.id} title={movie.title} />
       ))}
     </section>
