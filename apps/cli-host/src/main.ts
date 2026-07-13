@@ -39,6 +39,12 @@ type ProjectPackage = {
   devDependencies?: Record<string, string>;
 };
 
+type ManagedCommand = {
+  command: string;
+  args: string[];
+  shellOnWindows?: boolean;
+};
+
 function printUsage(): void {
   console.log(`Usage: lutest [doctor|install-browsers] [--project <path>] [--base-url <local-url>] [--no-open] [--no-start-app] [--no-install-prompt]\n\nDefaults to the current working directory. Starts a local worker and dashboard, then opens Lutest.`);
 }
@@ -157,16 +163,20 @@ function isLocalBaseUrl(value: string): boolean {
   }
 }
 
-function playwrightCliArgs(extra: string[]): { command: string; args: string[] } {
-  const isWindows = process.platform === "win32";
-  const playwrightBin = path.join(packageRoot, "node_modules", ".bin", isWindows ? "playwright.cmd" : "playwright");
-  if (fs.existsSync(playwrightBin)) return { command: playwrightBin, args: extra };
-  return { command: "npx", args: ["playwright", ...extra] };
+function playwrightCliArgs(extra: string[]): ManagedCommand {
+  try {
+    const packageJson = requireFromCli.resolve("playwright/package.json");
+    const cliEntrypoint = path.join(path.dirname(packageJson), "cli.js");
+    if (fs.existsSync(cliEntrypoint)) return { command: process.execPath, args: [cliEntrypoint, ...extra] };
+  } catch {
+    // Fallback below keeps global/dev installs usable when dependency resolution is unusual.
+  }
+  return { command: process.platform === "win32" ? "npx.cmd" : "npx", args: ["playwright", ...extra], shellOnWindows: true };
 }
 
-function runCommand(command: string, args: string[], cwd: string, env = process.env): Promise<number> {
+function runCommand(command: ManagedCommand, cwd: string, env = process.env): Promise<number> {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { cwd, env, stdio: "inherit", shell: process.platform === "win32" });
+    const child = spawn(command.command, command.args, { cwd, env, stdio: "inherit", shell: process.platform === "win32" && command.shellOnWindows === true });
     child.once("exit", (code) => resolve(code ?? 0));
   });
 }
@@ -194,7 +204,7 @@ async function runDoctor(projectRoot: string): Promise<void> {
 async function installBrowsers(projectRoot: string): Promise<void> {
   console.log("=== Lutest Browser Install ===");
   const command = playwrightCliArgs(["install", "chromium"]);
-  const code = await runCommand(command.command, command.args, projectRoot);
+  const code = await runCommand(command, projectRoot);
   if (code !== 0) throw new Error("Playwright Chromium install failed. On Linux, try: npx playwright install --with-deps chromium");
 }
 
@@ -283,28 +293,27 @@ function packageManager(projectRoot: string): "npm" | "pnpm" | "yarn" {
   return "npm";
 }
 
-function projectLocalBin(projectRoot: string, name: string): string | null {
-  const executable = process.platform === "win32" ? `${name}.cmd` : name;
-  const binaryPath = path.join(projectRoot, "node_modules", ".bin", executable);
-  return fs.existsSync(binaryPath) ? binaryPath : null;
+function projectPackageEntrypoint(projectRoot: string, packageName: string, relativeEntrypoint: string): string | null {
+  const entrypoint = path.join(projectRoot, "node_modules", packageName, relativeEntrypoint);
+  return fs.existsSync(entrypoint) ? entrypoint : null;
 }
 
-function devCommand(projectRoot: string, port: number, pkg: ProjectPackage): { command: string; args: string[] } | null {
+function devCommand(projectRoot: string, port: number, pkg: ProjectPackage): ManagedCommand | null {
   const manager = packageManager(projectRoot);
   const base = manager === "yarn" ? ["dev"] : ["run", "dev"];
   const separator = manager === "yarn" ? [] : ["--"];
   if (pkg.scripts?.dev) {
-    if (hasDependency(pkg, "next")) return { command: manager, args: [...base, ...separator, "--hostname", "127.0.0.1", "-p", String(port)] };
-    if (hasDependency(pkg, "vite")) return { command: manager, args: [...base, ...separator, "--host", "127.0.0.1", "--port", String(port)] };
-    return { command: manager, args: base };
+    if (hasDependency(pkg, "next")) return { command: manager, args: [...base, ...separator, "--hostname", "127.0.0.1", "-p", String(port)], shellOnWindows: true };
+    if (hasDependency(pkg, "vite")) return { command: manager, args: [...base, ...separator, "--host", "127.0.0.1", "--port", String(port)], shellOnWindows: true };
+    return { command: manager, args: base, shellOnWindows: true };
   }
   if (hasDependency(pkg, "next")) {
-    const nextBin = projectLocalBin(projectRoot, "next");
-    if (nextBin) return { command: nextBin, args: ["dev", "--hostname", "127.0.0.1", "-p", String(port)] };
+    const nextEntrypoint = projectPackageEntrypoint(projectRoot, "next", path.join("dist", "bin", "next"));
+    if (nextEntrypoint) return { command: process.execPath, args: [nextEntrypoint, "dev", "--hostname", "127.0.0.1", "-p", String(port)] };
   }
   if (hasDependency(pkg, "vite")) {
-    const viteBin = projectLocalBin(projectRoot, "vite");
-    if (viteBin) return { command: viteBin, args: ["--host", "127.0.0.1", "--port", String(port)] };
+    const viteEntrypoint = projectPackageEntrypoint(projectRoot, "vite", path.join("bin", "vite.js"));
+    if (viteEntrypoint) return { command: process.execPath, args: [viteEntrypoint, "--host", "127.0.0.1", "--port", String(port)] };
   }
   return null;
 }
@@ -319,7 +328,7 @@ function startManagedApp(projectRoot: string, port: number): ChildProcess | null
     cwd: projectRoot,
     env: { ...process.env, PORT: String(port), HOST: "127.0.0.1", HOSTNAME: "127.0.0.1" },
     stdio: "inherit",
-    shell: process.platform === "win32",
+    shell: process.platform === "win32" && command.shellOnWindows === true,
   });
 }
 
@@ -370,7 +379,7 @@ function startWorker(port: number, projectRoot: string): ChildProcess {
     cwd,
     env: createWorkerEnvironment(port, projectRoot),
     stdio: "inherit",
-    shell: process.platform === "win32",
+    shell: process.platform === "win32" && !workerEntrypoint,
   });
 }
 
@@ -394,7 +403,7 @@ function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string,
         LUTEST_CHROMIUM_STATUS: chromiumStatus,
       },
       stdio: "inherit",
-      shell: process.platform === "win32",
+      shell: false,
     });
   }
 
