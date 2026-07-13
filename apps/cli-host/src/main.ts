@@ -18,6 +18,8 @@ const DASHBOARD_WAIT_DELAY_MS = 500;
 const WORKER_WAIT_RETRIES = 30;
 const WORKER_WAIT_DELAY_MS = 250;
 const REACHABILITY_TIMEOUT_MS = 900;
+const PROJECT_APP_WAIT_RETRIES = 80;
+const PROJECT_APP_WAIT_DELAY_MS = 500;
 
 type ChromiumStatus = "ok" | "missing";
 
@@ -227,6 +229,15 @@ async function isReachable(url: string): Promise<boolean> {
   }
 }
 
+async function isHttpResponding(url: string): Promise<boolean> {
+  try {
+    await fetch(url, { signal: AbortSignal.timeout(REACHABILITY_TIMEOUT_MS), redirect: "manual" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function findRunningBaseUrl(): Promise<string | undefined> {
   for (const port of localRuntimePorts) {
     const url = `http://127.0.0.1:${port}`;
@@ -272,14 +283,30 @@ function packageManager(projectRoot: string): "npm" | "pnpm" | "yarn" {
   return "npm";
 }
 
+function projectLocalBin(projectRoot: string, name: string): string | null {
+  const executable = process.platform === "win32" ? `${name}.cmd` : name;
+  const binaryPath = path.join(projectRoot, "node_modules", ".bin", executable);
+  return fs.existsSync(binaryPath) ? binaryPath : null;
+}
+
 function devCommand(projectRoot: string, port: number, pkg: ProjectPackage): { command: string; args: string[] } | null {
-  if (!pkg.scripts?.dev) return null;
   const manager = packageManager(projectRoot);
   const base = manager === "yarn" ? ["dev"] : ["run", "dev"];
   const separator = manager === "yarn" ? [] : ["--"];
-  if (hasDependency(pkg, "next")) return { command: manager, args: [...base, ...separator, "--hostname", "127.0.0.1", "-p", String(port)] };
-  if (hasDependency(pkg, "vite")) return { command: manager, args: [...base, ...separator, "--host", "127.0.0.1", "--port", String(port)] };
-  return { command: manager, args: base };
+  if (pkg.scripts?.dev) {
+    if (hasDependency(pkg, "next")) return { command: manager, args: [...base, ...separator, "--hostname", "127.0.0.1", "-p", String(port)] };
+    if (hasDependency(pkg, "vite")) return { command: manager, args: [...base, ...separator, "--host", "127.0.0.1", "--port", String(port)] };
+    return { command: manager, args: base };
+  }
+  if (hasDependency(pkg, "next")) {
+    const nextBin = projectLocalBin(projectRoot, "next");
+    if (nextBin) return { command: nextBin, args: ["dev", "--hostname", "127.0.0.1", "-p", String(port)] };
+  }
+  if (hasDependency(pkg, "vite")) {
+    const viteBin = projectLocalBin(projectRoot, "vite");
+    if (viteBin) return { command: viteBin, args: ["--host", "127.0.0.1", "--port", String(port)] };
+  }
+  return null;
 }
 
 function startManagedApp(projectRoot: string, port: number): ChildProcess | null {
@@ -309,9 +336,9 @@ async function resolveRuntimeBaseUrl(options: CliOptions, projectRoot: string): 
 
   const appPort = await getFreePort(3000);
   const appProcess = startManagedApp(projectRoot, appPort);
-  if (!appProcess) throw new Error("No safe frontend dev script found. Start the app or pass --base-url.");
+  if (!appProcess) throw new Error("No safe frontend dev command found. Add a dev script, install frontend dependencies, start the app, or pass --base-url.");
   const baseUrl = `http://127.0.0.1:${appPort}`;
-  await waitForUrl(baseUrl, 80, 500, "project app");
+  await waitForProjectApp(baseUrl);
   return { baseUrl, appProcess };
 }
 
@@ -396,6 +423,14 @@ async function waitForUrl(url: string, retries: number, delayMs: number, label: 
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
   throw new Error(`${label} did not become reachable${lastError ? `: ${errorMessage(lastError)}` : ""}`);
+}
+
+async function waitForProjectApp(url: string): Promise<void> {
+  for (let attempt = 1; attempt <= PROJECT_APP_WAIT_RETRIES; attempt += 1) {
+    if (await isHttpResponding(url)) return;
+    await new Promise((resolve) => setTimeout(resolve, PROJECT_APP_WAIT_DELAY_MS));
+  }
+  throw new Error("project app did not open a local HTTP server");
 }
 
 async function waitForWorker(port: number, retries = WORKER_WAIT_RETRIES, delayMs = WORKER_WAIT_DELAY_MS): Promise<unknown> {

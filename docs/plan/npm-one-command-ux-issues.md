@@ -1,6 +1,6 @@
 # Lutest NPM One-Command UX Issues
 
-Status: P0 implemented, browser-missing UX hardened in `@minld/lutest@1.0.4`
+Status: P0 implemented, browser-missing UX and safe frontend fallback hardened through `@minld/lutest@1.0.5`
 Priority: P0 for npm usability
 Scope: make installed `lutest` usable without manual worker/dashboard wiring.
 
@@ -185,6 +185,7 @@ PASS if:
 - `lutest` defaults to `process.cwd()` and accepts `--project` for monorepos.
 - Worker and dashboard use free local ports; dashboard prefers `3000` only when available.
 - Frontend dev server starts automatically for safe Next/Vite `dev` scripts, or Lutest uses an already running local app.
+- If a Next/Vite project has dependencies installed but no `dev` script, Lutest falls back to the project-local `node_modules/.bin/next` or `node_modules/.bin/vite` command only.
 - Runtime base URL and selected project are passed into the dashboard through runtime config, not baked build-time env.
 - Missing Chromium is detected by the CLI before dashboard startup. Interactive terminals prompt once; declining keeps static/dashboard features available and disables runtime scan in UI with `lutest install-browsers` guidance.
 - Browser install is explicit user action. Lutest does not silently download browsers or OS dependencies after the user declines.
