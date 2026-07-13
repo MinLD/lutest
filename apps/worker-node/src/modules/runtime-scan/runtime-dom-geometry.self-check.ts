@@ -19,7 +19,7 @@ const main = async () => {
           <button id="zero-size" style="width:0;height:0;padding:0;border:0;overflow:visible">Visible zero size</button>
           <div class="clip"><div id="canvas-plane" style="transform: translateX(-200px)">Canvas plane</div></div>
           <script>window.__ignored = true;</script>
-          <div class="hidden">Hidden text</div>
+          <div class="hidden">Hidden text <button id="hidden-child">Hidden child</button></div>
         </body>
       </html>`);
 
@@ -34,6 +34,7 @@ const main = async () => {
     assert.equal(geometry.elements.length, 8);
     assert(geometry.capturedAt.includes("T"));
     assert(!geometry.elements.some((element) => ["SCRIPT", "STYLE", "META", "LINK"].includes(element.tagName)));
+    assert(!geometry.elements.some((element) => element.id === "hidden-child"), "children hidden by ancestor display:none are not captured");
     const serializedGeometry = JSON.stringify(geometry);
     assert(!serializedGeometry.includes("DoNotLeakInputValue"));
     assert(!serializedGeometry.includes("DoNotLeakTextareaValue"));

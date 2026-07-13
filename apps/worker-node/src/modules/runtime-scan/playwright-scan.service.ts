@@ -14,7 +14,7 @@ import {
 } from "./runtime-interaction-discovery";
 import { detectRuntimeLayoutIssues } from "./runtime-layout-issue-detector";
 import { detectRuntimeReadabilityIssues } from "./runtime-readability-issue-detector";
-import { RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS, RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS, resolveRuntimeScanLimits } from "./runtime-scan-limits";
+import { MAX_RUNTIME_INTERACTIONS_PER_ROUTE, RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS, RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS, resolveRuntimeScanLimits } from "./runtime-scan-limits";
 import { manualTargetRoute, manualTargetSteps, redactRuntimeTarget, runManualFlowSteps, type RuntimeManualStepResult } from "./runtime-manual-flow";
 import { runtimeScanArtifactPaths, saveLatestRuntimeScan } from "./runtime-scan-artifacts";
 import { RUNTIME_SCAN_SCHEMA_VERSION } from "./runtime-scan.schema";
@@ -93,6 +93,28 @@ const routeUrl = (baseUrl: URL, route: string): string => {
   return url.toString();
 };
 
+const localWorkerUrl = (): string | undefined => {
+  if (process.env.LUTEST_WORKER_URL) return process.env.LUTEST_WORKER_URL.replace(/\/$/, "");
+  if (process.env.PORT) return `http://127.0.0.1:${process.env.PORT}`;
+  return undefined;
+};
+
+const addLutestRuntimeConfig = async (context: BrowserContext, baseUrl: URL): Promise<void> => {
+  const workerUrl = localWorkerUrl();
+  if (!workerUrl) return;
+  await context.addInitScript((config) => {
+    Object.defineProperty(window, "__LUTEST_CONFIG__", {
+      value: config,
+      configurable: true,
+      writable: true,
+    });
+  }, {
+    workerUrl,
+    runtimeBaseUrl: baseUrl.origin,
+    chromiumStatus: "ok",
+  });
+};
+
 const summarize = (routes: RuntimeRouteScanResult[]) => ({
   routeCount: routes.length,
   targetCount: routes.length,
@@ -132,7 +154,7 @@ export const runPlaywrightRuntimeScan = async (
   const limits = {
     ...resolvedLimits,
     maxInteractionsPerRoute: request.interactionDiscovery?.maxInteractionsPerRoute
-      ?? Math.max(resolvedLimits.maxInteractionsPerRoute, (resolvedLimits.maxStatesPerRoute - 1) * viewports.length),
+      ?? Math.min(MAX_RUNTIME_INTERACTIONS_PER_ROUTE, Math.max(resolvedLimits.maxInteractionsPerRoute, (resolvedLimits.maxStatesPerRoute - 1) * viewports.length)),
   };
   const discoveredRoutes = await discoverRuntimeScanRoutes({
     projectRoot,
@@ -207,6 +229,7 @@ export const runPlaywrightRuntimeScan = async (
 
         try {
           context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1, storageState: request.storageStatePath });
+          await addLutestRuntimeConfig(context, baseUrl);
           page = await context.newPage();
           page.on("console", (message) => {
             if (message.type() !== "warning" && message.type() !== "error") return;

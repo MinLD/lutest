@@ -158,6 +158,15 @@ export const captureRuntimeDomGeometry = async (input: {
       }
       return "viewport";
     };
+    const isEffectivelyHidden = (element: Element): boolean => {
+      let current: Element | null = element;
+      while (current && current !== document.documentElement) {
+        const style = computedStyle(current);
+        if (current.hasAttribute("hidden") || style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" || Number(style.opacity) === 0) return true;
+        current = current.parentElement;
+      }
+      return false;
+    };
 
     const documentElements = Array.from(document.body?.querySelectorAll("*") ?? []);
     const internalIds = new Map(documentElements.map((element, index) => [element, `el:${index + 1}`]));
@@ -167,7 +176,7 @@ export const captureRuntimeDomGeometry = async (input: {
       if (ignoredTags.has(tagName)) continue;
       const rect = element.getBoundingClientRect();
       const style = computedStyle(element);
-      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) continue;
+      if (isEffectivelyHidden(element)) continue;
       const canCaptureText = tagName !== "INPUT" && tagName !== "TEXTAREA" && tagName !== "SELECT";
       const text = canCaptureText ? redactText((element.textContent ?? "").replace(/\s+/g, " ").trim()) : "";
       const role = element.getAttribute("role") ?? undefined;

@@ -323,21 +323,34 @@ function devCommand(projectRoot: string, port: number, pkg: ProjectPackage): Man
   return null;
 }
 
-function startManagedApp(projectRoot: string, port: number): ChildProcess | null {
+function createManagedAppEnvironment(projectRoot: string, port: number, workerUrl: string, runtimeBaseUrl: string): NodeJS.ProcessEnv {
+  return {
+    ...process.env,
+    PORT: String(port),
+    HOST: "127.0.0.1",
+    HOSTNAME: "127.0.0.1",
+    LUTEST_WORKER_URL: workerUrl,
+    LUTEST_RUNTIME_BASE_URL: runtimeBaseUrl,
+    LUTEST_PROJECT_PATH: projectRoot,
+  };
+}
+
+function startManagedApp(projectRoot: string, port: number, workerUrl: string): ChildProcess | null {
   const pkg = readProjectPackage(projectRoot);
   if (!pkg) return null;
   const command = devCommand(projectRoot, port, pkg);
   if (!command) return null;
+  const runtimeBaseUrl = `http://127.0.0.1:${port}`;
   console.log(`[Host] Starting project dev server: ${command.command} ${command.args.join(" ")}`);
   return spawn(command.command, command.args, {
     cwd: projectRoot,
-    env: { ...process.env, PORT: String(port), HOST: "127.0.0.1", HOSTNAME: "127.0.0.1" },
+    env: createManagedAppEnvironment(projectRoot, port, workerUrl, runtimeBaseUrl),
     stdio: "inherit",
     shell: process.platform === "win32" && command.shellOnWindows === true,
   });
 }
 
-async function resolveRuntimeBaseUrl(options: CliOptions, projectRoot: string): Promise<{ baseUrl: string; appProcess: ChildProcess | null }> {
+async function resolveRuntimeBaseUrl(options: CliOptions, projectRoot: string, workerUrl: string): Promise<{ baseUrl: string; appProcess: ChildProcess | null }> {
   const explicit = options.baseUrl ?? process.env.LUTEST_RUNTIME_BASE_URL;
   if (explicit) {
     if (!isLocalBaseUrl(explicit)) throw new Error("Runtime baseUrl must be local http(s) without credentials");
@@ -349,7 +362,7 @@ async function resolveRuntimeBaseUrl(options: CliOptions, projectRoot: string): 
   if (!options.startApp) throw new Error("No running local app found. Start the app or pass --base-url.");
 
   const appPort = await getFreePort(3000);
-  const appProcess = startManagedApp(projectRoot, appPort);
+  const appProcess = startManagedApp(projectRoot, appPort, workerUrl);
   if (!appProcess) throw new Error("No safe frontend dev command found. Add a dev script, install frontend dependencies, start the app, or pass --base-url.");
   const baseUrl = `http://127.0.0.1:${appPort}`;
   await waitForProjectApp(baseUrl);
@@ -357,9 +370,11 @@ async function resolveRuntimeBaseUrl(options: CliOptions, projectRoot: string): 
 }
 
 function createWorkerEnvironment(port: number, projectRoot: string): NodeJS.ProcessEnv {
+  const workerUrl = `http://127.0.0.1:${port}`;
   return {
     ...process.env,
     PORT: String(port),
+    LUTEST_WORKER_URL: workerUrl,
     LUTEST_PROJECT_PATH: projectRoot,
     LUTEST_ENV: process.env.LUTEST_ENV ?? "development",
     WORKER_TIMEOUT: process.env.WORKER_TIMEOUT ?? "30000",
@@ -497,11 +512,12 @@ async function main(): Promise<void> {
   console.log(`[Host] Project root: ${projectRoot}`);
   const chromiumStatus = await ensureChromium(projectRoot, options);
 
-  const { baseUrl, appProcess } = await resolveRuntimeBaseUrl(options, projectRoot);
-  console.log(`[Host] Runtime base URL: ${baseUrl}`);
-
   const workerPort = await getFreePort();
   const workerUrl = `http://127.0.0.1:${workerPort}`;
+
+  const { baseUrl, appProcess } = await resolveRuntimeBaseUrl(options, projectRoot, workerUrl);
+  console.log(`[Host] Runtime base URL: ${baseUrl}`);
+
   console.log(`[Host] Worker URL: ${workerUrl}`);
   const worker = startWorker(workerPort, projectRoot);
   logChildExit("Worker", worker);

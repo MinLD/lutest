@@ -24,6 +24,7 @@ const startServer = async (): Promise<{ baseUrl: string; close: () => Promise<vo
           <input id="settings-name" />
           <section id="settings-panel" hidden>Settings panel</section>
           <script>
+            console.warn("lutest-worker-url:" + (window.__LUTEST_CONFIG__?.workerUrl || "missing"));
             document.querySelector('#open-settings').addEventListener('click', () => document.querySelector('#settings-panel').hidden = false);
             console.warn("self-check warning");
             console.error("self-check error");
@@ -49,6 +50,7 @@ const assertRejects = async (promise: Promise<unknown>, message: string): Promis
 const main = async () => {
   const oldLutest = process.env.LUTEST_PROJECT_PATH;
   const oldProject = process.env.PROJECT_PATH;
+  const oldWorkerUrl = process.env.LUTEST_WORKER_URL;
   const allowedRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-runtime-allowed-"));
   const projectRoot = path.join(allowedRoot, "project");
   const outsideRoot = await fs.mkdtemp(path.join(os.tmpdir(), "lutest-runtime-outside-"));
@@ -66,6 +68,7 @@ const main = async () => {
 
     const server = await startServer();
     try {
+      process.env.LUTEST_WORKER_URL = server.baseUrl;
       await assertRejects(runPlaywrightRuntimeScan({ projectRoot: outsideRoot, baseUrl: server.baseUrl, routes: ["/"] }), "Project path must stay inside allowed root");
       await assertRejects(runPlaywrightRuntimeScan({ projectRoot, baseUrl: "https://example.com", routes: ["/"] }), "Runtime scan baseUrl must be a local HTTP(S) URL");
       await assertRejects(runPlaywrightRuntimeScan({ projectRoot, baseUrl: "file:///etc/passwd", routes: ["/"] }), "Runtime scan baseUrl must be a local HTTP(S) URL");
@@ -87,6 +90,7 @@ const main = async () => {
       assert.deepEqual(result.routeDiscovery.routes, ["/", "/foo-bar", "/foo/bar"]);
       assert.equal(result.summary.routeCount, 3);
       assert.equal(result.routes[0]?.status, 200);
+      assert(result.routes[0]?.consoleMessages.some((message) => message.text === `lutest-worker-url:${server.baseUrl}`));
       assert(result.routes[0]?.consoleMessages.some((message) => message.text.includes("self-check warning")));
       assert(result.routes[0]?.consoleMessages.some((message) => message.text.includes("self-check error")));
       assert(result.routes[0]?.failedResponses.some((response) => response.status === 404 && response.url.endsWith("/missing.js")));
@@ -169,6 +173,8 @@ const main = async () => {
     else process.env.LUTEST_PROJECT_PATH = oldLutest;
     if (oldProject === undefined) delete process.env.PROJECT_PATH;
     else process.env.PROJECT_PATH = oldProject;
+    if (oldWorkerUrl === undefined) delete process.env.LUTEST_WORKER_URL;
+    else process.env.LUTEST_WORKER_URL = oldWorkerUrl;
   }
 
   console.log("playwright runtime scan self-check passed");

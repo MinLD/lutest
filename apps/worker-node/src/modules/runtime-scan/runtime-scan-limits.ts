@@ -2,6 +2,7 @@
 
 export const RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS = 5_000;
 export const RUNTIME_INTERACTION_SETTLE_TIMEOUT_MS = 2_000;
+export const MAX_RUNTIME_INTERACTIONS_PER_ROUTE = 20;
 
 export const DEFAULT_RUNTIME_SCAN_LIMITS: RuntimeScanLimits = {
   maxRoutes: 25,
@@ -11,7 +12,7 @@ export const DEFAULT_RUNTIME_SCAN_LIMITS: RuntimeScanLimits = {
   routeTimeoutMs: Number(process.env.WORKER_TIMEOUT ?? 15_000),
   scanTimeoutMs: 120_000,
   maxInteractionsPerRoute: 8,
-  maxStatesPerRoute: 6,
+  maxStatesPerRoute: 8,
   interactionDiscoveryTimeoutMs: 10_000,
   ignoredTags: ["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "META", "LINK"],
 };

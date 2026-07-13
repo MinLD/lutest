@@ -22,7 +22,8 @@ button, [role=button], a { display: block; margin: 8px; }
 <button id="accordion" aria-expanded="false" aria-controls="accordion-panel">Expand details</button>
 <button id="duplicate-one" aria-controls="duplicate-panel">Open duplicate one</button>
 <button id="duplicate-two" aria-controls="duplicate-panel">Open duplicate two</button>
-<button id="dashboard-reports" aria-controls="dashboard-content">Reports</button>
+<button id="theme-toggle">Toggle theme</button>
+<nav><button id="dashboard-reports" aria-controls="dashboard-content">Reports</button></nav>
 <button id="spa-route" aria-controls="spa-panel">Open routed panel</button>
 <button id="disabled" aria-controls="disabled-panel" disabled>Open disabled</button>
 <form><input required><button id="requires-input" type="button" aria-controls="required-panel">Open required panel</button></form>
@@ -133,6 +134,18 @@ const main = async (): Promise<void> => {
     const limitedBaseline = limited.routes[0]?.viewportResults[0];
     assert(limited.routes[0]?.viewportResults.length <= 2, "max states enforced");
     assert(limitedBaseline?.skippedInteractions?.some((item) => item.reason === "limit-reached"), "interaction/state limit typed skip recorded");
+    const reportsBeforePriorityCheck = count("dashboard-reports");
+    const themeBeforePriorityCheck = count("theme-toggle");
+    await runPlaywrightRuntimeScan({
+      projectRoot,
+      baseUrl: server.baseUrl,
+      routes: ["/"],
+      viewport: { width: 640, height: 480 },
+      headless: true,
+      interactionDiscovery: { enabled: true, maxInteractionsPerRoute: 1, maxStatesPerRoute: 2, timeoutMs: 10_000 },
+    });
+    assert(count("dashboard-reports") > reportsBeforePriorityCheck, "semantic navigation state is prioritized under tight state budget");
+    assert.equal(count("theme-toggle"), themeBeforePriorityCheck, "global preference toggle does not consume first tight-budget state");
 
     const timed = await runPlaywrightRuntimeScan({
       projectRoot,

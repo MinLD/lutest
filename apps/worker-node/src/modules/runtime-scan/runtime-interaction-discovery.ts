@@ -46,7 +46,7 @@ export const discoverRuntimeInteractionCandidates = async (page: Page): Promise<
   return page.evaluate(() => {
     type Kind = RuntimeInteractionControlKind;
     type Reason = RuntimeInteractionSkipReason;
-    type Evaluated = { candidateId: string; selector: string; kind?: Kind; label?: string; reason?: Reason };
+    type Evaluated = { candidateId: string; selector: string; kind?: Kind; label?: string; priority: number; order: number; reason?: Reason };
     const dangerous = /\b(delete|remove|logout|sign\s*out|submit|save|confirm|checkout|payment|pay|purchase|buy|send|upload|create|update)\b/i;
     const safeAction = /\b(open|show|toggle|expand|menu|filter|sort|settings|details|more|options)\b/i;
     const sensitive = /\b(cookie|token|password|storageState|localStorage|sessionStorage)\b|\.lutest|(?:^|\s)\/(?:home|Users|tmp|var|root|mnt|workspace)\/|[a-zA-Z]:[\\/]|\n\s*at\s+/i;
@@ -87,22 +87,25 @@ export const discoverRuntimeInteractionCandidates = async (page: Page): Promise<
       const label = rawLabel.replace(/\s+/g, " ").trim().slice(0, 80);
       const selector = selectorFor(element);
       const kind = kindFor(element, label);
-      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0 || rect.width <= 0 || rect.height <= 0) return { candidateId, selector, kind, label, reason: "not-visible" };
-      if ((element as HTMLButtonElement).disabled || element.getAttribute("aria-disabled") === "true") return { candidateId, selector, kind, label, reason: "disabled" };
+      const inNavigation = Boolean(element.closest("nav, aside, [role='navigation']"));
+      const globalPreferenceControl = /\b(theme|dark|light|language|locale|donate)\b/i.test(label);
+      const priority = (inNavigation ? -40 : 0) + (globalPreferenceControl ? 60 : 0);
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0 || rect.width <= 0 || rect.height <= 0) return { candidateId, selector, kind, label, priority, order: index, reason: "not-visible" };
+      if ((element as HTMLButtonElement).disabled || element.getAttribute("aria-disabled") === "true") return { candidateId, selector, kind, label, priority, order: index, reason: "disabled" };
       const form = element.closest("form");
-      if (form && Array.from(form.querySelectorAll("input[required], textarea[required], select[required]")).some((field) => !(field as HTMLInputElement).value)) return { candidateId, selector, kind, label, reason: "requires-input" };
+      if (form && Array.from(form.querySelectorAll("input[required], textarea[required], select[required]")).some((field) => !(field as HTMLInputElement).value)) return { candidateId, selector, kind, label, priority, order: index, reason: "requires-input" };
       const buttonType = element instanceof HTMLButtonElement ? element.type : undefined;
-      if ((form && (buttonType === "submit" || buttonType === "reset")) || dangerous.test(label) || (/\bapply\b/i.test(label) && form)) return { candidateId, selector, kind, label, reason: "destructive" };
+      if ((form && (buttonType === "submit" || buttonType === "reset")) || dangerous.test(label) || (/\bapply\b/i.test(label) && form)) return { candidateId, selector, kind, label, priority, order: index, reason: "destructive" };
       const onclick = element.getAttribute("onclick") ?? "";
-      if (element instanceof HTMLAnchorElement || element.hasAttribute("href") || element.hasAttribute("target") || /location|history|window\.open/i.test(onclick)) return { candidateId, selector, kind, label, reason: "route-change-risk" };
-      if (!label || sensitive.test(label)) return { candidateId, selector, kind, reason: "unsafe-candidate" };
-      if (!kind) return { candidateId, selector, label, reason: element.getAttribute("role") ? "unsupported-control" : "unsafe-candidate" };
-      return { candidateId, selector, kind, label };
+      if (element instanceof HTMLAnchorElement || element.hasAttribute("href") || element.hasAttribute("target") || /location|history|window\.open/i.test(onclick)) return { candidateId, selector, kind, label, priority, order: index, reason: "route-change-risk" };
+      if (!label || sensitive.test(label)) return { candidateId, selector, kind, priority, order: index, reason: "unsafe-candidate" };
+      if (!kind) return { candidateId, selector, label, priority, order: index, reason: element.getAttribute("role") ? "unsupported-control" : "unsafe-candidate" };
+      return { candidateId, selector, kind, label, priority, order: index };
     });
     const seen = new Set<string>();
     const candidates: RuntimeInteractionCandidate[] = [];
     const skipped: RuntimeSkippedInteraction[] = [];
-    for (const item of evaluated) {
+    for (const item of evaluated.sort((left, right) => left.priority - right.priority || left.order - right.order)) {
       if (item.reason) {
         skipped.push({ candidateId: item.candidateId, kind: item.kind, label: item.label, reason: item.reason });
         continue;

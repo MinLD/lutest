@@ -5,6 +5,7 @@ const MIN_CLICK_TARGET_RADIUS = MIN_CLICK_TARGET_SIZE / 2;
 const OVERFLOW_TOLERANCE_PX = 1;
 const OVERLAP_RATIO_THRESHOLD = 0.5;
 const MAX_OVERLAP_ELEMENTS = 200;
+const ZERO_SIZE_LAYOUT_IGNORED_TAGS = new Set(["DESC", "OPTGROUP", "OPTION", "TITLE"]);
 
 type DetectInput = {
   scanTargetId: string;
@@ -107,6 +108,11 @@ const distanceToRect = (point: { x: number; y: number }, element: DomElementGeom
 const isUndersizedClickTarget = (element: DomElementGeometry): boolean =>
   element.rect.width < MIN_CLICK_TARGET_SIZE || element.rect.height < MIN_CLICK_TARGET_SIZE;
 
+const isAuditableZeroSizeElement = (element: DomElementGeometry): boolean =>
+  !ZERO_SIZE_LAYOUT_IGNORED_TAGS.has(element.tagName)
+  && usesViewportBoundary(element, "horizontal")
+  && usesViewportBoundary(element, "vertical");
+
 const hasInsufficientClickTargetSpacing = (element: DomElementGeometry, clickableElements: DomElementGeometry[]): boolean => {
   const elementCenter = center(element);
   return clickableElements.some((other) => {
@@ -132,7 +138,9 @@ export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssu
 
   for (const element of elements) {
     if (element.rect.width <= 0 || element.rect.height <= 0) {
-      issues.push(issue(input, element, "zero-size-visible-element", "warning", "Visible element has zero-size geometry.", "width > 0 and height > 0"));
+      if (isAuditableZeroSizeElement(element)) {
+        issues.push(issue(input, element, "zero-size-visible-element", "warning", "Visible element has zero-size geometry.", "width > 0 and height > 0"));
+      }
       continue;
     }
     if (isFullyOutsideViewport(element, input.viewport)) {

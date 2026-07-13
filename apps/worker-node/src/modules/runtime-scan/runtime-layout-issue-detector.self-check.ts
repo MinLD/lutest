@@ -201,6 +201,71 @@ const main = () => {
   });
   assert.equal(nestedOverflowIssues.some((issue) => issue.elementRef === "el:form"), false, "overflow ancestor sharing the same edge is deduped");
   assert.equal(nestedOverflowIssues.some((issue) => issue.elementRef === "el:submit"), true, "leaf overflow evidence is retained");
+  const nativeOptionIssues = detectRuntimeLayoutIssues({
+    scanTargetId: "route:select",
+    route: "/select",
+    viewport,
+    domGeometry: {
+      viewport,
+      capturedAt: "2026-01-01T00:00:00.000Z",
+      elementCount: 1,
+      truncated: false,
+      elements: [{
+        internalId: "el:option",
+        tagName: "OPTION",
+        selectorHint: "option",
+        rect: { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 },
+        visibility: { display: "block", visibility: "visible", opacity: 1 },
+        clickable: false,
+        order: 1,
+      }],
+    },
+  });
+  assert.equal(nativeOptionIssues.length, 0, "native options are not standalone auditable zero-size layout boxes");
+  const nonAuditableZeroSizeIssues = detectRuntimeLayoutIssues({
+    scanTargetId: "route:helpers",
+    route: "/helpers",
+    viewport,
+    domGeometry: {
+      viewport,
+      capturedAt: "2026-01-01T00:00:00.000Z",
+      elementCount: 3,
+      truncated: false,
+      elements: [
+        {
+          internalId: "el:clipped-zero",
+          tagName: "DIV",
+          selectorHint: "div.clipped-zero",
+          rect: { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 },
+          visibility: { display: "block", visibility: "visible", opacity: 1 },
+          viewportBoundary: { horizontal: "clipped-ancestor", vertical: "clipped-ancestor" },
+          clickable: false,
+          order: 1,
+        },
+        {
+          internalId: "el:svg-title",
+          tagName: "TITLE",
+          selectorHint: "svg title",
+          rect: { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0 },
+          visibility: { display: "inline", visibility: "visible", opacity: 1 },
+          clickable: false,
+          order: 2,
+        },
+        {
+          internalId: "el:real-zero",
+          tagName: "BUTTON",
+          selectorHint: "button.real-zero",
+          rect: { x: 20, y: 20, width: 0, height: 0, top: 20, right: 20, bottom: 20, left: 20 },
+          visibility: { display: "inline-block", visibility: "visible", opacity: 1 },
+          clickable: true,
+          order: 3,
+        },
+      ],
+    },
+  });
+  assert.equal(nonAuditableZeroSizeIssues.some((issue) => issue.elementRef === "el:clipped-zero"), false, "zero-size content clipped by ancestor is not visible UI evidence");
+  assert.equal(nonAuditableZeroSizeIssues.some((issue) => issue.elementRef === "el:svg-title"), false, "SVG title helper nodes are not layout boxes");
+  assert.equal(nonAuditableZeroSizeIssues.some((issue) => issue.elementRef === "el:real-zero"), true, "viewport-bound zero-size controls remain reported");
   assert.equal(detectRuntimeLayoutIssues({ scanTargetId: "route:1", route: "/", viewport }).length, 0);
   console.log("runtime layout issue detector self-check passed");
 };
