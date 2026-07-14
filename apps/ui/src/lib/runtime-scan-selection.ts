@@ -16,11 +16,31 @@ export type RuntimeScanSelectionInput = {
   availableRoutes: string[];
   selectedRoutes: string[];
   interactionDiscoveryEnabled?: boolean;
+  useSavedAuthState?: boolean;
 };
 
 export type RuntimeScanSelectionResult =
   | { ok: true; request: RuntimeScanRequest }
   | { ok: false; message: string };
+
+const normalizeNextPublicRouteSegment = (segment: string): string | undefined => {
+  if (segment.startsWith("@")) return undefined;
+  if (/^\(.+\)$/.test(segment)) return undefined;
+
+  const publicSegment = segment.replace(/^(?:\(\.\)|\(\.\.\)|\(\.\.\.\))+/, "");
+  return publicSegment || undefined;
+};
+
+const normalizeSelectableRoute = (route: string): string => {
+  const [pathname = "", suffix = ""] = route.split(/(?=[?#])/, 2);
+  const publicPath = pathname
+    .split("/")
+    .map(normalizeNextPublicRouteSegment)
+    .filter((segment): segment is string => Boolean(segment))
+    .join("/");
+  const normalizedPath = (`/${publicPath}`.replace(/\/+/g, "/").replace(/\/$/, "") || "/");
+  return `${normalizedPath}${suffix}`;
+};
 
 const isSelectableRoute = (route: string): boolean =>
   validateRuntimeScanRequest({
@@ -37,12 +57,13 @@ export const runtimeScanRouteOptions = (
 ): RuntimeScanRouteOption[] => {
   const options = new Map<string, RuntimeScanRouteOption>();
   for (const node of graph?.nodes ?? []) {
-    const route = node.kind === "page" && node.route?.kind === "page" ? node.route.path : undefined;
+    const route = node.kind === "page" && node.route?.kind === "page" ? normalizeSelectableRoute(node.route.path) : undefined;
     if (route && isSelectableRoute(route)) options.set(route, { route, source: "production-graph" });
   }
   for (const target of detail?.targetResults ?? []) {
-    if (isSelectableRoute(target.route) && !options.has(target.route)) {
-      options.set(target.route, { route: target.route, source: "latest-runtime" });
+    const route = normalizeSelectableRoute(target.route);
+    if (isSelectableRoute(route) && !options.has(route)) {
+      options.set(route, { route, source: "latest-runtime" });
     }
   }
   return [...options.values()].sort((left, right) => left.route.localeCompare(right.route));
@@ -51,10 +72,10 @@ export const runtimeScanRouteOptions = (
 export const buildRuntimeScanSelectionRequest = (
   input: RuntimeScanSelectionInput,
 ): RuntimeScanSelectionResult => {
-  const availableRoutes = [...new Set(input.availableRoutes)].filter(isSelectableRoute);
+  const availableRoutes = [...new Set(input.availableRoutes.map(normalizeSelectableRoute))].filter(isSelectableRoute);
   if (availableRoutes.length === 0) return { ok: false, message: "No valid runtime routes are available." };
 
-  const selectedRoutes = [...new Set(input.selectedRoutes)].filter((route) => availableRoutes.includes(route));
+  const selectedRoutes = [...new Set(input.selectedRoutes.map(normalizeSelectableRoute))].filter((route) => availableRoutes.includes(route));
   if (input.mode === "selected-routes" && selectedRoutes.length === 0) {
     return { ok: false, message: "Select at least one valid route." };
   }
@@ -67,6 +88,7 @@ export const buildRuntimeScanSelectionRequest = (
     baseUrl: input.baseUrl.trim(),
     discoveryMode: input.mode,
     viewportPreset: "default",
+    auth: { promptOnRedirect: true as const, ...(input.useSavedAuthState ? { useSavedState: true as const } : {}) },
     ...(input.interactionDiscoveryEnabled ? { interactionDiscovery: { enabled: true as const } } : {}),
     ...(input.mode === "selected-routes" ? { routes: selectedRoutes } : {}),
   };

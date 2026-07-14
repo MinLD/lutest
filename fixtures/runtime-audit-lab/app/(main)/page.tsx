@@ -1,5 +1,5 @@
 import Link from "next/link";
-import catalog from "../fixture-catalog.json";
+import catalog from "../../fixture-catalog.json";
 
 export default function FixtureCatalogPage() {
   return (

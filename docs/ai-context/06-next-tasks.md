@@ -2,22 +2,33 @@
 
 ## Next Recommended
 
-R8.9 — Runtime Fix Guidance UI.
+R9.1 — Full Self-check Matrix.
 
 ## R8.8 Status
 
 - Completed: WCAG 2.2 low-text-contrast detection, public-safe OKLCH evidence, deterministic WCAG-valid foreground suggestions, strict validators, screenshot/detail mapping, UI swatches, and production fixture coverage.
 - Verified: 24 intended contrast failures across three viewports; unsupported/hidden cases and high-contrast controls avoid false positives.
 
-## R8.9 Goal
+## R8.9 Status
 
-- Turn measured runtime evidence into concise issue-specific remediation guidance.
-- Keep guidance deterministic, public-safe, and evidence-grounded.
-- Do not auto-edit source or weaken scanner/security policy.
+- Completed: deterministic issue-specific remediation guidance for all runtime issue types in Reports.
+- Verified: focused overlay/view-model self-checks, UI build, and workspace typecheck passed.
+- Scope held: no backend contract change, OCR, AI analysis, source-file guessing, or automatic source edit.
+
+## R8.10 Status
+
+- Completed: dashboard auth status/start/clear controls and explicit saved-auth runtime scan opt-in.
+- Completed: safe browser/auth error messaging and clear configured-flow-catalog blocker.
+- Scope held: no raw auth artifacts, credential autofill, form bypass, path-policy loosening, or fake flow targets.
+
+## R9.1 Goal
+
+- Run and close the full production self-check matrix before release hardening continues.
+- Keep generated `.lutest` artifacts and auth artifacts out of commits.
 
 ## Later Runtime Phases
 
-- R8.9 — Runtime Fix Guidance UI.
+- R9.1 — Full Self-check Matrix.
 
 ## Non-Goals For R8.1 Unless Requested
 

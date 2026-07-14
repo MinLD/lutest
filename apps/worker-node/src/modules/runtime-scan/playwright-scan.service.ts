@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
 import { pathPolicyService } from "../../shared/services/path-policy.service";
+import { authStatePaths, saveAuthStorageState } from "../auth/auth-state.repository";
 import { assertPlaywrightBrowserPreflight } from "./playwright-browser-preflight";
 import { discoverRuntimeScanRoutes } from "./playwright-route-discovery";
 import { captureRuntimeDomGeometry } from "./runtime-dom-geometry";
@@ -34,6 +35,17 @@ import type {
   RuntimeSkippedInteraction,
   RuntimeViewportResult,
 } from "./playwright-scan.types";
+
+type PageDiagnosticSinks = {
+  viewportConsoleMessages: RuntimeConsoleMessage[];
+  consoleMessages: RuntimeConsoleMessage[];
+  viewportPageErrors: string[];
+  pageErrors: string[];
+  viewportNetworkErrors: RuntimeNetworkError[];
+  networkErrors: RuntimeNetworkError[];
+  viewportFailedResponses: RuntimeFailedResponse[];
+  failedResponses: RuntimeFailedResponse[];
+};
 
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 const BASE_URL_ERROR = "Runtime scan baseUrl must be a local HTTP(S) URL";
@@ -91,6 +103,111 @@ const routeUrl = (baseUrl: URL, route: string): string => {
     throw new Error("Runtime scan route must stay under baseUrl");
   }
   return url.toString();
+};
+
+const normalizeRoutePath = (value: string): string => {
+  const pathOnly = value.split(/[?#]/, 1)[0] || "/";
+  const withSlash = pathOnly.startsWith("/") ? pathOnly : `/${pathOnly}`;
+  return withSlash.length > 1 ? withSlash.replace(/\/+$/, "") : withSlash;
+};
+
+export const runtimeRedirectDiagnostic = (input: { requestedRoute: string; finalUrl: string; baseUrl: URL }): RuntimeConsoleMessage | null => {
+  const requestedPath = normalizeRoutePath(input.requestedRoute);
+  let final: URL;
+  try {
+    final = new URL(input.finalUrl);
+  } catch {
+    return null;
+  }
+  if (final.origin !== input.baseUrl.origin) return null;
+  const finalPath = normalizeRoutePath(final.pathname);
+  if (requestedPath === finalPath) return null;
+  return {
+    type: "warning",
+    text: `Runtime target ${requestedPath} ended at ${finalPath}. This usually means the page redirected, often because login/auth is required.`,
+    location: input.finalUrl,
+  };
+};
+
+export const isSameTargetUrl = (candidate: string, target: string): boolean => {
+  try {
+    const candidateUrl = new URL(candidate);
+    const targetUrl = new URL(target);
+    return candidateUrl.origin === targetUrl.origin && normalizeRoutePath(candidateUrl.pathname) === normalizeRoutePath(targetUrl.pathname);
+  } catch {
+    return false;
+  }
+};
+
+export const waitForStableTargetUrl = async (page: Page, targetUrl: string, timeoutMs: number): Promise<void> => {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const remainingMs = Math.max(1, deadline - Date.now());
+    await page.waitForURL((url) => isSameTargetUrl(url.href, targetUrl), { timeout: remainingMs });
+    await page.waitForLoadState("networkidle", { timeout: Math.min(1_000, Math.max(1, deadline - Date.now())) }).catch(() => undefined);
+    await page.waitForTimeout(300);
+    if (isSameTargetUrl(page.url(), targetUrl)) return;
+  }
+  throw new Error(`Auth prompt did not stay on target ${new URL(targetUrl).pathname}`);
+};
+
+const attachRuntimePageDiagnostics = (page: Page, sinks: PageDiagnosticSinks): void => {
+  page.on("console", (message) => {
+    if (message.type() !== "warning" && message.type() !== "error") return;
+    const location = message.location();
+    const consoleMessage = {
+      type: message.type(),
+      text: message.text(),
+      location: location.url ? `${location.url}:${location.lineNumber}:${location.columnNumber}` : undefined,
+    };
+    sinks.viewportConsoleMessages.push(consoleMessage);
+    sinks.consoleMessages.push(consoleMessage);
+  });
+  page.on("pageerror", (pageError) => {
+    sinks.viewportPageErrors.push(pageError.message);
+    sinks.pageErrors.push(pageError.message);
+  });
+  page.on("requestfailed", (failedRequest) => {
+    const networkError = {
+      url: failedRequest.url(),
+      method: failedRequest.method(),
+      failureText: failedRequest.failure()?.errorText,
+    };
+    sinks.viewportNetworkErrors.push(networkError);
+    sinks.networkErrors.push(networkError);
+  });
+  page.on("response", (response) => {
+    if (response.status() < 400) return;
+    const failedResponse = {
+      url: response.url(),
+      status: response.status(),
+      statusText: response.statusText(),
+    };
+    sinks.viewportFailedResponses.push(failedResponse);
+    sinks.failedResponses.push(failedResponse);
+  });
+};
+
+const promptForRedirectAuthState = async (input: {
+  projectRoot: string;
+  loginUrl: string;
+  targetUrl: string;
+  timeoutMs: number;
+}): Promise<string> => {
+  let browser: Browser | null = null;
+  let context: BrowserContext | null = null;
+  try {
+    browser = await chromium.launch({ headless: false });
+    context = await browser.newContext();
+    const page = await context.newPage();
+    await page.goto(input.loginUrl, { waitUntil: "load", timeout: Math.min(input.timeoutMs, 60_000) });
+    await waitForStableTargetUrl(page, input.targetUrl, input.timeoutMs);
+    await saveAuthStorageState(input.projectRoot, await context.storageState());
+    return authStatePaths(input.projectRoot).statePath;
+  } finally {
+    await closeQuietly(context);
+    await closeQuietly(browser);
+  }
 };
 
 const localWorkerUrl = (): string | undefined => {
@@ -192,6 +309,8 @@ export const runPlaywrightRuntimeScan = async (
 
   try {
     browser = await chromium.launch({ headless: request.headless ?? true });
+    let scanStorageStatePath = request.storageStatePath;
+    let authPrompted = false;
 
     for (const [index, target] of targets.entries()) {
       if (Date.now() >= scanDeadline) break;
@@ -228,52 +347,57 @@ export const runPlaywrightRuntimeScan = async (
         const viewportFailedResponses: RuntimeFailedResponse[] = [];
 
         try {
-          context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1, storageState: request.storageStatePath });
-          await addLutestRuntimeConfig(context, baseUrl);
-          page = await context.newPage();
-          page.on("console", (message) => {
-            if (message.type() !== "warning" && message.type() !== "error") return;
-            const location = message.location();
-            const consoleMessage = {
-              type: message.type(),
-              text: message.text(),
-              location: location.url ? `${location.url}:${location.lineNumber}:${location.columnNumber}` : undefined,
-            };
-            viewportConsoleMessages.push(consoleMessage);
-            consoleMessages.push(consoleMessage);
-          });
-          page.on("pageerror", (pageError) => {
-            viewportPageErrors.push(pageError.message);
-            pageErrors.push(pageError.message);
-          });
-          page.on("requestfailed", (failedRequest) => {
-            const networkError = {
-              url: failedRequest.url(),
-              method: failedRequest.method(),
-              failureText: failedRequest.failure()?.errorText,
-            };
-            viewportNetworkErrors.push(networkError);
-            networkErrors.push(networkError);
-          });
-          page.on("response", (response) => {
-            if (response.status() < 400) return;
-            const failedResponse = {
-              url: response.url(),
-              status: response.status(),
-              statusText: response.statusText(),
-            };
-            viewportFailedResponses.push(failedResponse);
-            failedResponses.push(failedResponse);
-          });
+          if (!browser) throw new Error("Runtime browser is not available");
+          const activeBrowser = browser;
+          const openRuntimePage = async (): Promise<Page> => {
+            context = await activeBrowser.newContext({ viewport: { width: viewport.width, height: viewport.height }, deviceScaleFactor: 1, storageState: scanStorageStatePath });
+            await addLutestRuntimeConfig(context, baseUrl);
+            page = await context.newPage();
+            attachRuntimePageDiagnostics(page, { viewportConsoleMessages, consoleMessages, viewportPageErrors, pageErrors, viewportNetworkErrors, networkErrors, viewportFailedResponses, failedResponses });
+            return page;
+          };
+
+          page = await openRuntimePage();
 
           try {
             const remainingScanMs = Math.max(1, scanDeadline - Date.now());
             const routeTimeoutMs = Math.min(limits.routeTimeoutMs, remainingScanMs);
-            const response = await page.goto(url, { waitUntil: "load", timeout: routeTimeoutMs });
-            viewportStatus = response?.status();
-            status ??= viewportStatus;
-            await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS) }).catch(() => undefined);
+            const loadTarget = async (): Promise<RuntimeConsoleMessage | null> => {
+              if (!page) return null;
+              const response = await page.goto(url, { waitUntil: "load", timeout: routeTimeoutMs });
+              viewportStatus = response?.status();
+              status ??= viewportStatus;
+              await page.waitForLoadState("networkidle", { timeout: Math.min(limits.routeTimeoutMs, RUNTIME_ROUTE_NETWORK_IDLE_TIMEOUT_MS) }).catch(() => undefined);
+              return runtimeRedirectDiagnostic({ requestedRoute: route, finalUrl: page.url(), baseUrl });
+            };
+            let redirectDiagnostic = await loadTarget();
+            if (redirectDiagnostic && request.auth?.promptOnRedirect && !authPrompted && page) {
+              authPrompted = true;
+              try {
+                scanStorageStatePath = await promptForRedirectAuthState({
+                  projectRoot,
+                  loginUrl: page.url(),
+                  targetUrl: url,
+                  timeoutMs: Math.max(1, Math.min(120_000, scanDeadline - Date.now())),
+                });
+                await closeQuietly(page);
+                await closeQuietly(context);
+                page = null;
+                context = null;
+                page = await openRuntimePage();
+                redirectDiagnostic = await loadTarget();
+              } catch (cause) {
+                const authDiagnostic = { type: "warning", text: `Auth prompt did not reach ${route}: ${errorMessage(cause)}` };
+                viewportConsoleMessages.push(authDiagnostic);
+                consoleMessages.push(authDiagnostic);
+              }
+            }
+            if (redirectDiagnostic) {
+              viewportConsoleMessages.push(redirectDiagnostic);
+              consoleMessages.push(redirectDiagnostic);
+            }
             if (manualSteps.length > 0) {
+              if (!page) throw new Error("Runtime page is not available");
               const stepResults = await runManualFlowSteps({
                 page,
                 steps: manualSteps,

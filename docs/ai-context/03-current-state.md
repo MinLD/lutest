@@ -48,6 +48,12 @@ R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence.
 - Scanner only executes explicitly declared steps; no crawler or auto-click discovery.
 - Runtime layout issue detector runs from DOM geometry only, independent of Playwright browser APIs.
 - Runtime issues currently cover horizontal overflow, outside viewport, small click target, suspicious overlap, zero-size visible element, and low text contrast.
+- Runtime DOM geometry captures `focusBehavior` for offscreen focusable controls by focusing with `preventScroll` and measuring the focused rect.
+- Offscreen controls that become visible on focus are treated as intentional accessibility controls and are not reported as layout overflow or overlap/click-target issues.
+- Offscreen controls that remain hidden after focus are still reported; this avoids hard-coded `skipLink`/text/class exceptions.
+- Zero-size layout detection ignores clipped coordinate-space helpers, native option/optgroup nodes, and SVG title/desc helper nodes while retaining viewport-bound zero-size controls.
+- Runtime scan injects active `window.__LUTEST_CONFIG__` into scanned Lutest dashboards so self-scans do not call stale default worker port `6532`.
+- Safe interaction discovery uses a bounded default of 8 states per route and at most 20 interactions per route; semantic navigation states are prioritized over global preference toggles under tight budgets.
 - Low-text-contrast detection uses WCAG 2.2 relative luminance; OCR and AI analysis remain intentionally unimplemented.
 - Runtime artifact repository has atomic latest/meta/snapshot writes and typed read errors.
 - Canonical runtime artifact paths remain `<projectRoot>/.lutest/runtime/latest-runtime-scan.json`, `<projectRoot>/.lutest/runtime/latest-runtime-scan.meta.json`, and `<projectRoot>/.lutest/runtime/scans/<scanId>.json`.
@@ -298,3 +304,61 @@ Implemented:
 
 Next recommended phase:
 - R8.9 — Runtime Fix Guidance UI
+
+## R8.9 — Runtime Fix Guidance UI
+
+Status: completed.
+
+Implemented:
+- Reports issue detail now shows deterministic rule-based guidance for every runtime issue type: `horizontal-overflow`, `small-click-target`, `suspicious-overlap`, `zero-size-visible-element`, `element-outside-viewport`, and `low-text-contrast`.
+- Guidance includes explanation, common causes, suggested CSS/HTML remediation, selector/evidence/viewport context, and a limitation that Lutest does not guess source files without source-map evidence.
+- Low-contrast guidance stays tied to measured WCAG/OKLCH evidence and optional validated foreground suggestions.
+- No backend contract, scanner behavior, path-policy, screenshot endpoint, OCR, AI analysis, or automatic source edit was added.
+
+Tests run:
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-report-view-model.self-check.ts` — passed.
+- `npm run build -w ui` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+
+Known limitations:
+- Guidance is deterministic UI advice only; it does not identify source files or edit code.
+- Auth/flow controls UI remains future work.
+
+Next recommended phase:
+- R8.10 — Auth / Flow Controls UI
+
+## R8.10 — Auth / Flow Controls UI
+
+Status: completed.
+
+Implemented:
+- Scans UI now loads safe auth status from `GET /api/auth/status` and shows only status/date/error metadata.
+- Users can start a manual Lutest-controlled Playwright auth session from the dashboard with local base URL plus optional success URL/selector wait conditions and bounded timeout.
+- Users can clear saved auth state from the dashboard.
+- Runtime scan controls include explicit `Use saved auth state`; it is disabled unless auth status is valid and sends only `runtimeScan.auth.useSavedState: true` when opted in.
+- Browser-missing/auth errors are shown as UI messages without raw storageState/cookie/token/password values.
+- Configured flow target catalog remains unavailable; UI states this clearly and does not invent scan targets from latest reports.
+- Auth start timeout `408` responses are treated as typed auth responses instead of generic fetch failures.
+
+Tests run:
+- `npx tsx ./apps/ui/src/lib/runtime-scan-selection.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-data-request.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-runtime-detail-load.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+
+Known limitations:
+- Manual flow builder and configured flow target catalog are still not implemented.
+- Auth UI does not auto-fill credentials or bypass form validation.
+
+Next recommended phase:
+- R9.1 — Full Self-check Matrix

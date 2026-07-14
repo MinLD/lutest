@@ -43,6 +43,9 @@ export type RuntimeIssueGuidance = {
   summary: string;
   impact: string;
   location: string;
+  commonCauses: string[];
+  suggestedFixes: string[];
+  limitation: string;
 };
 
 export type RuntimeOverlayCalloutPlacement = {
@@ -102,6 +105,9 @@ export function runtimeIssueGuidance(
           summary: `The entire element ends ${distance}px before the visible screen begins, so it cannot appear in this screenshot.`,
           impact: "Users cannot see or interact with this element unless the layout moves it back into the viewport.",
           location: `Outside left by ${distance}px · ${rectLocation(rect)}`,
+          commonCauses: ["Negative offsets", "absolute positioning", "responsive transform not constrained"],
+          suggestedFixes: ["Constrain positioned elements within the viewport", "Use responsive max-width or inset values", "Verify transforms at this viewport width"],
+          limitation: "No source file is guessed without source-map evidence.",
         };
       }
       if (rect.left >= viewport.width) {
@@ -112,6 +118,9 @@ export function runtimeIssueGuidance(
           summary: `The entire element starts ${distance}px after the visible screen ends, so it cannot appear in this screenshot.`,
           impact: "Users cannot see or interact with this element unless the layout moves it back into the viewport.",
           location: `Outside right by ${distance}px · ${rectLocation(rect)}`,
+          commonCauses: ["Fixed widths", "absolute positioning", "responsive breakpoint missing"],
+          suggestedFixes: ["Constrain width with max-width: 100%", "Prefer responsive grid/flex sizing", "Check right/left offsets at this viewport"],
+          limitation: "No source file is guessed without source-map evidence.",
         };
       }
       if (rect.bottom <= 0) {
@@ -122,6 +131,9 @@ export function runtimeIssueGuidance(
           summary: `The entire element ends ${distance}px above the viewport.`,
           impact: "Users cannot see or interact with this element in the captured state.",
           location: `Outside top by ${distance}px · ${rectLocation(rect)}`,
+          commonCauses: ["Negative top offset", "hidden-until-focus pattern", "transform moves content offscreen"],
+          suggestedFixes: ["Keep active UI within the visible viewport", "Use accessible focus-reveal patterns", "Verify transform and position constraints"],
+          limitation: "No source file is guessed without source-map evidence.",
         };
       }
       const distance = rounded(rect.top - viewport.height);
@@ -131,6 +143,9 @@ export function runtimeIssueGuidance(
         summary: `The entire element starts ${distance}px below the captured viewport.`,
         impact: "Users cannot see or interact with this element in the captured state.",
         location: `Outside bottom by ${distance}px · ${rectLocation(rect)}`,
+        commonCauses: ["Content anchored past the fold", "fixed-height container", "responsive spacing overflow"],
+        suggestedFixes: ["Allow containers to grow or scroll intentionally", "Use responsive spacing clamps", "Check vertical positioning constraints"],
+        limitation: "No source file is guessed without source-map evidence.",
       };
     }
     case "horizontal-overflow": {
@@ -143,6 +158,9 @@ export function runtimeIssueGuidance(
         summary: `Part of this element overflows the ${direction}.`,
         impact: "Content may be clipped or force unwanted horizontal scrolling.",
         location: rectLocation(rect),
+        commonCauses: ["Fixed pixel width", "negative margins", "absolute positioning", "unbounded media or table"],
+        suggestedFixes: ["Use max-width: 100%", "Remove fixed viewport-breaking widths", "Constrain media/table overflow", "Inspect absolute left/right offsets"],
+        limitation: "No source file is guessed without source-map evidence.",
       };
     }
     case "zero-size-visible-element":
@@ -152,6 +170,9 @@ export function runtimeIssueGuidance(
         summary: "The layout gives this element no usable width or height, but its content is still painted outside that box.",
         impact: "The content can overlap nearby UI, be clipped, or have an unreliable interaction area.",
         location: `Anchor point · ${rectLocation(rect)}`,
+        commonCauses: ["Missing intrinsic content size", "absolute children escaping parent", "display/layout constraint mismatch"],
+        suggestedFixes: ["Give the container an explicit usable size", "Contain positioned children", "Check display, content, and layout constraints"],
+        limitation: "No source file is guessed without source-map evidence.",
       };
     case "small-click-target":
       return {
@@ -160,6 +181,9 @@ export function runtimeIssueGuidance(
         summary: `The measured clickable area is ${rounded(rect.width)} × ${rounded(rect.height)}px.`,
         impact: "Touch and motor-impaired users may miss this control unless it has sufficient spacing from nearby targets.",
         location: rectLocation(rect),
+        commonCauses: ["Icon-only button without padding", "tight inline link", "small custom control"],
+        suggestedFixes: ["Add padding or min-width/min-height", "Target at least 44 × 44 CSS px where practical", "Keep sufficient spacing from adjacent controls"],
+        limitation: "No source file is guessed without source-map evidence.",
       };
     case "suspicious-overlap":
       return {
@@ -170,6 +194,9 @@ export function runtimeIssueGuidance(
           : `The related element covers about ${Math.round(overlapRatio * 100)}% of the primary clickable area.`,
         impact: "One control may hide another or receive the user's click unexpectedly.",
         location: rectLocation(rect),
+        commonCauses: ["z-index conflict", "absolute or fixed positioning", "negative margins", "responsive stacking issue"],
+        suggestedFixes: ["Inspect z-index and stacking contexts", "Adjust position/margin rules", "Add responsive spacing or wrapping", "Confirm intended layering"],
+        limitation: "No source file is guessed without source-map evidence.",
       };
     case "low-text-contrast":
       return {
@@ -178,6 +205,9 @@ export function runtimeIssueGuidance(
         summary: "The computed foreground and effective background colors are too similar.",
         impact: "People with low vision or displays in difficult lighting may not be able to read this text.",
         location: rectLocation(rect),
+        commonCauses: ["Low-contrast design token", "theme color mismatch", "disabled/muted text over light background"],
+        suggestedFixes: ["Adjust color tokens to meet WCAG AA", "Increase foreground/background contrast", "Use the suggested foreground color only after design review"],
+        limitation: "Guidance is deterministic color evidence only; no OCR, AI analysis, or automatic source edit is performed.",
       };
     default:
       return assertNever(type);

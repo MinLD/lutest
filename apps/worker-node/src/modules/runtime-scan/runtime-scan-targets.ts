@@ -30,6 +30,25 @@ export const createRuntimeRouteTarget = (route: string, index: number): RuntimeR
   route,
 });
 
+const normalizeRuntimeRouteSegment = (segment: string): string | undefined => {
+  if (segment.startsWith("@")) return undefined;
+  if (/^\(.+\)$/.test(segment)) return undefined;
+
+  const publicSegment = segment.replace(/^(?:\(\.\)|\(\.\.\)|\(\.\.\.\))+/, "");
+  return publicSegment || undefined;
+};
+
+const normalizeRuntimeRoute = (route: string): string => {
+  const [pathname = "", suffix = ""] = route.split(/(?=[?#])/, 2);
+  const publicPath = pathname
+    .split("/")
+    .map(normalizeRuntimeRouteSegment)
+    .filter((segment): segment is string => Boolean(segment))
+    .join("/");
+  const normalizedPath = (`/${publicPath}`.replace(/\/+/g, "/").replace(/\/$/, "") || "/");
+  return `${normalizedPath}${suffix}`;
+};
+
 export const createRuntimeStateTargetPlaceholder = (name: string, index: number): RuntimeStateTarget => ({
   id: `state:${index + 1}`,
   kind: "state",
@@ -48,15 +67,19 @@ export const resolveRuntimeTargetDiscovery = (input: RuntimeTargetInput): Runtim
     const targets = input.customTargets.slice(0, input.limits.maxTargets);
     return {
       mode: "custom-targets",
-      routes: [...new Set(targets.map((target) => target.kind === "route" ? target.route : target.route ?? "/"))],
-      targets,
+      routes: [...new Set(targets.map((target) => normalizeRuntimeRoute(target.kind === "route" ? target.route : target.route ?? "/")))],
+      targets: targets.map((target) => target.kind === "route"
+        ? { ...target, route: normalizeRuntimeRoute(target.route) }
+        : target.route
+          ? { ...target, route: normalizeRuntimeRoute(target.route) }
+          : target),
       source: input.source,
       reason: input.customTargets.length > targets.length
         ? `${input.reason}; capped by maxTargets=${input.limits.maxTargets}`
         : input.reason,
     };
   }
-  const cappedRoutes = input.routes.slice(0, input.limits.maxRoutes);
+  const cappedRoutes = [...new Set(input.routes.map(normalizeRuntimeRoute))].slice(0, input.limits.maxRoutes);
   const mode: RuntimeDiscoveryMode = input.source === "request" ? "selected-routes" : "all-routes";
   const targets = cappedRoutes.slice(0, input.limits.maxTargets).map(createRuntimeRouteTarget);
   const capReason = input.routes.length > cappedRoutes.length

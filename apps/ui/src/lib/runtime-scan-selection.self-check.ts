@@ -12,6 +12,10 @@ const graph: ProductionGraphResponse = {
     { id: "page:home", kind: "page", name: "Home", route: { path: "/", kind: "page" }, confidence: "high", reason: "test" },
     { id: "page:home-copy", kind: "page", name: "Home copy", route: { path: "/", kind: "page" }, confidence: "high", reason: "test" },
     { id: "page:users", kind: "page", name: "Users", route: { path: "/users", kind: "page" }, confidence: "high", reason: "test" },
+    { id: "page:route-group", kind: "page", name: "Route group", route: { path: "/(main)", kind: "page" }, confidence: "high", reason: "test" },
+    { id: "page:route-group-child", kind: "page", name: "Route group child", route: { path: "/(main)/route-group", kind: "page" }, confidence: "high", reason: "test" },
+    { id: "page:parallel-slot", kind: "page", name: "Parallel slot", route: { path: "/@modal/login", kind: "page" }, confidence: "high", reason: "test" },
+    { id: "page:intercepting", kind: "page", name: "Intercepting", route: { path: "/(.)photo/[id]", kind: "page" }, confidence: "high", reason: "test" },
     { id: "page:unsafe", kind: "page", name: "Unsafe", route: { path: "/../secret", kind: "page" }, confidence: "high", reason: "test" },
     { id: "page:encoded-unsafe", kind: "page", name: "Encoded unsafe", route: { path: "/%2e%2e/secret", kind: "page" }, confidence: "high", reason: "test" },
     { id: "page:artifact", kind: "page", name: "Artifact", route: { path: "/.lutest/runtime", kind: "page" }, confidence: "high", reason: "test" },
@@ -20,7 +24,7 @@ const graph: ProductionGraphResponse = {
     { id: "file:secret", kind: "file", name: "Secret", filePath: "/home/user/project/secret.ts", confidence: "high", reason: "test" },
   ],
   edges: [],
-  summary: { fileCount: 1, pageCount: 7, componentCount: 0, hookCount: 0, apiRouteCount: 1, apiClientMethodCount: 0, externalEndpointCount: 0, edgeCount: 0 },
+  summary: { fileCount: 1, pageCount: 11, componentCount: 0, hookCount: 0, apiRouteCount: 1, apiClientMethodCount: 0, externalEndpointCount: 0, edgeCount: 0 },
 };
 
 const detail: RuntimeArtifactDetailResponse = {
@@ -40,9 +44,13 @@ const detail: RuntimeArtifactDetailResponse = {
 const options = runtimeScanRouteOptions(graph, detail);
 assert.deepEqual(options, [
   { route: "/", source: "production-graph" },
+  { route: "/login", source: "production-graph" },
+  { route: "/photo/[id]", source: "production-graph" },
+  { route: "/route-group", source: "production-graph" },
   { route: "/settings", source: "latest-runtime" },
   { route: "/users", source: "production-graph" },
 ]);
+assert(!options.some((option) => option.route.includes("(") || option.route.includes("@")), "route options normalize Next internal segments");
 assert(!/\/home\/user|\.lutest|storageState|cookie|token|password/i.test(JSON.stringify(options)), "route options exclude paths and secrets");
 
 const selected = buildRuntimeScanSelectionRequest({
@@ -59,7 +67,7 @@ if (selected.ok) assert.deepEqual(selected.request, {
   targets: undefined,
   discoveryMode: "selected-routes",
   viewportPreset: "default",
-  auth: undefined,
+  auth: { promptOnRedirect: true },
   interactionDiscovery: undefined,
 });
 
@@ -77,7 +85,7 @@ if (allRoutes.ok) assert.deepEqual(allRoutes.request, {
   targets: undefined,
   discoveryMode: "all-routes",
   viewportPreset: "default",
-  auth: undefined,
+  auth: { promptOnRedirect: true },
   interactionDiscovery: undefined,
 });
 
@@ -90,6 +98,16 @@ const safeDiscovery = buildRuntimeScanSelectionRequest({
 });
 assert.equal(safeDiscovery.ok, true);
 if (safeDiscovery.ok) assert.equal(safeDiscovery.request.interactionDiscovery?.enabled, true);
+
+const savedAuth = buildRuntimeScanSelectionRequest({
+  mode: "selected-routes",
+  baseUrl: "http://localhost:3000",
+  availableRoutes: ["/account"],
+  selectedRoutes: ["/account"],
+  useSavedAuthState: true,
+});
+assert.equal(savedAuth.ok, true);
+if (savedAuth.ok) assert.deepEqual(savedAuth.request.auth, { useSavedState: true, promptOnRedirect: true }, "saved auth keeps guided prompt enabled");
 
 let callCount = 0;
 let submitted: RuntimeScanRequest | undefined;

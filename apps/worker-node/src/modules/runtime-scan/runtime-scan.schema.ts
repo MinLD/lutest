@@ -97,6 +97,8 @@ export type RuntimeReadabilityCoverage = {
   incomplete: boolean;
 };
 
+export type RuntimeElementRect = { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number };
+
 export type DomElementGeometry = {
   internalId: string;
   parentInternalId?: string;
@@ -107,9 +109,13 @@ export type DomElementGeometry = {
   role?: string;
   ariaLabel?: string;
   textSnippet?: string;
-  rect: { x: number; y: number; width: number; height: number; top: number; right: number; bottom: number; left: number };
+  rect: RuntimeElementRect;
   visibility: { display: string; visibility: string; opacity: number };
   textStyle?: RuntimeTextStyleEvidence;
+  focusBehavior?: {
+    visibleOnFocus: boolean;
+    rect?: RuntimeElementRect;
+  };
   viewportBoundary?: {
     horizontal: "viewport" | "clipped-ancestor" | "scrollable-ancestor";
     vertical: "viewport" | "clipped-ancestor" | "scrollable-ancestor";
@@ -147,10 +153,10 @@ export type RuntimeLayoutIssue = {
   elementRef: string;
   evidence: {
     selectorHint?: string;
-    boundingBox: DomElementGeometry["rect"];
+    boundingBox: RuntimeElementRect;
     relatedElementRef?: string;
     relatedSelectorHint?: string;
-    relatedBoundingBox?: DomElementGeometry["rect"];
+    relatedBoundingBox?: RuntimeElementRect;
     overlapArea?: number;
     overlapRatio?: number;
     viewport: RuntimeScanViewport;
@@ -339,7 +345,7 @@ const assertRuntimeDomGeometrySafe = (geometry: unknown): void => {
   }
   for (const element of geometry.elements) {
     if (!isObject(element)) throw new Error("Runtime scan DOM element must be object");
-    assertKnownFields(element, ["internalId", "parentInternalId", "tagName", "selectorHint", "id", "className", "role", "ariaLabel", "textSnippet", "rect", "visibility", "textStyle", "viewportBoundary", "clickable", "order"], "Runtime scan DOM element");
+    assertKnownFields(element, ["internalId", "parentInternalId", "tagName", "selectorHint", "id", "className", "role", "ariaLabel", "textSnippet", "rect", "visibility", "textStyle", "focusBehavior", "viewportBoundary", "clickable", "order"], "Runtime scan DOM element");
     if (!isString(element.internalId) || !isString(element.tagName) || typeof element.clickable !== "boolean" || !isCount(element.order)) throw new Error("Runtime scan DOM element fields invalid");
     assertRuntimeRectSafe(element.rect);
     if (!isObject(element.visibility)) throw new Error("Runtime scan DOM visibility invalid");
@@ -354,6 +360,12 @@ const assertRuntimeDomGeometrySafe = (geometry: unknown): void => {
       if (!isHexColor(element.textStyle.foregroundColor) || !isHexColor(element.textStyle.backgroundColor) || !isNumber(element.textStyle.fontSizePx) || element.textStyle.fontSizePx <= 0 || !isNumber(element.textStyle.fontWeight) || element.textStyle.fontWeight < 1 || element.textStyle.fontWeight > 1000 || typeof element.textStyle.largeText !== "boolean") throw new Error("Runtime scan text style invalid");
       const expectedLargeText = element.textStyle.fontSizePx >= WCAG_LARGE_TEXT_MIN_FONT_SIZE_PX || (element.textStyle.fontSizePx >= WCAG_LARGE_BOLD_TEXT_MIN_FONT_SIZE_PX && element.textStyle.fontWeight >= WCAG_LARGE_BOLD_TEXT_MIN_FONT_WEIGHT);
       if (element.textStyle.largeText !== expectedLargeText) throw new Error("Runtime scan large text classification invalid");
+    }
+    if (element.focusBehavior !== undefined) {
+      if (!isObject(element.focusBehavior)) throw new Error("Runtime scan focus behavior must be object");
+      assertKnownFields(element.focusBehavior, ["visibleOnFocus", "rect"], "Runtime scan focus behavior");
+      if (typeof element.focusBehavior.visibleOnFocus !== "boolean") throw new Error("Runtime scan focus behavior invalid");
+      if (element.focusBehavior.rect !== undefined) assertRuntimeRectSafe(element.focusBehavior.rect);
     }
   }
 };

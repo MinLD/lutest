@@ -6,10 +6,12 @@
 
 - Layout/readability detection is deterministic and heuristic-only; OCR and AI analysis are not included.
 
-- Auth storageState is implemented as manual, local, selected-root-scoped state. UI for starting/clearing auth is not implemented yet.
+- Auth storageState is implemented as manual, local, selected-root-scoped state. Dashboard UI can start, clear, and opt into saved auth state without exposing raw auth artifacts.
 - Auth session self-check uses mocked manual browser interaction; real manual login requires a user-driven Playwright browser session.
 
 - Latest report/runtime detail render in the dashboard, and R8.5 adds explicit route selection; configured flow/state target discovery still has no public catalog.
+- Runtime fix guidance is deterministic UI advice only; it does not guess source files, run OCR/AI analysis, or auto-edit code.
+- Configured flow target catalog/manual flow builder is not implemented yet; the UI reports this blocker rather than inventing targets.
 - Contrast detection skips hidden/transparent text, text shadows, non-uniform image/gradient backgrounds, blend/filter/mask effects when reliable evidence cannot be derived; checked/skipped/incomplete coverage is returned explicitly.
 - Missing Playwright Chromium is reported by runtime browser preflight as `PLAYWRIGHT_BROWSER_MISSING` with remediation `npx playwright install chromium`.
 

@@ -19,6 +19,15 @@ const main = () => {
   assert.deepEqual(selected.targets.map((target) => target.id), ["route:1", "route:2"]);
   assert.equal(selected.targets[0]?.kind, "route");
 
+  const nextInternals = resolveRuntimeTargetDiscovery({
+    routes: ["/(main)", "/(main)/categories", "/@modal/login", "/(.)photo/[id]"],
+    source: "request",
+    reason: "self-check",
+    limits: DEFAULT_RUNTIME_SCAN_LIMITS,
+  });
+  assert.deepEqual(nextInternals.routes, ["/", "/categories", "/login", "/photo/[id]"]);
+  assert.deepEqual(nextInternals.targets.map((target) => target.kind === "route" ? target.route : ""), ["/", "/categories", "/login", "/photo/[id]"]);
+
   const all = resolveRuntimeTargetDiscovery({
     routes: ["/a", "/b", "/c"],
     source: "production-graph",

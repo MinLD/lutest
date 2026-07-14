@@ -2,7 +2,7 @@
 
 Local-first UI quality auditing for web applications using Playwright, deterministic rules, DOM geometry, screenshot evidence, and an interactive report dashboard.
 
-> **Project status: developer preview.** Runtime scanning, screenshot evidence, geometry findings, WCAG contrast/readability evidence, safe interaction discovery, and the dashboard are implemented. Full WCAG coverage, runtime-to-source component mapping, portable report export, and fully bundled dashboard distribution are still in development.
+> **Project status: developer preview.** Runtime scanning, screenshot evidence, geometry findings, WCAG contrast/readability evidence, safe interaction discovery, deterministic fix guidance, auth controls, and the dashboard are implemented. Full WCAG coverage, runtime-to-source component mapping, portable report export, and release hardening are still in development.
 
 ## What Lutest does
 
@@ -16,6 +16,7 @@ Lutest inspects both the source structure and the running UI of a local web proj
 - Discover a bounded set of safe one-click UI states such as tabs, menus, accordions, drawers, dialogs, and toggles.
 - Collect console, page, network, and failed-response diagnostics.
 - Show the affected route, state, viewport, selector, bounding box, screenshot, and overlay.
+- Show deterministic issue-specific remediation guidance and optional saved-auth runtime scan controls.
 - Persist the latest report and runtime artifacts inside the scanned project.
 
 Lutest does **not yet** provide complete WCAG conformance testing or reliable React component/source-line mapping. AABB is used as a geometry technique; text contrast pass/fail uses WCAG contrast ratio with OKLCH evidence and deterministic color suggestions.

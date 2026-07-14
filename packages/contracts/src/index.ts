@@ -256,7 +256,7 @@ export interface RuntimeScanRequest {
   targets?: RuntimeScanTarget[];
   discoveryMode?: RuntimeDiscoveryMode;
   viewportPreset?: "default";
-  auth?: { useSavedState: true };
+  auth?: { useSavedState?: true; promptOnRedirect?: true };
   interactionDiscovery?: {
     enabled: true;
     maxInteractionsPerRoute?: number;
@@ -294,6 +294,7 @@ export interface DomElementGeometry {
   rect: RuntimeRect;
   visibility: { display: string; visibility: string; opacity: number };
   textStyle?: RuntimeTextStyleEvidence;
+  focusBehavior?: { visibleOnFocus: boolean; rect?: RuntimeRect };
   clickable: boolean;
   order: number;
 }
@@ -644,8 +645,10 @@ export const validateRuntimeScanRequest = (value: unknown): ValidationResult<Run
   if (value.viewportPreset !== undefined && value.viewportPreset !== "default") return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.viewportPreset is invalid" };
   if (value.auth !== undefined) {
     if (!isRecord(value.auth)) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth must be an object" };
-    const authKeys = rejectUnknownKeys(value.auth, ["useSavedState"]); if (!authKeys.ok) return authKeys;
-    if (value.auth.useSavedState !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth.useSavedState must be true" };
+    const authKeys = rejectUnknownKeys(value.auth, ["useSavedState", "promptOnRedirect"]); if (!authKeys.ok) return authKeys;
+    if (value.auth.useSavedState !== undefined && value.auth.useSavedState !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth.useSavedState must be true" };
+    if (value.auth.promptOnRedirect !== undefined && value.auth.promptOnRedirect !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth.promptOnRedirect must be true" };
+    if (value.auth.useSavedState !== true && value.auth.promptOnRedirect !== true) return { ok: false, code: "INVALID_REQUEST", message: "runtimeScan.auth requires useSavedState or promptOnRedirect" };
   }
   let interactionDiscovery: RuntimeScanRequest["interactionDiscovery"];
   if (value.interactionDiscovery !== undefined) {
@@ -660,7 +663,7 @@ export const validateRuntimeScanRequest = (value: unknown): ValidationResult<Run
     if (timeoutMs !== undefined && (typeof timeoutMs !== "number" || !Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 30_000)) return runtimeInvalid("runtimeScan.interactionDiscovery.timeoutMs invalid");
     interactionDiscovery = { enabled: true, maxInteractionsPerRoute: typeof maxInteractionsPerRoute === "number" ? maxInteractionsPerRoute : undefined, maxStatesPerRoute: typeof maxStatesPerRoute === "number" ? maxStatesPerRoute : undefined, timeoutMs: typeof timeoutMs === "number" ? timeoutMs : undefined };
   }
-  return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset, auth: value.auth === undefined ? undefined : { useSavedState: true }, interactionDiscovery } };
+  return { ok: true, value: { enabled: true, baseUrl: baseUrl.value, routes, targets, discoveryMode: value.discoveryMode, viewportPreset: value.viewportPreset, auth: value.auth === undefined ? undefined : { ...(value.auth.useSavedState === true ? { useSavedState: true as const } : {}), ...(value.auth.promptOnRedirect === true ? { promptOnRedirect: true as const } : {}) }, interactionDiscovery } };
 };
 
 export const validateAuthStartRequest = (value: unknown): ValidationResult<AuthStartRequest> => {
@@ -978,7 +981,7 @@ const validateRuntimeReadabilityCoverage = (value: unknown): ValidationResult<Ru
 
 const validateDomElementGeometry = (value: unknown): ValidationResult<DomElementGeometry> => {
   if (!isRecord(value)) return runtimeInvalid("dom element must be object");
-  const keys = rejectUnknownKeys(value, ["internalId", "tagName", "selectorHint", "id", "className", "role", "ariaLabel", "textSnippet", "rect", "visibility", "textStyle", "clickable", "order"]); if (!keys.ok) return keys;
+  const keys = rejectUnknownKeys(value, ["internalId", "tagName", "selectorHint", "id", "className", "role", "ariaLabel", "textSnippet", "rect", "visibility", "textStyle", "focusBehavior", "clickable", "order"]); if (!keys.ok) return keys;
   if (!isNonEmptyString(value.internalId) || !isNonEmptyString(value.tagName)) return runtimeInvalid("dom element identity invalid");
   if (!isOptionalString(value.selectorHint) || !isOptionalString(value.textSnippet) || !isOptionalString(value.ariaLabel) || (isString(value.textSnippet) && value.textSnippet.length > 500) || (isString(value.ariaLabel) && value.ariaLabel.length > 500)) return runtimeInvalid("dom element text/selector invalid");
   if ((isString(value.textSnippet) && containsSensitiveRuntimeText(value.textSnippet)) || (isString(value.ariaLabel) && containsSensitiveRuntimeText(value.ariaLabel))) return runtimeInvalid("dom element sensitive text evidence invalid");
@@ -990,8 +993,14 @@ const validateDomElementGeometry = (value: unknown): ValidationResult<DomElement
     const expectedLargeText = textStyle.fontSizePx >= WCAG_LARGE_TEXT_MIN_FONT_SIZE_PX || (textStyle.fontSizePx >= WCAG_LARGE_BOLD_TEXT_MIN_FONT_SIZE_PX && textStyle.fontWeight >= WCAG_LARGE_BOLD_TEXT_MIN_FONT_WEIGHT);
     if (textStyle.largeText !== expectedLargeText) return runtimeInvalid("dom element large text classification invalid");
   }
+  let focusBehavior: DomElementGeometry["focusBehavior"];
+  if (value.focusBehavior !== undefined) {
+    if (!isRecord(value.focusBehavior) || !rejectUnknownKeys(value.focusBehavior, ["visibleOnFocus", "rect"]).ok || typeof value.focusBehavior.visibleOnFocus !== "boolean") return runtimeInvalid("dom element focus behavior invalid");
+    const focusRect = value.focusBehavior.rect === undefined ? undefined : validateRuntimeRect(value.focusBehavior.rect); if (focusRect && !focusRect.ok) return focusRect;
+    focusBehavior = { visibleOnFocus: value.focusBehavior.visibleOnFocus, rect: focusRect?.value };
+  }
   if (typeof value.clickable !== "boolean" || !isCount(value.order)) return runtimeInvalid("dom element clickable/order invalid");
-  return { ok: true, value: { internalId: value.internalId, tagName: value.tagName, selectorHint: value.selectorHint, id: isOptionalString(value.id) ? value.id : undefined, className: isOptionalString(value.className) ? value.className : undefined, role: isOptionalString(value.role) ? value.role : undefined, ariaLabel: isOptionalString(value.ariaLabel) ? value.ariaLabel : undefined, textSnippet: value.textSnippet, rect: rect.value, visibility: { display: value.visibility.display, visibility: value.visibility.visibility, opacity: value.visibility.opacity }, textStyle: isRecord(textStyle) ? { foregroundColor: String(textStyle.foregroundColor), backgroundColor: String(textStyle.backgroundColor), fontSizePx: Number(textStyle.fontSizePx), fontWeight: Number(textStyle.fontWeight), largeText: Boolean(textStyle.largeText) } : undefined, clickable: value.clickable, order: value.order } };
+  return { ok: true, value: { internalId: value.internalId, tagName: value.tagName, selectorHint: value.selectorHint, id: isOptionalString(value.id) ? value.id : undefined, className: isOptionalString(value.className) ? value.className : undefined, role: isOptionalString(value.role) ? value.role : undefined, ariaLabel: isOptionalString(value.ariaLabel) ? value.ariaLabel : undefined, textSnippet: value.textSnippet, rect: rect.value, visibility: { display: value.visibility.display, visibility: value.visibility.visibility, opacity: value.visibility.opacity }, textStyle: isRecord(textStyle) ? { foregroundColor: String(textStyle.foregroundColor), backgroundColor: String(textStyle.backgroundColor), fontSizePx: Number(textStyle.fontSizePx), fontWeight: Number(textStyle.fontWeight), largeText: Boolean(textStyle.largeText) } : undefined, focusBehavior, clickable: value.clickable, order: value.order } };
 };
 
 export const validateDomGeometry = (value: unknown): ValidationResult<DomGeometry> => {

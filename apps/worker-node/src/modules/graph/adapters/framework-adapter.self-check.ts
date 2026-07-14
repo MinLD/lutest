@@ -62,6 +62,51 @@ assert.deepEqual(
 assert.deepEqual(
   classify({
     framework: "next",
+    filePath: "app/(main)/page.tsx",
+    content: "export default function HomePage() { return <main />; }",
+  })?.route,
+  { path: "/", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "app/(main)/categories/page.tsx",
+    content: "export default function CategoriesPage() { return <main />; }",
+  })?.route,
+  { path: "/categories", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "src/app/(dashboard)/studies/games/page.tsx",
+    content: "export default function GamesPage() { return <main />; }",
+  })?.route,
+  { path: "/studies/games", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "app/@modal/login/page.tsx",
+    content: "export default function LoginModalPage() { return <main />; }",
+  })?.route,
+  { path: "/login", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
+    filePath: "app/(.)photo/[id]/page.tsx",
+    content: "export default function PhotoPage() { return <main />; }",
+  })?.route,
+  { path: "/photo/[id]", kind: "page" },
+);
+
+assert.deepEqual(
+  classify({
+    framework: "next",
     filePath: "app/api/products/route.ts",
     content: "export async function GET() { return Response.json([]); }",
   })?.route,

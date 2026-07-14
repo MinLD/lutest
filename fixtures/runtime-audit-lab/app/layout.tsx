@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import "./globals.css";
 
-const routes = ["/", "/layout", "/interactions", "/diagnostics", "/readability", "/static-rules"];
+const routes = ["/", "/route-group", "/layout", "/interactions", "/diagnostics", "/readability", "/static-rules"];
 
 export default function FixtureLayout({ children }: { children: ReactNode }) {
   return (

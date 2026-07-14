@@ -9,8 +9,9 @@ const main = async () => {
   try {
     await page.setContent(`<!doctype html>
       <html>
-        <head><title>dom geometry self-check</title><style>.hidden { display: none; } .clip { overflow: hidden; width: 100px; height: 100px; }</style><meta name="x" content="y"></head>
+        <head><title>dom geometry self-check</title><style>.hidden { display: none; } .clip { overflow: hidden; width: 100px; height: 100px; } .skip { position: fixed; top: -48px; left: 12px; width: 120px; height: 40px; } .skip:focus { top: 12px; }</style><meta name="x" content="y"></head>
         <body>
+          <a id="skip-link" class="skip" href="#hero">Skip to content</a>
           <main id="hero" class="card primary" aria-label="Hero region">${"Visible text ".repeat(30)}</main>
           <input id="secret-input" value="DoNotLeakInputValue" />
           <textarea id="secret-textarea">DoNotLeakTextareaValue</textarea>
@@ -26,12 +27,12 @@ const main = async () => {
     const geometry = await captureRuntimeDomGeometry({
       page,
       viewport: { width: 800, height: 600 },
-      limits: { ...DEFAULT_RUNTIME_SCAN_LIMITS, maxElementsPerViewport: 8, maxTextSnippetLength: 20 },
+      limits: { ...DEFAULT_RUNTIME_SCAN_LIMITS, maxElementsPerViewport: 9, maxTextSnippetLength: 20 },
     });
 
     assert.equal(geometry.viewport.width, 800);
     assert.equal(geometry.truncated, true);
-    assert.equal(geometry.elements.length, 8);
+    assert.equal(geometry.elements.length, 9);
     assert(geometry.capturedAt.includes("T"));
     assert(!geometry.elements.some((element) => ["SCRIPT", "STYLE", "META", "LINK"].includes(element.tagName)));
     assert(!geometry.elements.some((element) => element.id === "hidden-child"), "children hidden by ancestor display:none are not captured");
@@ -39,6 +40,9 @@ const main = async () => {
     assert(!serializedGeometry.includes("DoNotLeakInputValue"));
     assert(!serializedGeometry.includes("DoNotLeakTextareaValue"));
     assert(!serializedGeometry.includes("DoNotLeakPasswordValue"));
+    const skipLink = geometry.elements.find((element) => element.id === "skip-link");
+    assert.equal(skipLink?.focusBehavior?.visibleOnFocus, true, "offscreen focus-revealed links are captured as focus-visible controls");
+    assert((skipLink?.focusBehavior?.rect?.top ?? -1) >= 0, "focused skip link geometry is visible in viewport");
 
     const hero = geometry.elements.find((element) => element.id === "hero");
     assert(hero);

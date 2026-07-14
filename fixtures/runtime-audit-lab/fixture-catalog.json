@@ -1,32 +1,120 @@
 [
   {
+    "route": "/route-group",
+    "title": "Next route group normalization",
+    "expected": [
+      "app/(main)/page.tsx maps to /",
+      "app/(main)/route-group/page.tsx maps to /route-group"
+    ],
+    "negativeControls": [
+      "/(main)",
+      "/(main)/route-group"
+    ]
+  },
+  {
+    "route": "/login",
+    "title": "Authentication gate",
+    "expected": [
+      "login form",
+      "demo credentials",
+      "cookie-backed redirect to /dashboard"
+    ],
+    "negativeControls": [
+      "destructive submit",
+      "real credentials"
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "title": "Protected dashboard",
+    "expected": [
+      "redirects to /login before auth",
+      "renders protected content after demo cookie"
+    ],
+    "negativeControls": [
+      "server-side secret access"
+    ]
+  },
+  {
+    "route": "/admin",
+    "title": "Role-protected admin",
+    "expected": [
+      "redirects to /login before auth",
+      "rejects non-admin role",
+      "renders after signed admin token"
+    ],
+    "negativeControls": [
+      "hard-coded client auth bypass"
+    ]
+  },
+  {
     "route": "/layout",
     "title": "Layout geometry",
-    "expected": ["horizontal-overflow", "element-outside-viewport", "small-click-target", "suspicious-overlap", "zero-size-visible-element"],
-    "negativeControls": ["clipped transformed canvas", "below-fold content", "isolated 30px target"]
+    "expected": [
+      "horizontal-overflow",
+      "element-outside-viewport",
+      "small-click-target",
+      "suspicious-overlap",
+      "zero-size-visible-element"
+    ],
+    "negativeControls": [
+      "clipped transformed canvas",
+      "below-fold content",
+      "isolated 30px target"
+    ]
   },
   {
     "route": "/interactions",
     "title": "Safe SPA interactions",
-    "expected": ["tab state", "dropdown state", "accordion state", "modal state", "typed skipped controls"],
-    "negativeControls": ["delete", "submit", "disabled", "required-input", "route navigation"]
+    "expected": [
+      "tab state",
+      "dropdown state",
+      "accordion state",
+      "modal state",
+      "typed skipped controls"
+    ],
+    "negativeControls": [
+      "delete",
+      "submit",
+      "disabled",
+      "required-input",
+      "route navigation"
+    ]
   },
   {
     "route": "/diagnostics",
     "title": "Browser diagnostics and real API",
-    "expected": ["console warning/error", "page error", "failed HTTP response", "network request failure"],
-    "negativeControls": ["successful real API response"]
+    "expected": [
+      "console warning/error",
+      "page error",
+      "failed HTTP response",
+      "network request failure"
+    ],
+    "negativeControls": [
+      "successful real API response"
+    ]
   },
   {
     "route": "/readability",
     "title": "R8.8 readability",
-    "expected": ["low-text-contrast", "inherited-color", "dark-theme-contrast", "transparent-background-composition"],
-    "negativeControls": ["high contrast text"]
+    "expected": [
+      "low-text-contrast",
+      "inherited-color",
+      "dark-theme-contrast",
+      "transparent-background-composition"
+    ],
+    "negativeControls": [
+      "high contrast text"
+    ]
   },
   {
     "route": "/static-rules",
     "title": "Static rules",
-    "expected": ["large-file", "console", "todo"],
+    "expected": [
+      "large-file",
+      "console",
+      "todo"
+    ],
     "negativeControls": []
   }
 ]

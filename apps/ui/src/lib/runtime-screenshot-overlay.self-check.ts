@@ -34,6 +34,9 @@ assert.deepEqual(
     summary: "The entire element ends 35px before the visible screen begins, so it cannot appear in this screenshot.",
     impact: "Users cannot see or interact with this element unless the layout moves it back into the viewport.",
     location: "Outside left by 35px · x -85, y 639 · 50 × 105 px",
+    commonCauses: ["Negative offsets", "absolute positioning", "responsive transform not constrained"],
+    suggestedFixes: ["Constrain positioned elements within the viewport", "Use responsive max-width or inset values", "Verify transforms at this viewport width"],
+    limitation: "No source file is guessed without source-map evidence.",
   },
   "outside issue explains direction, distance, location, and impact",
 );
@@ -44,6 +47,13 @@ assert.equal(runtimeIssueGuidance("small-click-target", { x: 20, y: 30, width: 1
 assert.equal(runtimeIssueGuidance("zero-size-visible-element", { x: 20, y: 30, width: 0, height: 0, top: 30, right: 20, bottom: 30, left: 20 }, viewport).title, "Visible content escapes a zero-size box", "zero-size issue has plain-language guidance");
 assert.equal(runtimeIssueGuidance("suspicious-overlap", { x: 20, y: 30, width: 40, height: 30, top: 30, right: 60, bottom: 60, left: 20 }, viewport, 0.5).summary, "The related element covers about 50% of the primary clickable area.", "overlap guidance explains measured overlap");
 assert.equal(runtimeIssueGuidance("low-text-contrast", { x: 20, y: 30, width: 180, height: 24, top: 30, right: 200, bottom: 54, left: 20 }, viewport).title, "Text is difficult to read against its background", "low contrast issue has plain-language guidance");
+for (const issueType of ["horizontal-overflow", "small-click-target", "suspicious-overlap", "zero-size-visible-element", "element-outside-viewport", "low-text-contrast"] as const) {
+  const guidance = runtimeIssueGuidance(issueType, { x: 20, y: 30, width: 40, height: 30, top: 30, right: 60, bottom: 60, left: 20 }, viewport, 0.5);
+  assert(guidance.summary && guidance.impact && guidance.location, `${issueType} has evidence-grounded explanation`);
+  assert(guidance.commonCauses.length > 0, `${issueType} has common causes`);
+  assert(guidance.suggestedFixes.length > 0, `${issueType} has deterministic fixes`);
+  assert(!/\b(auto[- ]?fix|OCR|AI)\b/i.test(`${guidance.summary} ${guidance.impact} ${guidance.suggestedFixes.join(" ")}`), `${issueType} does not promise AI/OCR/autofix`);
+}
 assert.equal(runtimeOverlayEdgeMarker({ x: 39, y: 120, width: 78, height: 240, top: 120, right: 117, bottom: 360, left: 39 }, viewport, naturalSize), undefined, "visible box does not get edge marker");
 assert.deepEqual(runtimeOverlayPointMarker({ x: 195, y: 1320, width: 0, height: 0, top: 1320, right: 195, bottom: 1320, left: 195 }, viewport, naturalSize, projection?.focusTop), { xPercent: 50, yPercent: 50 }, "zero-size issue gets a visible point marker");
 assert.deepEqual(runtimeScreenshotProjection({ x: 33, y: 995, width: 403, height: 76, top: 995, right: 436, bottom: 1071, left: 33 }, viewport, { width: 436, height: 1304 }), { focusTop: 460, imageWidthPercent: 111.794872, imageTranslateYPercent: 35.276074, expandedWidth: true }, "legacy expanded-width screenshot is cropped instead of compressed");

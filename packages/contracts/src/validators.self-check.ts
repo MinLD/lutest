@@ -86,7 +86,40 @@ assert(validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "fl
 assert(!validateRuntimeScanRequest({ ...customRuntimeRequest, targets: [{ id: "flow", kind: "flow", route: "/", steps: [{ kind: "waitForTimeout", timeoutMs: 10001 }] }] }).ok, "oversized wait rejected");
 
 const rect = { x: 0, y: 0, width: 100, height: 40, top: 0, right: 100, bottom: 40, left: 0 };
+const focusRect = { x: 8, y: 8, width: 100, height: 40, top: 8, right: 108, bottom: 48, left: 8 };
 const viewport = { width: 390, height: 844 };
+assert(validateDomGeometry({
+  viewport,
+  capturedAt: "2026-07-09T00:00:00.000Z",
+  elementCount: 1,
+  truncated: false,
+  elements: [{
+    internalId: "el-skip",
+    tagName: "A",
+    selectorHint: "a[href='#main']",
+    textSnippet: "Skip to content",
+    rect: { ...focusRect, y: -46, top: -46, bottom: -6 },
+    visibility: { display: "block", visibility: "visible", opacity: 1 },
+    focusBehavior: { visibleOnFocus: true, rect: focusRect },
+    clickable: true,
+    order: 1,
+  }],
+}).ok, "dom geometry focus behavior valid");
+assert(!validateDomGeometry({
+  viewport,
+  capturedAt: "2026-07-09T00:00:00.000Z",
+  elementCount: 1,
+  truncated: false,
+  elements: [{
+    internalId: "el-skip",
+    tagName: "A",
+    rect,
+    visibility: { display: "block", visibility: "visible", opacity: 1 },
+    focusBehavior: { visibleOnFocus: true, rawPath: "/home/user/secret" },
+    clickable: true,
+    order: 1,
+  }],
+}).ok, "dom geometry focus behavior rejects unknown fields");
 const layoutIssue = {
   id: "issue-1",
   type: "small-click-target",
@@ -331,6 +364,10 @@ assert(!validateAuthStartResponse({ status: "saved", cookies: [] }).ok, "auth st
 assert(validateAuthClearResponse({ cleared: true, status: "cleared" }).ok, "auth clear validates");
 assert(!validateAuthStartResponse({ status: "failed", error: { code: "BAD", message: "bad" } }).ok, "auth invalid error rejected");
 assert(validateRuntimeScanRequest({ ...runtimeRequest, auth: { useSavedState: true } }).ok, "runtime auth opt-in valid");
+assert(validateRuntimeScanRequest({ ...runtimeRequest, auth: { promptOnRedirect: true } }).ok, "runtime guided auth prompt valid");
+assert(validateRuntimeScanRequest({ ...runtimeRequest, auth: { useSavedState: true, promptOnRedirect: true } }).ok, "runtime saved auth with guided prompt valid");
+assert(!validateRuntimeScanRequest({ ...runtimeRequest, auth: { promptOnRedirect: false } }).ok, "runtime guided auth prompt rejects false");
+assert(!validateRuntimeScanRequest({ ...runtimeRequest, auth: {} }).ok, "runtime auth requires explicit opt-in");
 
 same(validateProjectPathQuery({}), {
   ok: true,

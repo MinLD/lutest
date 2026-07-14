@@ -7,7 +7,7 @@ export type RuntimeScanRequest = {
   targets?: RuntimeScanTarget[];
   discoveryMode?: "all-routes" | "selected-routes" | "custom-targets";
   viewportPreset?: "default";
-  auth?: { useSavedState: true };
+  auth?: { useSavedState?: true; promptOnRedirect?: true };
   storageStatePath?: string;
   viewport?: RuntimeScanViewport;
   headless?: boolean;

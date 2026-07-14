@@ -11,7 +11,6 @@ import dotenv from "dotenv";
 const cliDir = __dirname;
 const packageRoot = path.resolve(cliDir, "../../..");
 const requireFromCli = createRequire(__filename);
-const localRuntimePorts = [3000, 3001, 3002, 3400, 5173, 5174, 4173, 4200, 4300, 8000, 8080];
 const projectFlags = new Set(["--project", "--project-path"]);
 const DASHBOARD_WAIT_RETRIES = 80;
 const DASHBOARD_WAIT_DELAY_MS = 500;
@@ -20,6 +19,9 @@ const WORKER_WAIT_DELAY_MS = 250;
 const REACHABILITY_TIMEOUT_MS = 900;
 const PROJECT_APP_WAIT_RETRIES = 80;
 const PROJECT_APP_WAIT_DELAY_MS = 500;
+const SHUTDOWN_GRACE_MS = 2500;
+const SHUTDOWN_KILL_GRACE_MS = 1000;
+const MANAGED_APP_PORT_ATTEMPTS = 4;
 
 type ChromiumStatus = "ok" | "missing";
 
@@ -45,6 +47,18 @@ type ManagedCommand = {
   args: string[];
   shellOnWindows?: boolean;
 };
+
+type ManagedChild = {
+  name: string;
+  child: ChildProcess;
+};
+
+type RuntimeBaseUrlDecision =
+  | { type: "explicit"; baseUrl: string }
+  | { type: "managed" };
+
+const managedChildren: ManagedChild[] = [];
+let shutdownStarted = false;
 
 function printUsage(): void {
   console.log(`Usage: lutest [doctor|install-browsers] [--project <path>] [--base-url <local-url>] [--no-open] [--no-start-app] [--no-install-prompt] [--use-env-project]\n\nDefaults to the current working directory. Starts a local worker and dashboard, then opens Lutest.`);
@@ -253,14 +267,6 @@ async function isHttpResponding(url: string): Promise<boolean> {
   }
 }
 
-async function findRunningBaseUrl(): Promise<string | undefined> {
-  for (const port of localRuntimePorts) {
-    const url = `http://127.0.0.1:${port}`;
-    if (await isReachable(url)) return url;
-  }
-  return undefined;
-}
-
 function getFreePort(preferred?: number): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -279,6 +285,14 @@ function getFreePort(preferred?: number): Promise<number> {
       server.close(() => resolve(port));
     });
   });
+}
+
+export async function getManagedAppPort(preferred = 3000): Promise<number> {
+  for (let attempt = 0; attempt < MANAGED_APP_PORT_ATTEMPTS; attempt += 1) {
+    const port = await getFreePort(attempt === 0 ? preferred : undefined);
+    if (!await isHttpResponding(`http://127.0.0.1:${port}`)) return port;
+  }
+  throw new Error("No unused local HTTP port found for the project app.");
 }
 
 function readProjectPackage(projectRoot: string): ProjectPackage | null {
@@ -335,6 +349,42 @@ function createManagedAppEnvironment(projectRoot: string, port: number, workerUr
   };
 }
 
+const killedStaleProjectPids = new Set<number>();
+
+function sameRealPath(left: string, right: string): boolean {
+  try {
+    return fs.realpathSync(left) === fs.realpathSync(right);
+  } catch {
+    return false;
+  }
+}
+
+function stopStaleProjectProcess(pid: number, projectRoot: string): void {
+  if (!Number.isInteger(pid) || pid <= 0 || pid === process.pid || killedStaleProjectPids.has(pid)) return;
+  if (process.platform !== "linux" || !sameRealPath(`/proc/${pid}/cwd`, projectRoot)) return;
+  killedStaleProjectPids.add(pid);
+  console.log(`[Host] Stopping stale project dev server PID ${pid}`);
+  try {
+    process.kill(pid, "SIGTERM");
+    setTimeout(() => {
+      try { process.kill(pid, "SIGKILL"); } catch {}
+    }, SHUTDOWN_GRACE_MS).unref();
+  } catch {}
+}
+
+function pipeManagedAppOutput(child: ChildProcess, projectRoot: string): void {
+  let buffer = "";
+  const handle = (chunk: Buffer, output: NodeJS.WriteStream): void => {
+    const text = chunk.toString();
+    output.write(text);
+    buffer = `${buffer}${text}`.slice(-2000);
+    const pid = Number(buffer.match(/PID:\s*(\d+)/)?.[1]);
+    if (pid) stopStaleProjectProcess(pid, projectRoot);
+  };
+  child.stdout?.on("data", (chunk: Buffer) => handle(chunk, process.stdout));
+  child.stderr?.on("data", (chunk: Buffer) => handle(chunk, process.stderr));
+}
+
 function startManagedApp(projectRoot: string, port: number, workerUrl: string): ChildProcess | null {
   const pkg = readProjectPackage(projectRoot);
   if (!pkg) return null;
@@ -342,31 +392,51 @@ function startManagedApp(projectRoot: string, port: number, workerUrl: string): 
   if (!command) return null;
   const runtimeBaseUrl = `http://127.0.0.1:${port}`;
   console.log(`[Host] Starting project dev server: ${command.command} ${command.args.join(" ")}`);
-  return spawn(command.command, command.args, {
+  const child = spawn(command.command, command.args, {
     cwd: projectRoot,
     env: createManagedAppEnvironment(projectRoot, port, workerUrl, runtimeBaseUrl),
-    stdio: "inherit",
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: process.platform !== "win32",
     shell: process.platform === "win32" && command.shellOnWindows === true,
   });
+  pipeManagedAppOutput(child, projectRoot);
+  return child;
 }
 
 async function resolveRuntimeBaseUrl(options: CliOptions, projectRoot: string, workerUrl: string): Promise<{ baseUrl: string; appProcess: ChildProcess | null }> {
-  const explicit = options.baseUrl ?? process.env.LUTEST_RUNTIME_BASE_URL;
+  const decision = resolveRuntimeBaseUrlDecision(options);
+  if (decision.type === "explicit") return { baseUrl: decision.baseUrl, appProcess: null };
+
+  let commandMissing = false;
+  for (let attempt = 0; attempt < MANAGED_APP_PORT_ATTEMPTS; attempt += 1) {
+    const appPort = await getManagedAppPort(3000);
+    const appProcess = startManagedApp(projectRoot, appPort, workerUrl);
+    if (!appProcess) {
+      commandMissing = true;
+      break;
+    }
+    registerManagedChild("Project app", appProcess);
+    const baseUrl = `http://127.0.0.1:${appPort}`;
+    try {
+      await waitForProjectApp(baseUrl, appProcess);
+      return { baseUrl, appProcess };
+    } catch {
+      signalChild(appProcess, "SIGTERM");
+    }
+  }
+  if (commandMissing) throw new Error("No safe frontend dev command found. Add a dev script, install frontend dependencies, start the app, or pass --base-url.");
+  throw new Error("Project app did not start on an unused local port.");
+}
+
+export function resolveRuntimeBaseUrlDecision(options: Pick<CliOptions, "baseUrl" | "startApp">, env: NodeJS.ProcessEnv = process.env): RuntimeBaseUrlDecision {
+  const explicit = options.baseUrl ?? env.LUTEST_RUNTIME_BASE_URL;
   if (explicit) {
     if (!isLocalBaseUrl(explicit)) throw new Error("Runtime baseUrl must be local http(s) without credentials");
-    return { baseUrl: explicit.replace(/\/$/, ""), appProcess: null };
+    return { type: "explicit", baseUrl: explicit.replace(/\/$/, "") };
   }
 
-  const running = await findRunningBaseUrl();
-  if (running) return { baseUrl: running, appProcess: null };
-  if (!options.startApp) throw new Error("No running local app found. Start the app or pass --base-url.");
-
-  const appPort = await getFreePort(3000);
-  const appProcess = startManagedApp(projectRoot, appPort, workerUrl);
-  if (!appProcess) throw new Error("No safe frontend dev command found. Add a dev script, install frontend dependencies, start the app, or pass --base-url.");
-  const baseUrl = `http://127.0.0.1:${appPort}`;
-  await waitForProjectApp(baseUrl);
-  return { baseUrl, appProcess };
+  if (!options.startApp) throw new Error("No runtime baseUrl provided. Start the app and pass --base-url, or allow Lutest to start it.");
+  return { type: "managed" };
 }
 
 function createWorkerEnvironment(port: number, projectRoot: string): NodeJS.ProcessEnv {
@@ -399,6 +469,7 @@ function startWorker(port: number, projectRoot: string): ChildProcess {
     cwd,
     env: createWorkerEnvironment(port, projectRoot),
     stdio: "inherit",
+    detached: process.platform !== "win32",
     shell: process.platform === "win32" && !workerEntrypoint,
   });
 }
@@ -423,6 +494,7 @@ function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string,
         LUTEST_CHROMIUM_STATUS: chromiumStatus,
       },
       stdio: "inherit",
+      detached: process.platform !== "win32",
       shell: false,
     });
   }
@@ -437,6 +509,7 @@ function startDashboard(port: number, workerUrl: string, runtimeBaseUrl: string,
       NEXT_PUBLIC_LUTEST_CHROMIUM_STATUS: chromiumStatus,
     },
     stdio: "inherit",
+    detached: process.platform !== "win32",
     shell: process.platform === "win32",
   });
 }
@@ -454,8 +527,9 @@ async function waitForUrl(url: string, retries: number, delayMs: number, label: 
   throw new Error(`${label} did not become reachable${lastError ? `: ${errorMessage(lastError)}` : ""}`);
 }
 
-async function waitForProjectApp(url: string): Promise<void> {
+async function waitForProjectApp(url: string, appProcess: ChildProcess): Promise<void> {
   for (let attempt = 1; attempt <= PROJECT_APP_WAIT_RETRIES; attempt += 1) {
+    if (childExited(appProcess)) throw new Error("project app exited before opening a local HTTP server");
     if (await isHttpResponding(url)) return;
     await new Promise((resolve) => setTimeout(resolve, PROJECT_APP_WAIT_DELAY_MS));
   }
@@ -492,6 +566,98 @@ function logChildExit(name: string, child: ChildProcess): void {
   });
 }
 
+function startChildReaper(child: ChildProcess): void {
+  if (!child.pid || process.platform === "win32") return;
+  const script = `
+const parent=${process.pid};
+const target=${child.pid};
+const alive=(pid)=>{try{process.kill(pid,0);return true;}catch{return false;}};
+const stop=(signal)=>{try{process.kill(-target,signal);}catch{try{process.kill(target,signal);}catch{}}};
+const timer=setInterval(()=>{
+  if (alive(parent) && alive(target)) return;
+  if (!alive(parent)) { stop('SIGTERM'); setTimeout(()=>stop('SIGKILL'), ${SHUTDOWN_GRACE_MS}); }
+  clearInterval(timer);
+}, 500);
+`;
+  const reaper = spawn(process.execPath, ["-e", script], { detached: true, stdio: "ignore" });
+  reaper.unref();
+}
+
+function registerManagedChild(name: string, child: ChildProcess): void {
+  managedChildren.push({ name, child });
+  startChildReaper(child);
+  logChildExit(name, child);
+}
+
+function signalChild(child: ChildProcess, signal: NodeJS.Signals): void {
+  if (!child.pid) return;
+  try {
+    if (process.platform === "win32") child.kill(signal);
+    else process.kill(-child.pid, signal);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ESRCH") {
+      try {
+        child.kill(signal);
+      } catch {
+      }
+    }
+  }
+}
+
+function signalManagedChildren(signal: NodeJS.Signals): void {
+  for (const { child } of managedChildren) signalChild(child, signal);
+}
+
+function childExited(child: ChildProcess): boolean {
+  return child.exitCode !== null || child.signalCode !== null;
+}
+
+async function waitForManagedChildren(timeoutMs: number): Promise<boolean> {
+  const pending = managedChildren
+    .map(({ child }) => child)
+    .filter((child) => !childExited(child));
+  if (pending.length === 0) return true;
+
+  await Promise.race([
+    Promise.all(pending.map((child) => new Promise((resolve) => child.once("exit", resolve)))),
+    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+
+  return managedChildren.every(({ child }) => childExited(child));
+}
+
+async function shutdownManagedChildren(reason: string, exitCode: number): Promise<never> {
+  if (shutdownStarted) process.exit(exitCode);
+  shutdownStarted = true;
+  console.log(`\n[Host] Shutting down (${reason})...`);
+  signalManagedChildren("SIGINT");
+  if (!await waitForManagedChildren(SHUTDOWN_GRACE_MS)) {
+    signalManagedChildren("SIGTERM");
+    if (!await waitForManagedChildren(SHUTDOWN_GRACE_MS)) {
+      signalManagedChildren("SIGKILL");
+      await waitForManagedChildren(SHUTDOWN_KILL_GRACE_MS);
+    }
+  }
+  process.exit(exitCode);
+}
+
+function installShutdownHooks(): void {
+  process.once("SIGINT", () => void shutdownManagedChildren("SIGINT", 0));
+  process.once("SIGTERM", () => void shutdownManagedChildren("SIGTERM", 0));
+  process.once("SIGHUP", () => void shutdownManagedChildren("SIGHUP", 0));
+  process.once("uncaughtException", (error) => {
+    console.error(error);
+    void shutdownManagedChildren("uncaughtException", 1);
+  });
+  process.once("unhandledRejection", (error) => {
+    console.error(error);
+    void shutdownManagedChildren("unhandledRejection", 1);
+  });
+  process.once("exit", () => {
+    if (!shutdownStarted) signalManagedChildren("SIGTERM");
+  });
+}
+
 async function main(): Promise<void> {
   const options = parseOptions(process.argv);
   if (options.useEnvProjectPath) dotenv.config({ path: path.resolve(process.cwd(), ".env") });
@@ -510,17 +676,18 @@ async function main(): Promise<void> {
 
   console.log("=== Lutest CLI Starting ===");
   console.log(`[Host] Project root: ${projectRoot}`);
+  installShutdownHooks();
   const chromiumStatus = await ensureChromium(projectRoot, options);
 
   const workerPort = await getFreePort();
   const workerUrl = `http://127.0.0.1:${workerPort}`;
 
-  const { baseUrl, appProcess } = await resolveRuntimeBaseUrl(options, projectRoot, workerUrl);
+  const { baseUrl } = await resolveRuntimeBaseUrl(options, projectRoot, workerUrl);
   console.log(`[Host] Runtime base URL: ${baseUrl}`);
 
   console.log(`[Host] Worker URL: ${workerUrl}`);
   const worker = startWorker(workerPort, projectRoot);
-  logChildExit("Worker", worker);
+  registerManagedChild("Worker", worker);
 
   const status = await waitForWorker(workerPort);
   console.log("[Host] Worker status:", status);
@@ -528,25 +695,18 @@ async function main(): Promise<void> {
   const dashboardPort = await getFreePort(options.dashboardPort ?? 3000);
   const dashboardUrl = `http://127.0.0.1:${dashboardPort}`;
   const dashboard = startDashboard(dashboardPort, workerUrl, baseUrl, projectRoot, chromiumStatus);
-  logChildExit("Dashboard", dashboard);
+  registerManagedChild("Dashboard", dashboard);
   await waitForUrl(dashboardUrl, DASHBOARD_WAIT_RETRIES, DASHBOARD_WAIT_DELAY_MS, "dashboard");
   console.log(`[Host] Dashboard: ${dashboardUrl}`);
 
   if (options.openBrowser) openBrowser(dashboardUrl);
-
-  const children = [worker, dashboard, ...(appProcess ? [appProcess] : [])];
-  if (appProcess) logChildExit("Project app", appProcess);
-  const cleanup = (): void => {
-    console.log("\n[Host] Shutting down...");
-    for (const child of children) child.kill("SIGINT");
-    process.exit(0);
-  };
-
-  process.once("SIGINT", cleanup);
-  process.once("SIGTERM", cleanup);
+  setInterval(() => undefined, 24 * 60 * 60 * 1000);
+  await new Promise(() => undefined);
 }
 
-main().catch((error) => {
-  console.error(`[Host] Startup failed: ${errorMessage(error)}`);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(`[Host] Startup failed: ${errorMessage(error)}`);
+    void shutdownManagedChildren("startup failure", 1);
+  });
+}

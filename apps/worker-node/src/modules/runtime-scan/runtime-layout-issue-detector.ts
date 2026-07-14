@@ -69,6 +69,9 @@ const isFullyOutsideViewport = (element: DomElementGeometry, viewport: RuntimeSc
   (usesViewportBoundary(element, "horizontal") && (element.rect.right < -OVERFLOW_TOLERANCE_PX || element.rect.left > viewport.width + OVERFLOW_TOLERANCE_PX))
   || (usesViewportBoundary(element, "vertical") && element.rect.bottom < -OVERFLOW_TOLERANCE_PX);
 
+const isIntentionalFocusRevealedControl = (element: DomElementGeometry): boolean =>
+  element.clickable && element.focusBehavior?.visibleOnFocus === true;
+
 const isDescendantOf = (
   element: DomElementGeometry,
   ancestor: DomElementGeometry,
@@ -127,7 +130,7 @@ const hasInsufficientClickTargetSpacing = (element: DomElementGeometry, clickabl
 export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssue[] => {
   const elements = input.domGeometry?.elements ?? [];
   const elementsById = new Map(elements.map((element) => [element.internalId, element]));
-  const clickableElements = elements.filter((element) => element.clickable && area(element) > 0);
+  const clickableElements = elements.filter((element) => element.clickable && area(element) > 0 && !isIntentionalFocusRevealedControl(element));
   const horizontalOverflowElements = elements.filter((element) =>
     element.rect.width > 0
     && element.rect.height > 0
@@ -144,6 +147,7 @@ export const detectRuntimeLayoutIssues = (input: DetectInput): RuntimeLayoutIssu
       continue;
     }
     if (isFullyOutsideViewport(element, input.viewport)) {
+      if (isIntentionalFocusRevealedControl(element)) continue;
       issues.push(issue(input, element, "element-outside-viewport", "warning", "Element is fully outside the viewport in an unexpected direction.", `right >= -${OVERFLOW_TOLERANCE_PX}px, left <= viewport.width + ${OVERFLOW_TOLERANCE_PX}px, bottom >= -${OVERFLOW_TOLERANCE_PX}px`));
       continue;
     }

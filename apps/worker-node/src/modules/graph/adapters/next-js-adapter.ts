@@ -114,15 +114,36 @@ const routeAfterSegment = (relativePath: string, segment: "app" | "pages") => {
   return segments.slice(segmentIndex + 1).join("/");
 };
 
+const normalizeAppRouteSegment = (segment: string): string | undefined => {
+  if (segment.startsWith("@")) return undefined;
+  if (/^\(.+\)$/.test(segment)) return undefined;
+
+  const publicSegment = segment.replace(/^(?:\(\.\)|\(\.\.\)|\(\.\.\.\))+/, "");
+  return publicSegment || undefined;
+};
+
+const publicAppRoutePath = (routeFilePath: string, filePattern: RegExp): string | undefined => {
+  if (!filePattern.test(routeFilePath)) return undefined;
+
+  const routeSegments = getPathSegments(routeFilePath)
+    .slice(0, -1)
+    .map(normalizeAppRouteSegment)
+    .filter((segment): segment is string => Boolean(segment));
+
+  return routeSegments.join("/");
+};
+
 const routeFromAppPath = (relativePath: string) => {
   const routeFilePath = routeAfterSegment(relativePath, "app");
   if (routeFilePath === undefined) return undefined;
-  if (/(^|\/)page\.(tsx|jsx|ts|js)$/.test(routeFilePath)) {
-    const route = routeFilePath.replace(/(^|\/)page\.(tsx|jsx|ts|js)$/, "").replace(/\/$/, "");
+  const pageRoute = publicAppRoutePath(routeFilePath, /(^|\/)page\.(tsx|jsx|ts|js)$/);
+  if (pageRoute !== undefined) {
+    const route = pageRoute.replace(/\/$/, "");
     return { path: route ? `/${route}` : "/", kind: "page" as const };
   }
-  if (/(^|\/)route\.(tsx|jsx|ts|js)$/.test(routeFilePath)) {
-    const route = routeFilePath.replace(/(^|\/)route\.(tsx|jsx|ts|js)$/, "").replace(/\/$/, "");
+  const apiRoute = publicAppRoutePath(routeFilePath, /(^|\/)route\.(tsx|jsx|ts|js)$/);
+  if (apiRoute !== undefined) {
+    const route = apiRoute.replace(/\/$/, "");
     return { path: route ? `/${route}` : "/", kind: "api" as const };
   }
   return undefined;

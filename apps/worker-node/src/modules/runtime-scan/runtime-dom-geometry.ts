@@ -167,6 +167,38 @@ export const captureRuntimeDomGeometry = async (input: {
       }
       return false;
     };
+    const rectValue = (rect: DOMRect): DomGeometry["elements"][number]["rect"] => ({
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+    });
+    const intersectsViewport = (rect: DomGeometry["elements"][number]["rect"]): boolean =>
+      rect.width > 0 && rect.height > 0 && rect.right >= 0 && rect.left <= viewport.width && rect.bottom >= 0 && rect.top <= viewport.height;
+    const canReceiveFocus = (element: Element): boolean => {
+      if (!(element instanceof HTMLElement || element instanceof SVGElement)) return false;
+      if (element instanceof HTMLAnchorElement && element.href) return true;
+      if (element instanceof HTMLButtonElement || element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) return !element.disabled;
+      const tabindex = element.getAttribute("tabindex");
+      return tabindex !== null && Number.parseInt(tabindex, 10) >= 0;
+    };
+    const focusBehavior = (element: Element, rect: DomGeometry["elements"][number]["rect"]): DomGeometry["elements"][number]["focusBehavior"] => {
+      if (intersectsViewport(rect) || !canReceiveFocus(element)) return undefined;
+      const active = document.activeElement instanceof HTMLElement || document.activeElement instanceof SVGElement ? document.activeElement : undefined;
+      try {
+        (element as HTMLElement | SVGElement).focus({ preventScroll: true });
+        if (document.activeElement !== element) return undefined;
+        const focusedRect = rectValue(element.getBoundingClientRect());
+        return { visibleOnFocus: intersectsViewport(focusedRect), rect: focusedRect };
+      } finally {
+        if (active && active !== element) active.focus({ preventScroll: true });
+        else if (document.activeElement === element && element instanceof HTMLElement) element.blur();
+      }
+    };
 
     const documentElements = Array.from(document.body?.querySelectorAll("*") ?? []);
     const internalIds = new Map(documentElements.map((element, index) => [element, `el:${index + 1}`]));
@@ -175,6 +207,7 @@ export const captureRuntimeDomGeometry = async (input: {
       const tagName = element.tagName.toUpperCase();
       if (ignoredTags.has(tagName)) continue;
       const rect = element.getBoundingClientRect();
+      const capturedRect = rectValue(rect);
       const style = computedStyle(element);
       if (isEffectivelyHidden(element)) continue;
       const canCaptureText = tagName !== "INPUT" && tagName !== "TEXTAREA" && tagName !== "SELECT";
@@ -194,22 +227,14 @@ export const captureRuntimeDomGeometry = async (input: {
         role,
         ariaLabel,
         textSnippet: text ? text.slice(0, textLimit) : undefined,
-        rect: {
-          x: rect.x,
-          y: rect.y,
-          width: rect.width,
-          height: rect.height,
-          top: rect.top,
-          right: rect.right,
-          bottom: rect.bottom,
-          left: rect.left,
-        },
+        rect: capturedRect,
         visibility: {
           display: style.display,
           visibility: style.visibility,
           opacity: Number(style.opacity),
         },
         textStyle: textStyleEvidence(element, style),
+        focusBehavior: focusBehavior(element, capturedRect),
         viewportBoundary: {
           horizontal: boundaryFor(element, "x"),
           vertical: boundaryFor(element, "y"),

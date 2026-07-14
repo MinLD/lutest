@@ -4474,3 +4474,79 @@ Next recommended phase:
 - Strict internal/public validators reject malformed OKLCH values, unknown nested fields, and suggestions that still fail WCAG.
 - Elements fully below the audited viewport no longer emit contrast issues; the production fixture keeps all intended readability controls inside each viewport.
 - WCAG remains the only pass/fail model. OKLCH is public-safe perceptual evidence and fix guidance only.
+
+### Post-R8.8 runtime false-positive hardening — focus-revealed offscreen controls
+
+- Audited `test_scan/tan/opsi-developer/cli/ui` report where `a.skipLink` / "Skip to content" was flagged as `element-outside-viewport` at `y=-46`.
+- Classified it as an intentional accessibility pattern: offscreen by default, expected to become visible on keyboard focus.
+- Added DOM geometry `focusBehavior` evidence for offscreen focusable controls by focusing with `preventScroll` and measuring the focused rect.
+- Layout detector now suppresses outside-viewport, overlap, and click-target reports for offscreen controls that become visible on focus.
+- Offscreen focusable controls that remain hidden after focus are still reported.
+- Contracts and runtime artifact validators strictly validate `focusBehavior` and reject unknown nested fields.
+- This fix is behavior-based, not a project/class/text hard-code.
+- Checks passed: contracts validators, DOM geometry, layout detector, runtime scan schema, Playwright scan self-checks, workspace typecheck, contracts build, worker build, and UI build.
+- Live Opsi rescan was not run because `http://127.0.0.1:3000` was not reachable at final verification time.
+
+## R8.9 — Runtime Fix Guidance UI
+
+Status: completed.
+
+Implemented:
+- Reused the existing runtime screenshot/evidence UI path; no new API or artifact shape was needed.
+- Extended `runtimeIssueGuidance` with common causes, deterministic CSS/HTML fixes, and limitation text for every runtime issue type.
+- Rendered guidance alongside selector/evidence/viewport details in the issue evidence card.
+- Added self-check coverage that all issue types have explanation, causes, fixes, and no AI/OCR/autofix promise.
+
+Tests/checks run:
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-report-view-model.self-check.ts` — passed.
+- `npm run build -w ui` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+
+Security/scope:
+- No backend contract changes.
+- No path-policy or local-only baseUrl changes.
+- No raw filesystem path, `.lutest` URL, auth artifact, stack, token, cookie, OCR, AI analysis, or source auto-edit added.
+
+Known limitations:
+- Guidance is deterministic advice only and does not identify source files without source-map evidence.
+
+Next recommended phase:
+- R8.10 — Auth / Flow Controls UI
+
+## R8.10 — Auth / Flow Controls UI
+
+Status: completed.
+
+Implemented:
+- Added validated UI API methods for auth status, start, and clear using existing public auth contracts.
+- Auth start accepts `408` timeout as a typed `AuthStartResponse` instead of collapsing it into an opaque fetch error.
+- Scans UI renders safe auth status metadata, manual auth start controls, clear auth control, browser/auth errors, and explicit saved-auth scan opt-in.
+- Runtime scan selection builder emits `auth: { useSavedState: true }` only when the user opts in.
+- Scans UI shows the configured flow target catalog blocker and does not fake new scan targets from latest runtime reports.
+
+Tests/checks run:
+- `npx tsx ./apps/ui/src/lib/runtime-scan-selection.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-data-request.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-runtime-detail-load.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+
+Security/scope:
+- No raw storageState/cookie/token/password values are displayed or returned by new UI code.
+- No path-policy, local-only baseUrl, screenshot endpoint, runtime artifact schema, or backend auth contract was loosened.
+- No credential autofill, form bypass, destructive click automation, manual flow builder, or fake flow target catalog was added.
+
+Known limitations:
+- Configured flow target catalog and manual flow builder remain future work.
+
+Next recommended phase:
+- R9.1 — Full Self-check Matrix

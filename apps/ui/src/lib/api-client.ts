@@ -1,5 +1,9 @@
 import type {
   GraphResponse,
+  AuthClearResponse,
+  AuthStartRequest,
+  AuthStartResponse,
+  AuthStatusResponse,
   LatestReportResponse,
   ProductionGraphResponse,
   ProjectSummary,
@@ -10,6 +14,9 @@ import type {
 } from "@lutest/contracts";
 import {
   validateProductionGraphResponse,
+  validateAuthClearResponse,
+  validateAuthStartResponse,
+  validateAuthStatusResponse,
   validateRuntimeArtifactDetailResponse,
   validateRuntimeArtifactScreenshotQuery,
 } from "@lutest/contracts";
@@ -62,6 +69,26 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function requestJsonAllowStatus<T>(path: string, allowedStatus: number, init?: RequestInit): Promise<T> {
+  const workerUrl = await getWorkerUrl();
+  const response = await fetch(`${workerUrl}${path}`, {
+    ...init,
+    headers: {
+      "content-type": "application/json",
+      ...init?.headers,
+    },
+    cache: "no-store",
+  });
+  if (response.status === allowedStatus) return response.json() as Promise<T>;
+  if (!response.ok) {
+    const fallbackMessage = `Request failed: ${response.status} ${response.statusText}`;
+    const body = await response.json().catch(() => null);
+    const apiError = isApiErrorBody(body) ? body.error : null;
+    throw new ApiClientError(apiError?.message ?? fallbackMessage, response.status, apiError?.code);
+  }
+  return response.json() as Promise<T>;
+}
+
 export function runtimeScreenshotUrl(ref: string | undefined): string | undefined {
   const validation = validateRuntimeArtifactScreenshotQuery({ ref });
   if (!validation.ok) return undefined;
@@ -104,6 +131,33 @@ async function requestRuntimeArtifactDetail(path: string): Promise<RuntimeArtifa
   return validation.value;
 }
 
+async function requestAuthStatus(path: string): Promise<AuthStatusResponse> {
+  const response = await requestJson<unknown>(path);
+  const validation = validateAuthStatusResponse(response);
+  if (!validation.ok) throw new ApiClientError(validation.message);
+  return validation.value;
+}
+
+async function requestAuthStart(input: AuthStartRequest): Promise<AuthStartResponse> {
+  const response = await requestJsonAllowStatus<unknown>("/api/actions/auth/start", 408, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+  const validation = validateAuthStartResponse(response);
+  if (!validation.ok) throw new ApiClientError(validation.message);
+  return validation.value;
+}
+
+async function requestAuthClear(projectPath?: string): Promise<AuthClearResponse> {
+  const response = await requestJson<unknown>("/api/actions/auth/clear", {
+    method: "POST",
+    body: JSON.stringify(projectPath ? { projectPath } : {}),
+  });
+  const validation = validateAuthClearResponse(response);
+  if (!validation.ok) throw new ApiClientError(validation.message);
+  return validation.value;
+}
+
 export const lutestApi = {
   getStatus() {
     return requestJson<StatusResponse>("/api/status");
@@ -137,6 +191,18 @@ export const lutestApi = {
     return requestRuntimeArtifactDetail(
       withProjectPath("/api/report/runtime/latest", projectPath),
     );
+  },
+
+  getAuthStatus(projectPath?: string) {
+    return requestAuthStatus(withProjectPath("/api/auth/status", projectPath));
+  },
+
+  startAuth(input: AuthStartRequest) {
+    return requestAuthStart(input);
+  },
+
+  clearAuth(projectPath?: string) {
+    return requestAuthClear(projectPath);
   },
 
   runScan(input: ScanRequest = {}) {

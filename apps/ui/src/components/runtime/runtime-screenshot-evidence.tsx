@@ -164,6 +164,21 @@ export function RuntimeScreenshotEvidence({ issue }: { issue: RuntimeIssueView }
             <dd className="mt-1 text-[#475467]">{guidance.impact}</dd>
           </div>
         </dl>
+        <div className="mt-3 grid gap-3 text-xs sm:grid-cols-2">
+          <div className="rounded-lg border border-[#e5edf7] bg-[#f8fbff] p-3">
+            <p className="font-bold uppercase tracking-[0.08em] text-[#405168]">Common causes</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-[#475467]">
+              {guidance.commonCauses.map((cause) => <li key={cause}>{cause}</li>)}
+            </ul>
+          </div>
+          <div className="rounded-lg border border-[#d8eadf] bg-[#f4fbf6] p-3">
+            <p className="font-bold uppercase tracking-[0.08em] text-[#24613a]">Suggested fixes</p>
+            <ul className="mt-2 list-disc space-y-1 pl-4 text-[#24613a]">
+              {guidance.suggestedFixes.map((fix) => <li key={fix}>{fix}</li>)}
+            </ul>
+          </div>
+        </div>
+        <p className="mt-2 rounded-lg bg-[#f7f8fb] px-3 py-2 text-xs text-[#667085]">{guidance.limitation}</p>
         <p className="mt-3 break-words font-mono text-xs text-[#667085]">Element: {issue.selectorHint ?? issue.elementRef}</p>
         {issue.foregroundColor && issue.backgroundColor && issue.contrastRatio !== undefined && issue.requiredContrastRatio !== undefined ? (
           <div className="mt-3 rounded-lg border border-[#e5edf7] bg-[#f8fbff] p-3 text-xs">

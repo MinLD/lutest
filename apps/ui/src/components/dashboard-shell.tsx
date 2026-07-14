@@ -433,12 +433,13 @@ function ProductionSummaryCards({
         meta={`${summary?.pageCount ?? 0} pages / ${summary?.componentCount ?? 0} components / ${summary?.hookCount ?? 0} hooks`}
       />
       <MetricCard
-        title="API flow"
+        title="API surface"
         value={
+          (summary?.apiRouteCount ?? 0) +
           (summary?.apiClientMethodCount ?? 0) +
           (summary?.externalEndpointCount ?? 0)
         }
-        meta={`${summary?.apiClientMethodCount ?? 0} clients / ${summary?.externalEndpointCount ?? 0} endpoints`}
+        meta={`${summary?.apiRouteCount ?? 0} routes / ${summary?.apiClientMethodCount ?? 0} clients / ${summary?.externalEndpointCount ?? 0} external`}
       />
       <MetricCard
         title="Graph health"

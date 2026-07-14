@@ -22,8 +22,8 @@ Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL D
 
 - Product: Lutest, local-first code/UX audit platform.
 - Primary graph path: production graph.
-- Latest completed phase recorded here: R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence.
-- Next recommended phase: R8.9 — Runtime Fix Guidance UI.
+- Latest completed phase recorded here: R8.10 — Auth / Flow Controls UI.
+- Next recommended phase: R9.1 — Full Self-check Matrix.
 - Production graph persists latest artifact at `<projectRoot>/.lutest/graph/latest-production-graph.json`.
 - Default UI graph data flow calls `/api/graph/production`, not legacy `/api/graph`.
 - Runtime scan artifacts now use hardened repository save/read, atomic latest/meta/snapshot writes, strict path safety, and separated safe metadata under `<projectRoot>/.lutest/runtime/`.
@@ -43,6 +43,12 @@ Old MVP/refactor planning files in `docs/plan/` are marked `STALE / HISTORICAL D
 - Failing contrast issues include normalized OKLCH foreground/background/delta evidence plus an optional gamut-safe foreground suggestion whose WCAG ratio is revalidated.
 - Reports renders color swatches, measured/required ratios, OKLCH evidence, suggested foreground, selector, viewport, and opaque screenshot evidence without exposing internal DOM or artifact paths.
 - R8.8 hardening redacts sensitive rendered text/ARIA before persistence, exposes checked/skipped/incomplete contrast coverage, caches computed style/background resolution, and enforces semantic contrast/artifact validation.
+- Post-R8.8 runtime hardening suppresses false-positive offscreen skip-link/accessibility controls by recording whether a focusable offscreen control becomes visible on focus; class/text-specific rules are not used.
+- Runtime DOM geometry now includes public-safe `focusBehavior` evidence and strict validators accept/reject it; offscreen controls that remain hidden on focus still report layout issues.
+- Runtime scan state discovery prioritizes semantic navigation states under bounded budgets, injects the active worker URL into scanned Lutest dashboards, and ignores clipped/internal/native non-layout boxes for zero-size detection.
+- Reports now renders deterministic rule-based remediation guidance for every runtime issue type, with common causes, safe CSS/HTML fixes, selector/evidence/viewport context, and explicit no-source-file/no-auto-fix limitations.
+- Scans UI now exposes auth status, manual auth start/clear controls, success URL/selector wait conditions, browser-missing/auth errors, and explicit `runtimeScan.auth.useSavedState` opt-in without showing raw cookies/tokens/storageState.
+- No configured flow target catalog exists yet; Scans UI states that blocker and does not fake scan targets from latest reports.
 - Working tree may contain uncommitted phase changes; check `git status` before starting.
 
 ## Approval Gate

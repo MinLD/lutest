@@ -1,5 +1,127 @@
 # Session Handoff
 
+## Current Session Addendum — R8.10 Auth / Flow Controls UI
+
+Status: implemented, not yet committed.
+
+Implemented:
+- Scans UI loads safe auth status and shows status/date/error metadata only.
+- Scans UI can start manual auth through existing backend auth endpoint using local base URL, optional success URL/selector, and bounded timeout.
+- Scans UI can clear saved auth state.
+- Runtime scan request builder supports explicit `auth.useSavedState` opt-in; UI disables it unless auth status is valid.
+- Auth start timeout `408` is handled as a typed auth response in the UI client.
+- Configured flow target catalog remains absent; UI states the blocker and does not fake flow targets.
+
+Files changed for R8.10:
+- `apps/ui/src/lib/api-client.ts`
+- `apps/ui/src/lib/runtime-scan-selection.ts`
+- `apps/ui/src/lib/runtime-scan-selection.self-check.ts`
+- `apps/ui/src/components/runtime/runtime-scan-controls.tsx`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+Verification run:
+- `npx tsx ./apps/ui/src/lib/runtime-scan-selection.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-data-request.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-runtime-detail-load.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/dashboard-navigation.self-check.ts` — passed.
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth-state.repository.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/auth/auth.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/scan/scan-runtime-integration.self-check.ts` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w ui` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+
+Next recommended phase:
+- R9.1 — Full Self-check Matrix.
+
+
+## Current Session Addendum — R8.9 Runtime Fix Guidance UI
+
+Status: implemented, not yet committed.
+
+Implemented:
+- Reports issue detail now renders deterministic remediation guidance for every runtime issue type.
+- Guidance includes common causes, CSS/HTML fixes, selector/evidence/viewport context, and explicit limitation text.
+- No backend contract, path-policy, screenshot endpoint, OCR, AI analysis, source-file guessing, or automatic source edit was added.
+
+Files changed for R8.9:
+- `apps/ui/src/lib/runtime-screenshot-overlay.ts`
+- `apps/ui/src/components/runtime/runtime-screenshot-evidence.tsx`
+- `apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/05-known-issues.md`
+- `docs/ai-context/06-next-tasks.md`
+- `docs/ai-context/07-session-handoff.md`
+- `docs/plan/production-refactor-progress.md`
+
+Verification run:
+- `npx tsx ./apps/ui/src/lib/runtime-screenshot-overlay.self-check.ts` — passed.
+- `npx tsx ./apps/ui/src/lib/runtime-report-view-model.self-check.ts` — passed.
+- `npm run build -w ui` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+
+Next recommended phase:
+- R8.10 — Auth / Flow Controls UI.
+
+
+## Current Session Addendum — Runtime False-Positive Hardening
+
+Status: implemented, not yet committed.
+
+Context:
+- User tested `test_scan/tan/opsi-developer/cli/ui` and saw `element-outside-viewport` on `a.skipLink` / "Skip to content" at `y=-46`.
+- Audit showed this is an intentional accessibility skip link hidden above the viewport and expected to appear on keyboard focus.
+- The user explicitly requested a production-grade fix without hard-coded class/text/project exceptions.
+
+Implemented:
+- DOM geometry now records public-safe `focusBehavior` for offscreen focusable controls by focusing with `preventScroll` and measuring the focused rect.
+- Layout detector suppresses `element-outside-viewport`, overlap, and click-target checks for offscreen controls that become visible on focus.
+- Offscreen focusable controls that remain hidden after focus still report layout issues.
+- Contracts and internal artifact validators now strictly accept `focusBehavior` and reject unknown nested fields.
+- This is semantic behavior detection, not a `skipLink`, text, route, or project hard-code.
+
+Files changed in current uncommitted work:
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts`
+- `apps/worker-node/src/modules/runtime-scan/runtime-scan.schema.ts`
+- `packages/contracts/src/index.ts`
+- `packages/contracts/src/validators.self-check.ts`
+- `AI_HANDOFF.md`
+- `docs/ai-context/03-current-state.md`
+- `docs/ai-context/07-session-handoff.md`
+
+Verification already run:
+- `npx tsx ./packages/contracts/src/validators.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-dom-geometry.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-layout-issue-detector.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/runtime-scan-schema.self-check.ts` — passed.
+- `npx tsx ./apps/worker-node/src/modules/runtime-scan/playwright-scan.self-check.ts` — passed.
+- `npm run typecheck --workspaces --if-present` — passed.
+- `npm run build -w @lutest/contracts` — passed.
+- `npm run build -w @lutest/worker-node` — passed.
+- `npm run build -w ui` — passed outside sandbox because Turbopack can bind local ports during build.
+
+Not verified live:
+- Opsi app at `http://127.0.0.1:3000` was not running during final verification, so the Opsi artifact has not been regenerated after the fix.
+- Ask user to restart Opsi and rescan before claiming the live Opsi report is clean.
+
+Important follow-up for next AI:
+- Run `git status --short` first.
+- Do not commit generated `.lutest` artifacts.
+- If committing this fix, stage only the files listed above unless user explicitly asks otherwise.
+- Do not kill non-Lutest ports; the previous session accidentally killed a `9Router` process on port `20128`.
+
 ## Phase Completed
 
 R8.8 — Visual Readability: WCAG Pass/Fail + OKLCH Evidence.

@@ -161,6 +161,41 @@ const main = () => {
     },
   });
   assert.equal(belowFoldIssues.some((issue) => issue.type === "element-outside-viewport"), false);
+  const focusRevealedIssues = detectRuntimeLayoutIssues({
+    scanTargetId: "route:focus",
+    route: "/focus",
+    viewport: mobileViewport,
+    domGeometry: {
+      viewport: mobileViewport,
+      capturedAt: "2026-01-01T00:00:00.000Z",
+      elementCount: 2,
+      truncated: false,
+      elements: [
+        {
+          internalId: "el:skip-link",
+          tagName: "A",
+          selectorHint: "a[href='#main']",
+          rect: { x: 10, y: -46, width: 132, height: 40, top: -46, right: 142, bottom: -6, left: 10 },
+          visibility: { display: "block", visibility: "visible", opacity: 1 },
+          focusBehavior: { visibleOnFocus: true, rect: { x: 10, y: 10, width: 132, height: 40, top: 10, right: 142, bottom: 50, left: 10 } },
+          clickable: true,
+          order: 1,
+        },
+        {
+          internalId: "el:bad-link",
+          tagName: "A",
+          selectorHint: "a.bad-offscreen",
+          rect: { x: 10, y: -46, width: 132, height: 40, top: -46, right: 142, bottom: -6, left: 10 },
+          visibility: { display: "block", visibility: "visible", opacity: 1 },
+          focusBehavior: { visibleOnFocus: false, rect: { x: 10, y: -46, width: 132, height: 40, top: -46, right: 142, bottom: -6, left: 10 } },
+          clickable: true,
+          order: 2,
+        },
+      ],
+    },
+  });
+  assert.equal(focusRevealedIssues.some((issue) => issue.elementRef === "el:skip-link"), false, "focus-revealed offscreen controls are not reported as layout overflow");
+  assert.equal(focusRevealedIssues.some((issue) => issue.elementRef === "el:bad-link"), true, "offscreen focusable controls that stay hidden on focus are still reported");
   const overlap = issues.find((issue) => issue.type === "suspicious-overlap");
   assert.equal(overlap?.evidence.relatedElementRef, "el:overlap-b");
   assert.equal(overlap?.evidence.relatedSelectorHint, "#overlap-b");
