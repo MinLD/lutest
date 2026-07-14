@@ -29,6 +29,28 @@ const publicDiagnostic = (value: string, fallback: string): string =>
     ? fallback
     : value.slice(0, 500);
 
+const publicEndpoint = (value: string): string => {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "unknown endpoint";
+    return `${url.pathname}${url.search}`.slice(0, 240);
+  } catch {
+    return "unknown endpoint";
+  }
+};
+
+const networkDiagnostic = (error: NonNullable<RuntimeViewportResult["networkErrors"]>[number]): string => {
+  const method = /^[A-Z]+$/.test(error.method) ? error.method : "GET";
+  const failure = publicDiagnostic(error.failureText ?? "Network request failed.", "Runtime network diagnostic redacted.");
+  return `${method} ${publicEndpoint(error.url)} — ${failure}`;
+};
+
+const failedResponseDiagnostic = (response: NonNullable<RuntimeViewportResult["failedResponses"]>[number]): string => {
+  const method = "GET";
+  const statusText = publicDiagnostic(response.statusText || "HTTP failure", "HTTP failure");
+  return `${method} ${publicEndpoint(response.url)} — HTTP ${response.status} ${statusText}`;
+};
+
 const viewportDiagnostics = (viewport: RuntimeViewportResult): RuntimeArtifactDiagnostic[] => {
   const failedResourceUrls = [
     ...(viewport.networkErrors ?? []).map((error) => error.url),
@@ -47,8 +69,8 @@ const viewportDiagnostics = (viewport: RuntimeViewportResult): RuntimeArtifactDi
   return [
     ...consoleDiagnostics,
     ...(viewport.pageErrors ?? []).map((message): RuntimeArtifactDiagnostic => ({ kind: "page-error", message: publicDiagnostic(message, "Runtime page diagnostic redacted.") })),
-    ...(viewport.networkErrors ?? []).map((error): RuntimeArtifactDiagnostic => ({ kind: "network-error", message: publicDiagnostic(error.failureText ?? "Network request failed.", "Runtime network diagnostic redacted.") })),
-    ...(viewport.failedResponses ?? []).map((response): RuntimeArtifactDiagnostic => ({ kind: "failed-response", message: `${response.status} response` })),
+    ...(viewport.networkErrors ?? []).map((error): RuntimeArtifactDiagnostic => ({ kind: "network-error", message: networkDiagnostic(error) })),
+    ...(viewport.failedResponses ?? []).map((response): RuntimeArtifactDiagnostic => ({ kind: "failed-response", message: failedResponseDiagnostic(response) })),
   ];
 };
 

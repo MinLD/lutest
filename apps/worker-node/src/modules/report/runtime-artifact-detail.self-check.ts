@@ -192,8 +192,8 @@ const main = async (): Promise<void> => {
     assert(diagnostics.some((diagnostic) => diagnostic.kind === "console-warning" && diagnostic.message === "fixture warning"));
     assert(diagnostics.some((diagnostic) => diagnostic.kind === "console-error" && diagnostic.message === "Runtime console diagnostic redacted."));
     assert(diagnostics.some((diagnostic) => diagnostic.kind === "page-error"));
-    assert(diagnostics.some((diagnostic) => diagnostic.kind === "network-error"));
-    assert(diagnostics.some((diagnostic) => diagnostic.kind === "failed-response"));
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "network-error" && diagnostic.message.includes("GET /failure")));
+    assert(diagnostics.some((diagnostic) => diagnostic.kind === "failed-response" && diagnostic.message === "GET /failure — HTTP 503 Service Unavailable"));
     assert.equal(screenshot?.available, true);
     assert.match(screenshot?.ref ?? "", /^shot_[a-f0-9]{32}$/);
     assert.deepEqual(await runtimeArtifactDetailService.getScreenshot(projectRoot, screenshot?.ref ?? ""), png);

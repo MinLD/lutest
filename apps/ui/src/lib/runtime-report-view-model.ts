@@ -127,6 +127,20 @@ export type RuntimeDiagnosticView = {
   viewportKey: string;
 };
 
+export type RuntimeApiFailureView = {
+  id: string;
+  kind: "failed-response" | "network-error";
+  endpoint: string;
+  method?: string;
+  status?: number;
+  message: string;
+  route: string;
+  targetId: string;
+  stateLabel: string;
+  viewportKey: string;
+  observationCount: number;
+};
+
 export type RuntimeReportViewModel = {
   runtimeEnabled: boolean;
   status?: string;
@@ -140,6 +154,7 @@ export type RuntimeReportViewModel = {
   issueCount: number;
   errorCount: number;
   diagnosticCount: number;
+  apiFailureCount: number;
   readabilityCheckedCount: number;
   readabilitySkippedCount: number;
   readabilityIncompleteViewportCount: number;
@@ -149,6 +164,7 @@ export type RuntimeReportViewModel = {
   states: RuntimeStateView[];
   skippedInteractions: RuntimeSkippedInteractionView[];
   diagnostics: RuntimeDiagnosticView[];
+  apiFailures: RuntimeApiFailureView[];
   screenshotArtifacts: RuntimeScreenshotArtifactView[];
   issues: RuntimeIssueView[];
   errors: RuntimeScanError[];
@@ -188,6 +204,38 @@ const isLegacySmallClickTargetFalsePositive = (
   boundingBox.height >= WCAG_AA_MIN_CLICK_TARGET_SIZE;
 const visibleRuntimeIssues = (issues: RuntimeLayoutIssue[]): RuntimeLayoutIssue[] =>
   issues.filter((issue) => !isLegacySmallClickTargetFalsePositive(issue.type, issue.evidence.boundingBox));
+
+const parseApiFailureDiagnostic = (diagnostic: RuntimeDiagnosticView): RuntimeApiFailureView | null => {
+  if (diagnostic.kind !== "failed-response" && diagnostic.kind !== "network-error") return null;
+  const methodEndpoint = diagnostic.message.match(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+([^\s—]+)\s*[—-]\s*(.+)$/i);
+  const status = Number(diagnostic.message.match(/\bHTTP\s+([1-5]\d\d)\b/i)?.[1] ?? diagnostic.message.match(/^([1-5]\d\d) response$/i)?.[1]);
+  const method = methodEndpoint?.[1]?.toUpperCase();
+  const endpoint = methodEndpoint?.[2] ?? "unknown endpoint";
+  const message = methodEndpoint?.[3] ?? diagnostic.message;
+  return {
+    id: `${diagnostic.kind}:${method ?? ""}:${endpoint}:${Number.isFinite(status) ? status : "network"}:${diagnostic.route}:${diagnostic.viewportKey}`,
+    kind: diagnostic.kind,
+    endpoint,
+    method,
+    status: Number.isFinite(status) ? status : undefined,
+    message,
+    route: diagnostic.route,
+    targetId: diagnostic.targetId,
+    stateLabel: diagnostic.stateLabel,
+    viewportKey: diagnostic.viewportKey,
+    observationCount: 1,
+  };
+};
+
+const deriveApiFailures = (diagnostics: RuntimeDiagnosticView[]): RuntimeApiFailureView[] =>
+  Array.from(diagnostics.reduce<Map<string, RuntimeApiFailureView>>((groups, diagnostic) => {
+    const failure = parseApiFailureDiagnostic(diagnostic);
+    if (!failure) return groups;
+    const key = `${failure.kind}:${failure.method ?? ""}:${failure.endpoint}:${failure.status ?? failure.message}:${failure.route}`;
+    const current = groups.get(key);
+    groups.set(key, current ? { ...current, observationCount: current.observationCount + 1 } : failure);
+    return groups;
+  }, new Map()).values()).sort((left, right) => (right.status ?? 0) - (left.status ?? 0) || right.observationCount - left.observationCount);
 
 const visibleIssueReason = (
   type: RuntimeLayoutIssue["type"],
@@ -345,6 +393,7 @@ const fromRuntimeScan = (runtimeScan: RuntimeScanResult): RuntimeReportViewModel
     },
     {},
   );
+  const apiFailures = deriveApiFailures(diagnostics);
   return {
     runtimeEnabled: true,
     status: runtimeScan.status,
@@ -356,6 +405,7 @@ const fromRuntimeScan = (runtimeScan: RuntimeScanResult): RuntimeReportViewModel
     issueCount: issues.length,
     errorCount: runtimeScan.summary.errorCount,
     diagnosticCount: diagnostics.length,
+    apiFailureCount: apiFailures.length,
     readabilityCheckedCount: readabilityCoverage.checked,
     readabilitySkippedCount: readabilityCoverage.skipped,
     readabilityIncompleteViewportCount: readabilityCoverage.incompleteViewports,
@@ -365,6 +415,7 @@ const fromRuntimeScan = (runtimeScan: RuntimeScanResult): RuntimeReportViewModel
     states,
     skippedInteractions,
     diagnostics,
+    apiFailures,
     screenshotArtifacts,
     issues,
     errors: [
@@ -479,6 +530,7 @@ const fromRuntimeArtifactDetail = (detail: RuntimeArtifactDetailResponse): Runti
     counts[issue.severity] = (counts[issue.severity] ?? 0) + 1;
     return counts;
   }, {});
+  const apiFailures = deriveApiFailures(diagnostics);
   return {
     runtimeEnabled: true,
     status: detail.status,
@@ -490,6 +542,7 @@ const fromRuntimeArtifactDetail = (detail: RuntimeArtifactDetailResponse): Runti
     issueCount: issues.length,
     errorCount: detail.summary.errorCount,
     diagnosticCount: diagnostics.length,
+    apiFailureCount: apiFailures.length,
     readabilityCheckedCount: readabilityCoverage.checked,
     readabilitySkippedCount: readabilityCoverage.skipped,
     readabilityIncompleteViewportCount: readabilityCoverage.incompleteViewports,
@@ -499,6 +552,7 @@ const fromRuntimeArtifactDetail = (detail: RuntimeArtifactDetailResponse): Runti
     states,
     skippedInteractions,
     diagnostics,
+    apiFailures,
     screenshotArtifacts,
     issues,
     errors: [],
@@ -520,6 +574,7 @@ export const runtimeReportViewModel = (
       issueCount: 0,
       errorCount: 0,
       diagnosticCount: 0,
+      apiFailureCount: 0,
       readabilityCheckedCount: 0,
       readabilitySkippedCount: 0,
       readabilityIncompleteViewportCount: 0,
@@ -529,6 +584,7 @@ export const runtimeReportViewModel = (
       states: [],
       skippedInteractions: [],
       diagnostics: [],
+      apiFailures: [],
       screenshotArtifacts: [],
       issues: [],
       errors: [],
@@ -553,6 +609,7 @@ export const runtimeReportViewModel = (
     issueCount: summary.issueCount,
     errorCount: summary.errorCount,
     diagnosticCount: 0,
+    apiFailureCount: 0,
     readabilityCheckedCount: 0,
     readabilitySkippedCount: 0,
     readabilityIncompleteViewportCount: 0,
@@ -562,6 +619,7 @@ export const runtimeReportViewModel = (
     states: [],
     skippedInteractions: [],
     diagnostics: [],
+    apiFailures: [],
     screenshotArtifacts: [],
     issues: [],
     errors: [],

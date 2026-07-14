@@ -131,6 +131,8 @@ const detail: RuntimeArtifactDetailResponse = {
       diagnostics: [
         { kind: "console-warning", message: "Fixture warning" },
         { kind: "page-error", message: "Fixture page error" },
+        { kind: "failed-response", message: "GET /api/runtime-fixtures/failure — HTTP 503 Service Unavailable" },
+        { kind: "network-error", message: "GET /protected-runtime-network-error — net::ERR_CONNECTION_REFUSED" },
       ],
       issues: [{
         id: "issue-1",
@@ -175,7 +177,11 @@ assert.equal(detailModel.issues[0]?.screenshotRef, opaqueRef, "runtime detail ke
 assert.equal(detailModel.issues[0]?.stateLabel, "after open Filter", "detail issue inherits discovered state");
 assert.equal(detailModel.states[0]?.interactionLabel, "Filter", "interaction source mapped safely");
 assert.equal(detailModel.skippedInteractions[0]?.label, "Delete", "skipped control label mapped safely");
-assert.equal(detailModel.diagnosticCount, 2, "browser diagnostic count survives artifact refresh");
+assert.equal(detailModel.diagnosticCount, 4, "browser diagnostic count survives artifact refresh");
+assert.equal(detailModel.apiFailureCount, 2, "API failures are derived from network diagnostics");
+assert.equal(detailModel.apiFailures[0]?.endpoint, "/api/runtime-fixtures/failure", "failed API endpoint exposed as safe path only");
+assert.equal(detailModel.apiFailures[0]?.status, 503, "failed API status parsed");
+assert.equal(detailModel.apiFailures[1]?.kind, "network-error", "network API failure grouped separately");
 assert.equal(detailModel.readabilityCheckedCount, 4, "readability checked count survives artifact refresh");
 assert.equal(detailModel.readabilitySkippedCount, 1, "readability skipped count survives artifact refresh");
 assert.equal(detailModel.readabilityIncompleteViewportCount, 1, "incomplete readability coverage remains visible");

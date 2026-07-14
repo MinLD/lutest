@@ -8,6 +8,7 @@ import {
   defaultRuntimeFilters,
   filterRuntimeIssues,
   runtimeReportViewModel,
+  type RuntimeApiFailureView,
   type RuntimeIssueView,
   type RuntimeReportFilters,
   type RuntimeReportViewModel,
@@ -122,7 +123,7 @@ function RuntimeOverview({ model }: { model: RuntimeReportViewModel }) {
         <p className="text-xs text-[#667085]">Scan {model.scanId ?? "latest"} · {model.viewportCount} viewports</p>
       </div>
       <div className="grid gap-3 p-3 sm:grid-cols-3">
-        <Metric icon={<AlertTriangle size={18} />} label="Visible issues" value={model.issueCount} detail={`${model.diagnosticCount} browser diagnostics · ${model.errorCount} scanner failures`} />
+        <Metric icon={<AlertTriangle size={18} />} label="Visible issues" value={model.issueCount} detail={`${model.apiFailureCount} API failures · ${model.diagnosticCount} diagnostics`} />
         <Metric icon={<RouteIcon size={18} />} label="Affected routes" value={affectedRoutes} detail={`${model.targetCount} targets scanned`} />
         <Metric icon={<Camera size={18} />} label="Safe previews" value={previewCount} detail={`${model.screenshotCount} captured`} />
       </div>
@@ -210,6 +211,39 @@ function BrowserDiagnostics({ model }: { model: RuntimeReportViewModel }) {
   );
 }
 
+function ApiFailureCard({ failure }: { failure: RuntimeApiFailureView }) {
+  const statusLabel = failure.status ? `HTTP ${failure.status}` : failure.kind === "network-error" ? "Network" : "HTTP";
+  const statusClassName = failure.status && failure.status >= 500 ? "bg-[#fee2e2] text-[#b42318]" : failure.status && failure.status >= 400 ? "bg-[#ffedd5] text-[#c2410c]" : "bg-[#eef5ff] text-[#2563eb]";
+  return (
+    <div className="rounded-lg border border-[#fecaca] bg-white px-3 py-2 text-xs">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className={`rounded-full px-2 py-0.5 font-bold ${statusClassName}`}>{statusLabel}</span>
+        {failure.method ? <span className="rounded-full bg-[#f2f4f7] px-2 py-0.5 font-mono font-bold text-[#475467]">{failure.method}</span> : null}
+        <span className="font-mono font-semibold text-[#111827]">{failure.endpoint}</span>
+        {failure.observationCount > 1 ? <span className="rounded-full bg-[#fff7ed] px-2 py-0.5 font-bold text-[#c2410c]">×{failure.observationCount}</span> : null}
+      </div>
+      <p className="mt-1 break-words text-[#7f1d1d]">{failure.message}</p>
+      <p className="mt-1 font-mono text-[11px] text-[#98a2b3]">{failure.route} · {failure.stateLabel} · {failure.viewportKey}</p>
+    </div>
+  );
+}
+
+function ApiFailures({ model }: { model: RuntimeReportViewModel }) {
+  if (model.apiFailures.length === 0) return null;
+  return (
+    <section className="rounded-xl border border-[#fecaca] bg-[#fff7f7] px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#b42318]">API failures</p>
+        <span className="rounded-full bg-white px-2 py-1 text-xs font-bold tabular-nums text-[#b42318]">{model.apiFailureCount} failures</span>
+      </div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        {model.apiFailures.slice(0, 12).map((failure) => <ApiFailureCard key={failure.id} failure={failure} />)}
+      </div>
+      {model.apiFailures.length > 12 ? <p className="mt-2 text-xs font-semibold text-[#991b1b]">Showing 12 of {model.apiFailures.length} API failures.</p> : null}
+    </section>
+  );
+}
+
 function ReadabilityCoverageSummary({ model }: { model: RuntimeReportViewModel }) {
   if (model.readabilityCheckedCount === 0 && model.readabilitySkippedCount === 0 && model.readabilityIncompleteViewportCount === 0) return null;
   return (
@@ -241,6 +275,7 @@ export function RuntimeReportPanel({ latestReport, runtimeArtifactDetail }: { la
       <RuntimeOverview model={model} />
       {!model.hasFullIssueData ? <div className="rounded-xl border border-[#fef3c7] bg-[#fffbeb] p-4 text-sm text-[#a16207]">Detailed runtime issues are not available in this report.</div> : null}
       <RuntimeErrorList model={model} />
+      <ApiFailures model={model} />
       <BrowserDiagnostics model={model} />
       <ReadabilityCoverageSummary model={model} />
 
